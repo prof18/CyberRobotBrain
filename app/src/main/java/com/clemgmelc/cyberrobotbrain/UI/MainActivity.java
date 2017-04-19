@@ -26,7 +26,7 @@ public class MainActivity extends AppCompatActivity {
 
     //request code
     public static final int SCAN_DEVICE_REQUEST = 1;
-    private String mDeviceAddress;
+    private String mDeviceAddress = "NO_DEVICE";
     private BluetoothLeService mBluetoothLeService;
     private MainActivity mainActivity;
 
@@ -47,12 +47,14 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        //TODO: SE NON E' CONNESSO NON SI PUO' ANDARE AVANTI
         Button manualNav = (Button) findViewById(R.id.manual_nav_btn);
         manualNav.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
 
                 Intent startManualNav = new Intent(MainActivity.this, ManualNavigation.class);
+                startManualNav.putExtra("DEVICE_ADDRESS", mDeviceAddress);
                 startActivity(startManualNav);
             }
         });
