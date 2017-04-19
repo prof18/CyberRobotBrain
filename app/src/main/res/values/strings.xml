@@ -1,0 +1,27 @@
+<resources>
+    <string name="app_name">Cyber Robot Brain</string>
+    <string name="action_settings">Settings</string>
+    <string name="hello_robot">Hello Cyber Robot</string>
+    <string name="btn_navigation">Manual Navigation</string>
+    <string name="perm_error_title">Attention: Mandatory Permission</string>
+    <string name="perm_error_msg">You must accept the permission to connect to the Cyber Robot</string>
+    <string name="blue_error_title">Attention: Mandatory Feature</string>
+    <string name="blue_error_msg">You must turn on the Bluetooth to connect to the Cyber Robot</string>
+    <string name="no_name_device">Unknown Device</string>
+    <string name="scan_stopped">Scan finished</string>
+    <string name="title_connect_dialog">Connect to Cyber Robot</string>
+    <string name="connect_dialog_cancel">Cancel</string>
+    <string name="connect_dialog_rescan_error">The scanning is already running</string>
+    <string name="rescan">Rescan</string>
+    <string name="scanning">Scanning</string>
+    <string name="no_device">No device found</string>
+    <string name="title_activity_scan">ScanActivity</string>
+
+    <string name="nav_forward">Move forward</string>
+    <string name="nav_backward">Move backward</string>
+    <string name="nav_left">Move left</string>
+    <string name="nav_right">Move right</string>
+    <string name="title_scan">Select a device</string>
+    <string name="title_navigation">Manual Navigation</string>
+
+</resources>
