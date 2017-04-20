@@ -26,7 +26,7 @@ public class MainActivity extends AppCompatActivity {
 
     //request code
     public static final int SCAN_DEVICE_REQUEST = 1;
-    private String mDeviceAddress = "NO_DEVICE";
+    public String mDeviceAddress = null;
     private BluetoothLeService mBluetoothLeService;
     private MainActivity mainActivity;
 

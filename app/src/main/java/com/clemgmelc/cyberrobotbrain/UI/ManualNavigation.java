@@ -6,12 +6,14 @@ import android.content.ComponentName;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.IBinder;
-import android.provider.ContactsContract;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageButton;
+import android.widget.Toast;
 
 import com.clemgmelc.cyberrobotbrain.Data.BluetoothLeService;
 import com.clemgmelc.cyberrobotbrain.R;
@@ -29,7 +31,8 @@ public class ManualNavigation extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_manual_navigation);
+        setContentView(R.layout.manual_navigation_activity_main);
+
         mDeviceAddress = getIntent().getStringExtra("DEVICE_ADDRESS");
 
 
@@ -86,7 +89,13 @@ public class ManualNavigation extends AppCompatActivity {
 
         super.onPause();
 
+    }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        unbindService(mServiceConnection);
+        mBluetoothLeService = null;
     }
 
     // Manage Service lifecycle.
@@ -95,19 +104,24 @@ public class ManualNavigation extends AppCompatActivity {
         //what to do when connected to the service
         @Override
         public void onServiceConnected(ComponentName componentName, IBinder service) {
+
             mBluetoothLeService = ((BluetoothLeService.LocalBinder) service).getService();
             if (!mBluetoothLeService.initialize()) {
                 Log.e("", "Unable to initialize Bluetooth");
                 finish();
             }
+            if (mDeviceAddress != null) {
 
-            //if connected send a toast message
-            if(mBluetoothLeService.connect(mDeviceAddress)) {
-                Log.v(ConstantApp.TAG, "Connected to: Cyber Robot from navigation");
+                //if connected send a toast message
+                if (mBluetoothLeService.connect(mDeviceAddress)) {
+                    Log.v(ConstantApp.TAG, "Connected to: Cyber Robot from navigation");
+                }
+
+                mMovementGattService = mBluetoothLeService.getSupportedGattServices().get(8);
+                mMovementCharacteristic = mMovementGattService.getCharacteristic(ConstantApp.UUID_MOVEMENT);
+            } else {
+                Toast.makeText(mBluetoothLeService, "Cyber Robot not connected. Please connect before trying to move it!", Toast.LENGTH_SHORT).show();
             }
-
-            mMovementGattService = mBluetoothLeService.getSupportedGattServices().get(8);
-            mMovementCharacteristic = mMovementGattService.getCharacteristic(ConstantApp.UUID_MOVEMENT);
         }
 
         @Override
@@ -115,4 +129,16 @@ public class ManualNavigation extends AppCompatActivity {
             mBluetoothLeService = null;
         }
     };
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+
+            case android.R.id.home:
+                super.onBackPressed();
+                break;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
 }

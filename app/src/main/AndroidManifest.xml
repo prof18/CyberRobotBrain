@@ -32,6 +32,7 @@
             </intent-filter>
         </activity>
         <activity
+            android:theme="@style/AppTheme.NoActionBar"
             android:name=".UI.ManualNavigation"
             android:label="@string/title_navigation"/>
         <activity
