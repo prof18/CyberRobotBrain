@@ -24,6 +24,7 @@ import com.clemgmelc.cyberrobotbrain.Util.ConstantApp;
 
 public class MainActivity extends AppCompatActivity {
 
+
     //request code
     public static final int SCAN_DEVICE_REQUEST = 1;
     private String mDeviceAddress = "NO_DEVICE";

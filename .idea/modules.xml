@@ -4,6 +4,7 @@
     <modules>
       <module fileurl="file://$PROJECT_DIR$/CyberRobotBrain.iml" filepath="$PROJECT_DIR$/CyberRobotBrain.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/cyberrobotbrain.iml" filepath="$PROJECT_DIR$/cyberrobotbrain.iml" />
     </modules>
   </component>
 </project>

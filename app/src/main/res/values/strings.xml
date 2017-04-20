@@ -23,5 +23,9 @@
     <string name="nav_right">Move right</string>
     <string name="title_scan">Select a device</string>
     <string name="title_navigation">Manual Navigation</string>
+    <!-- GPS -->
+    <string name="gps_required">GPS Required for device discovery</string>
+    <string name="gps_enabling">Enable GPS</string>
+    <string name="gps_cancel">Cancel</string>
 
 </resources>

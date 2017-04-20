@@ -6,8 +6,12 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -41,6 +45,11 @@ public class DeviceScanActivity extends AppCompatActivity {
     private BluetoothAdapter mBluetoothAdapter;
     private boolean mScanning;
     private Handler mHandler;
+    //GPS
+    private LocationManager mLocationManager;
+    private LocationListener mLocationListener;
+    private AlertDialog.Builder mAlertDialog;
+    private AlertDialog mAlert;
 
     private static final int REQUEST_ENABLE_BT = 1;
 
@@ -99,10 +108,86 @@ public class DeviceScanActivity extends AppCompatActivity {
             }
         });
 
+        //use location manager and listener to be aware of GPS enabling/disabling
+        mLocationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        mLocationListener = createLocationListener();
+        //TODO: gestire i permessi (come in"verifyStoragePermissions")
+        mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,20000, 10, mLocationListener);
+        mAlertDialog = initializeGps();
+        if(mAlertDialog != null) {
+            mAlert = mAlertDialog.create();
+            mAlert.show();
+        }
+
+
         mHandler = new Handler();
         initializeBluetooth();
     }
 
+    //
+    private AlertDialog.Builder initializeGps() {
+
+
+        if (mLocationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+            Log.d(TAG, "CHECK GPS ABILITATO PROCEDI SENZA REMORE");
+            return null;
+        } else {
+            Log.d(TAG, "CHECK GPS DISABILITATO****************");
+            return showGpsAlert();
+        }
+
+    }
+    private AlertDialog.Builder showGpsAlert() {
+        AlertDialog.Builder alertDialog = new AlertDialog.Builder(this);
+        alertDialog.setMessage(com.clemgmelc.cyberrobotbrain.R.string.gps_required);
+        alertDialog.setCancelable(false);
+        alertDialog.setPositiveButton(com.clemgmelc.cyberrobotbrain.R.string.gps_enabling,
+                new DialogInterface.OnClickListener(){
+                    public void onClick(DialogInterface dialog, int which){
+                        Intent callGPSSettingIntent = new Intent(
+                                android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+                        startActivity(callGPSSettingIntent);
+                    }
+                });
+        alertDialog.setNegativeButton(com.clemgmelc.cyberrobotbrain.R.string.gps_cancel,
+                new DialogInterface.OnClickListener(){
+                    public void onClick(DialogInterface dialog, int which){
+                        dialog.cancel();
+                        finish();
+                    }
+                });
+
+        return alertDialog;
+    }
+
+    private LocationListener createLocationListener() {
+        LocationListener ll = new LocationListener() {
+            @Override
+            public void onLocationChanged(Location location) {
+                Log.d(TAG, "location changed");
+            }
+            @Override
+            public void onStatusChanged(String provider, int status, Bundle extras) {
+
+            }
+            @Override
+            public void onProviderEnabled(String provider) {
+                Log.d(TAG, "CAMBIAMENTO UTENTE ---->ATTIVATO");
+                mAlert.dismiss();
+                mAlert = null;
+            }
+            @Override
+            public void onProviderDisabled(String provider) {
+                Log.d(TAG, "CAMBIAMENTO UTENTE ---->DISATTIVATO..mettiti le mani nel culo");
+                if(mAlert == null){
+                    mAlertDialog = initializeGps();
+                    mAlert = mAlertDialog.create();
+                    mAlert.show();
+                }
+            }
+        };
+        return ll;
+    }
 
     //check if bluetooth is enabled and set the adapter. If not, open a dialog.
     private void initializeBluetooth() {
