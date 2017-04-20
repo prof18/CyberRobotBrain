@@ -255,12 +255,12 @@ public class BluetoothLeService extends Service {
     }
 
     //write the time on the characteristic
-    public boolean writeCharacteristic(BluetoothGattCharacteristic characteristic, String command) {
+    public boolean writeCharacteristic(BluetoothGattCharacteristic characteristic, byte[] value) {
         if (mBluetoothAdapter == null || mBluetoothGatt == null) {
             Log.w(TAG, "BluetoothAdapter not initialized");
             return false;
         }
-        byte[] value = {0x31, 0x32, 0x44, 0x30, 0x53, 0x2d, 0x31};
+
 
 
         //value[0] = (byte) (command);

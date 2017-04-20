@@ -6,6 +6,7 @@ import android.content.ComponentName;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.IBinder;
+import android.provider.ContactsContract;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -18,9 +19,11 @@ import com.clemgmelc.cyberrobotbrain.Util.ConstantApp;
 
 public class ManualNavigation extends AppCompatActivity {
 
-    private ImageButton mForward;
+    private ImageButton mForward, mBackward, mLeft, mRight;
     private BluetoothLeService mBluetoothLeService;
     private String mDeviceAddress;
+    private BluetoothGattService mMovementGattService;
+    private BluetoothGattCharacteristic mMovementCharacteristic;
 
 
     @Override
@@ -31,15 +34,40 @@ public class ManualNavigation extends AppCompatActivity {
 
 
         mForward = (ImageButton) findViewById(R.id.forward_button);
+        mBackward = (ImageButton) findViewById(R.id.backward_button);
+        mRight = (ImageButton) findViewById(R.id.right_button);
+        mLeft = (ImageButton) findViewById(R.id.left_button);
+
+
         mForward.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
 
-                BluetoothGattService mSVC = mBluetoothLeService.getSupportedGattServices().get(8);
-                BluetoothGattCharacteristic mCH = mSVC.getCharacteristic(ConstantApp.UUID_MOVEMENT);
+                mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.forward);
+            }
+        });
 
+        mBackward.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
 
-                mBluetoothLeService.writeCharacteristic(mCH, null);
+                mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.backward);
+            }
+        });
+
+        mLeft.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.left);
+            }
+        });
+
+        mRight.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.right);
             }
         });
     }
@@ -77,6 +105,9 @@ public class ManualNavigation extends AppCompatActivity {
             if(mBluetoothLeService.connect(mDeviceAddress)) {
                 Log.v(ConstantApp.TAG, "Connected to: Cyber Robot from navigation");
             }
+
+            mMovementGattService = mBluetoothLeService.getSupportedGattServices().get(8);
+            mMovementCharacteristic = mMovementGattService.getCharacteristic(ConstantApp.UUID_MOVEMENT);
         }
 
         @Override

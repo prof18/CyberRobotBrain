@@ -127,6 +127,7 @@ public class MainActivity extends AppCompatActivity {
             //if connected send a toast message
             if(mBluetoothLeService.connect(mDeviceAddress)) {
                 Log.v(ConstantApp.TAG, "Connected to: Cyber Robot");
+                Toast.makeText(mBluetoothLeService, "Connected to: Cyber Robot", Toast.LENGTH_SHORT).show();
             }
         }
 
