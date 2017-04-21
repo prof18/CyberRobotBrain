@@ -129,15 +129,17 @@ public class DeviceScanActivity extends AppCompatActivity {
 
 
         if (mLocationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-            Log.d(TAG, "CHECK GPS ABILITATO PROCEDI SENZA REMORE");
+            Log.d(TAG, "CHECK: GPS ABILITATO PROCEDI");
             return null;
         } else {
-            Log.d(TAG, "CHECK GPS DISABILITATO****************");
+            Log.d(TAG, "CHECK: GPS DISABILITATO STOP");
             return showGpsAlert();
         }
 
     }
     private AlertDialog.Builder showGpsAlert() {
+        Log.d(TAG,"partito il messaggio di attivazione GPS");
+
         AlertDialog.Builder alertDialog = new AlertDialog.Builder(this);
         alertDialog.setMessage(com.clemgmelc.cyberrobotbrain.R.string.gps_required);
         alertDialog.setCancelable(false);
@@ -164,11 +166,9 @@ public class DeviceScanActivity extends AppCompatActivity {
         LocationListener ll = new LocationListener() {
             @Override
             public void onLocationChanged(Location location) {
-                Log.d(TAG, "location changed");
             }
             @Override
             public void onStatusChanged(String provider, int status, Bundle extras) {
-
             }
             @Override
             public void onProviderEnabled(String provider) {
@@ -178,7 +178,7 @@ public class DeviceScanActivity extends AppCompatActivity {
             }
             @Override
             public void onProviderDisabled(String provider) {
-                Log.d(TAG, "CAMBIAMENTO UTENTE ---->DISATTIVATO..mettiti le mani nel culo");
+                Log.d(TAG, "CAMBIAMENTO UTENTE ---->DISATTIVATO.");
                 if(mAlert == null){
                     mAlertDialog = initializeGps();
                     mAlert = mAlertDialog.create();
@@ -191,6 +191,7 @@ public class DeviceScanActivity extends AppCompatActivity {
 
     //check if bluetooth is enabled and set the adapter. If not, open a dialog.
     private void initializeBluetooth() {
+        Log.d(TAG,"partito il messaggio di attivazione bluetooth");
 
         final BluetoothManager bluetoothManager =
                 (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
@@ -198,6 +199,8 @@ public class DeviceScanActivity extends AppCompatActivity {
 
 
         if (mBluetoothAdapter == null || !mBluetoothAdapter.isEnabled()) {
+            Log.d(TAG,"partito il messaggio di attivazione bluetooth");
+
             Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
 
@@ -317,6 +320,7 @@ public class DeviceScanActivity extends AppCompatActivity {
             scanLeDevice(false);
             mLeDeviceListAdapter.clear();
         }
+        mLocationManager.removeUpdates(mLocationListener);
     }
 
     //Enable bluetooth scanning
