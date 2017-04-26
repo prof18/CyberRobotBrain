@@ -9,7 +9,6 @@
     android:clickable="true"
     android:focusable="true"
     android:orientation="horizontal"
-    card_view:cardBackgroundColor="#fafafa"
     card_view:cardCornerRadius="5dp"
     card_view:contentPadding="10dp"
     card_view:cardElevation="6dp"

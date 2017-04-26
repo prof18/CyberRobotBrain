@@ -8,21 +8,27 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:textColor="#FFFFFF"
         android:padding="24dp"
         android:text="@string/hello_robot"
         android:textSize="20sp" />
 
     <LinearLayout
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
 
         <Button
             android:id="@+id/manual_nav_btn"
-            android:layout_width="wrap_content"
+            android:layout_width="180dp"
             android:layout_height="wrap_content"
-            android:text="@string/btn_navigation" />
-
-
+            android:text="@string/btn_navigation"
+            />
+        <Button
+            android:id="@+id/auto_navigation_btn"
+            android:layout_width="180dp"
+            android:layout_height="wrap_content"
+            android:text="@string/btn_auto_navigation"
+            />
     </LinearLayout>
-
 </LinearLayout>

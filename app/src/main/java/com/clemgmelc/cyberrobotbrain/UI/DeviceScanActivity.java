@@ -39,6 +39,8 @@ import com.clemgmelc.cyberrobotbrain.Util.ConstantApp;
 
 import java.util.ArrayList;
 
+import static android.webkit.ConsoleMessage.MessageLevel.LOG;
+
 public class DeviceScanActivity extends AppCompatActivity {
 
     private LeDeviceAdapter mLeDeviceListAdapter;
@@ -54,7 +56,7 @@ public class DeviceScanActivity extends AppCompatActivity {
     private static final int REQUEST_ENABLE_BT = 1;
 
     // Stops scanning after 10 seconds.
-    private static final long SCAN_PERIOD = 5000;
+    private static final long SCAN_PERIOD = 1500;
 
     private boolean mConnected = false;
 
@@ -323,13 +325,15 @@ public class DeviceScanActivity extends AppCompatActivity {
         mLocationManager.removeUpdates(mLocationListener);
     }
 
+
     //Enable bluetooth scanning
     private void scanLeDevice(boolean enabled) {
 
         if (enabled) {
 
+            // TODO: METTERE ROTELLA
             Log.v(TAG, "Start Scanning");
-            Toast.makeText(this, getResources().getString(R.string.scanning), Toast.LENGTH_SHORT).show();
+            //Toast.makeText(this, getResources().getString(R.string.scanning), Toast.LENGTH_SHORT).show();
 
             // Stops scanning after a pre-defined scan period.
             mHandler.postDelayed(new Runnable() {
@@ -340,7 +344,7 @@ public class DeviceScanActivity extends AppCompatActivity {
                         mScanning = false;
                         //TODO: Deal with deprecated method
                         mBluetoothAdapter.stopLeScan(mLeScanCallback);
-                        Toast.makeText(getApplicationContext(), R.string.scan_stopped, Toast.LENGTH_LONG).show();
+                        //Toast.makeText(getApplicationContext(), R.string.scan_stopped, Toast.LENGTH_LONG).show();
 
                         //show a message in the dialog if there isn't any BLE device
                         if (mLeDeviceListAdapter.getItemCount() == 0) {
@@ -386,7 +390,8 @@ public class DeviceScanActivity extends AppCompatActivity {
 
                             //add the new device to the list
                             mSwipeRefreshLayout.setRefreshing(false);
-                            mLeDeviceListAdapter.addDevice(device);
+                            if (device.getName() != null && device.getName().equals("Cyber Robot"))
+                                mLeDeviceListAdapter.addDevice(device);
                             mLeDeviceListAdapter.notifyDataSetChanged();
                         }
                     });
@@ -447,12 +452,17 @@ public class DeviceScanActivity extends AppCompatActivity {
                 @Override
                 public void onClick(View view) {
 
-                    BluetoothDevice device = mLeDevices.get(position);
-                    mActivity.scanLeDevice(false);
-                    Intent intent = new Intent();
-                    intent.putExtra("DEVICE_ADDRESS", device.getAddress());
-                    setResult(Activity.RESULT_OK, intent);
-                    finish();
+                    if (mScanning) {
+                        Toast.makeText(mActivity, getResources().getText(R.string.wait_during_scan), Toast.LENGTH_SHORT).show();
+                    } else {
+
+                        BluetoothDevice device = mLeDevices.get(position);
+                        mActivity.scanLeDevice(false);
+                        Intent intent = new Intent();
+                        intent.putExtra("DEVICE_ADDRESS", device.getAddress());
+                        setResult(Activity.RESULT_OK, intent);
+                        finish();
+                    }
                 }
             });
         }

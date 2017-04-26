@@ -24,9 +24,18 @@
     <string name="title_scan">Select a device</string>
     <string name="title_navigation">Manual Navigation</string>
     <string name="sound">Play Sound</string>
-    <!-- GPS -->
+
+    <string name="btn_auto_navigation">Auto Navigation</string>
+    <string name="title_activity_camera">CameraActivity</string>
+
     <string name="gps_required">GPS Required for device discovery</string>
     <string name="gps_enabling">Enable GPS</string>
     <string name="gps_cancel">Cancel</string>
+
+    <string name="message_connected">Connected to Cyber Robot</string>
+    <string name="message_disconnected">Disconnected from Cyber Robot</string>
+
+    <string name="action_disconnected">You cannot move the Cyber Robot if you are not connected</string>
+    <string name="wait_during_scan">You must wait until scanning is complete</string>
 
 </resources>

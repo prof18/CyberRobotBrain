@@ -1,16 +1,17 @@
 package com.clemgmelc.cyberrobotbrain.UI;
 
 import android.app.Activity;
-import android.bluetooth.BluetoothGattService;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.content.res.ColorStateList;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.design.widget.FloatingActionButton;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
@@ -30,6 +31,9 @@ public class MainActivity extends AppCompatActivity {
     public String mDeviceAddress = null;
     private BluetoothLeService mBluetoothLeService;
     private MainActivity mainActivity;
+    private FloatingActionButton mFab;
+    private boolean mConnected = false;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,24 +43,38 @@ public class MainActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
         mainActivity = this;
 
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
+        mFab = (FloatingActionButton) findViewById(R.id.fab);
+        mFab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Intent launchScan = new Intent(MainActivity.this, DeviceScanActivity.class);
-                startActivityForResult(launchScan, SCAN_DEVICE_REQUEST);
+
+                if (!mConnected) {
+                    Intent launchScan = new Intent(MainActivity.this, DeviceScanActivity.class);
+                    startActivityForResult(launchScan, SCAN_DEVICE_REQUEST);
+                } else {
+
+
+                    mBluetoothLeService.disconnect();
+
+
+                }
+
+
             }
         });
 
-        //TODO: SE NON E' CONNESSO NON SI PUO' ANDARE AVANTI
         Button manualNav = (Button) findViewById(R.id.manual_nav_btn);
         manualNav.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
 
-                Intent startManualNav = new Intent(MainActivity.this, ManualNavigation.class);
-                startManualNav.putExtra("DEVICE_ADDRESS", mDeviceAddress);
-                startActivity(startManualNav);
+                if (mConnected) {
+                    Intent startManualNav = new Intent(MainActivity.this, ManualNavigation.class);
+                    startManualNav.putExtra("DEVICE_ADDRESS", mDeviceAddress);
+                    startActivity(startManualNav);
+                } else {
+                    Toast.makeText(mainActivity, getResources().getString(R.string.action_disconnected), Toast.LENGTH_SHORT).show();
+                }
             }
         });
     }
@@ -71,7 +89,7 @@ public class MainActivity extends AppCompatActivity {
 
                 String address = data.getStringExtra("DEVICE_ADDRESS");
                 mDeviceAddress = address;
-                Toast.makeText(this, address, Toast.LENGTH_SHORT).show();
+                //Toast.makeText(this, address, Toast.LENGTH_SHORT).show();
 
                 registerReceiver(mGattUpdateReceiver, makeGattUpdateIntentFilter());
 
@@ -89,11 +107,20 @@ public class MainActivity extends AppCompatActivity {
             final String action = intent.getAction();
             if (BluetoothLeService.ACTION_GATT_CONNECTED.equals(action)) {
 
-               // mConnected = true;
+                mConnected = true;
 
             } else if (BluetoothLeService.ACTION_GATT_DISCONNECTED.equals(action)) {
 
-                //mConnected = false;
+                mConnected = false;
+                Log.v(ConstantApp.TAG, "sono scollegato dio can");
+                Toast.makeText(mBluetoothLeService, getResources().getString(R.string.message_disconnected), Toast.LENGTH_SHORT).show();
+                mFab.setImageDrawable(ContextCompat.getDrawable(mainActivity, R.drawable.ic_bluetooth_standard));
+                mFab.setBackgroundTintList(ColorStateList.valueOf(ContextCompat.getColor(mainActivity, R.color.red)));
+
+                unregisterReceiver(mGattUpdateReceiver);
+                unbindService(mServiceConnection);
+
+                Log.v(ConstantApp.TAG, "unregistred");
 
             } else if (BluetoothLeService.ACTION_GATT_SERVICES_DISCOVERED.equals(action)) {
 
@@ -125,10 +152,13 @@ public class MainActivity extends AppCompatActivity {
                 finish();
             }
 
+
             //if connected send a toast message
-            if(mBluetoothLeService.connect(mDeviceAddress)) {
+            if (mBluetoothLeService.connect(mDeviceAddress)) {
                 Log.v(ConstantApp.TAG, "Connected to: Cyber Robot");
-                Toast.makeText(mBluetoothLeService, "Connected to: Cyber Robot", Toast.LENGTH_SHORT).show();
+                Toast.makeText(mBluetoothLeService, getResources().getString(R.string.message_connected), Toast.LENGTH_SHORT).show();
+                mFab.setImageDrawable(ContextCompat.getDrawable(mainActivity, R.drawable.ic_bluetooth_connected));
+                mFab.setBackgroundTintList(ColorStateList.valueOf(ContextCompat.getColor(mainActivity, R.color.green)));
             }
         }
 
@@ -138,5 +168,15 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
+    @Override
+    public void onBackPressed() {
+
+        super.onBackPressed();
+
+        if (mBluetoothLeService != null) {
+
+            mBluetoothLeService.disconnect();
+        }
+    }
 
 }

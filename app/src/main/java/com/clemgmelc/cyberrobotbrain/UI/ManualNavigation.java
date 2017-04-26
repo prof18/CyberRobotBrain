@@ -5,12 +5,14 @@ import android.bluetooth.BluetoothGattService;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.os.Bundle;
 import android.os.IBinder;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.Toast;
@@ -26,12 +28,15 @@ public class ManualNavigation extends AppCompatActivity {
     private String mDeviceAddress;
     private BluetoothGattService mMovementGattService;
     private BluetoothGattCharacteristic mMovementCharacteristic;
+    private boolean pressed = true;
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.manual_navigation_activity_main);
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
 
         mDeviceAddress = getIntent().getStringExtra("DEVICE_ADDRESS");
 
@@ -42,13 +47,15 @@ public class ManualNavigation extends AppCompatActivity {
         mLeft = (ImageButton) findViewById(R.id.left_button);
 
 
-        mForward.setOnClickListener(new View.OnClickListener() {
+
+       mForward.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
 
                 mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.forward);
             }
         });
+
 
         mBackward.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -74,6 +81,7 @@ public class ManualNavigation extends AppCompatActivity {
             }
         });
     }
+
 
     @Override
     public void onResume() {
@@ -117,7 +125,7 @@ public class ManualNavigation extends AppCompatActivity {
                     Log.v(ConstantApp.TAG, "Connected to: Cyber Robot from navigation");
                 }
 
-                mMovementGattService = mBluetoothLeService.getSupportedGattServices().get(8);
+                mMovementGattService = mBluetoothLeService.getSupportedGattServices().get(mBluetoothLeService.getSupportedGattServices().size() - 1);
                 mMovementCharacteristic = mMovementGattService.getCharacteristic(ConstantApp.UUID_MOVEMENT);
             } else {
                 Toast.makeText(mBluetoothLeService, "Cyber Robot not connected. Please connect before trying to move it!", Toast.LENGTH_SHORT).show();

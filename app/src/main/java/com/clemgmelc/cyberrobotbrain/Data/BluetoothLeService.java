@@ -20,6 +20,8 @@ import android.os.Binder;
 import android.os.IBinder;
 import android.util.Log;
 
+import com.clemgmelc.cyberrobotbrain.Util.ConstantApp;
+
 import java.util.List;
 import java.util.UUID;
 
@@ -58,6 +60,9 @@ public class BluetoothLeService extends Service {
     private final BluetoothGattCallback mGattCallback = new BluetoothGattCallback() {
         @Override
         public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
+
+            Log.v(ConstantApp.TAG, "changed");
+
             String intentAction;
             if (newState == BluetoothProfile.STATE_CONNECTED) {
                 intentAction = ACTION_GATT_CONNECTED;
@@ -72,6 +77,7 @@ public class BluetoothLeService extends Service {
                 intentAction = ACTION_GATT_DISCONNECTED;
                 mConnectionState = STATE_DISCONNECTED;
                 Log.i(TAG, "Disconnected from GATT server.");
+                close();
                 broadcastUpdate(intentAction);
             }
         }
@@ -163,6 +169,7 @@ public class BluetoothLeService extends Service {
         }
 
         mBluetoothAdapter = mBluetoothManager.getAdapter();
+        Log.v(TAG, "Initialized");
         if (mBluetoothAdapter == null) {
             Log.e(TAG, "Unable to obtain a BluetoothAdapter.");
             return false;
