@@ -18,4 +18,10 @@ public class ConstantApp {
     public static final byte[] left = {0x31, 0x32, 0x44, 0x32, 0x53, 0x2d, 0x31};
     public static final byte[] right = {0x31, 0x32, 0x44, 0x33, 0x53, 0x2d, 0x31};
 
+    public static final int CODE_FORWARD = 0;
+    public static final int CODE_BACKWARD = 1;
+    public static final int CODE_LEFT = 2;
+    public static final int CODE_RIGHT = 3;
+
+
 }

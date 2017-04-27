@@ -33,7 +33,8 @@
     <string name="gps_cancel">Cancel</string>
 
     <string name="message_connected">Connected to Cyber Robot</string>
-    <string name="message_disconnected">Disconnected from Cyber Robot</string>
+    <string name="message_connecting">Connecting to Cyber Robot</string>
+    <string name="message_disconnected">Disconnecting from Cyber Robot</string>
 
     <string name="action_disconnected">You cannot move the Cyber Robot if you are not connected</string>
     <string name="wait_during_scan">You must wait until scanning is complete</string>

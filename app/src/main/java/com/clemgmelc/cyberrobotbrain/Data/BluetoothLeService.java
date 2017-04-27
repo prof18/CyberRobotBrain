@@ -242,6 +242,7 @@ public class BluetoothLeService extends Service {
         if (mBluetoothGatt == null) {
             return;
         }
+        Log.v(ConstantApp.TAG, "closed");
         mBluetoothGatt.close();
         mBluetoothGatt = null;
     }

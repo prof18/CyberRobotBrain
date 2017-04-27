@@ -11,7 +11,6 @@ import android.os.IBinder;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
-import android.view.KeyEvent;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
@@ -33,7 +32,6 @@ public class ManualNavigation extends AppCompatActivity {
     private Handler mHandler;
 
 
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -49,42 +47,11 @@ public class ManualNavigation extends AppCompatActivity {
         mRight = (ImageButton) findViewById(R.id.right_button);
         mLeft = (ImageButton) findViewById(R.id.left_button);
 
-       mForward.setOnTouchListener(new View.OnTouchListener() {
-           @Override
-           public boolean onTouch(View v, MotionEvent event) {
-
-               if(event.getAction() == MotionEvent.ACTION_DOWN ) {
-                   if (mHandler != null) {
-                       return true;
-                   }
-                   mHandler = new Handler();
-                   mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.forward);
-                   mHandler.postDelayed(mAction, 200);
-                   return false;
-               } else if(event.getAction() == MotionEvent.ACTION_UP) {
-                   if (mHandler == null) {
-                       return true;
-                   }
-                   mHandler.removeCallbacks(mAction);
-                   mHandler = null;
-                   return false;
-               }
-               return false;
-           }
-
-           Runnable mAction = new Runnable() {
-               @Override public void run() {
-
-                   mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.forward);
-                   mHandler.postDelayed(this, 200);
-               }
-           };
-
-       });
-
-
-
-
+        //add listeners
+        mForward.setOnTouchListener(movementListener(ConstantApp.CODE_FORWARD));
+        mBackward.setOnTouchListener(movementListener(ConstantApp.CODE_BACKWARD));
+        mLeft.setOnTouchListener(movementListener(ConstantApp.CODE_LEFT));
+        mRight.setOnTouchListener(movementListener(ConstantApp.CODE_RIGHT));
     }
 
 
@@ -97,12 +64,6 @@ public class ManualNavigation extends AppCompatActivity {
 
     }
 
-    @Override
-    public void onPause() {
-
-        super.onPause();
-
-    }
 
     @Override
     protected void onDestroy() {
@@ -133,7 +94,7 @@ public class ManualNavigation extends AppCompatActivity {
                 mMovementGattService = mBluetoothLeService.getSupportedGattServices().get(mBluetoothLeService.getSupportedGattServices().size() - 1);
                 mMovementCharacteristic = mMovementGattService.getCharacteristic(ConstantApp.UUID_MOVEMENT);
             } else {
-                Toast.makeText(mBluetoothLeService, "Cyber Robot not connected. Please connect before trying to move it!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(mBluetoothLeService, getResources().getString(R.string.action_disconnected), Toast.LENGTH_SHORT).show();
             }
         }
 
@@ -154,4 +115,161 @@ public class ManualNavigation extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
+    private View.OnTouchListener movementListener(int movement) {
+
+        View.OnTouchListener listener = null;
+
+        switch (movement) {
+
+            case ConstantApp.CODE_FORWARD :
+
+                listener = new View.OnTouchListener() {
+                    @Override
+                    public boolean onTouch(View v, MotionEvent event) {
+                        if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                            if (mHandler != null) {
+                                return true;
+                            }
+                            mHandler = new Handler();
+                            mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.forward);
+                            mHandler.postDelayed(mAction, 200);
+                            return false;
+                        } else if (event.getAction() == MotionEvent.ACTION_UP) {
+                            if (mHandler == null) {
+                                return true;
+                            }
+                            mHandler.removeCallbacks(mAction);
+                            mHandler = null;
+                            return false;
+                        }
+                        return false;
+                    }
+
+                    Runnable mAction = new Runnable() {
+                        @Override
+                        public void run() {
+
+                            mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.forward);
+                            mHandler.postDelayed(this, 200);
+                        }
+                    };
+
+                };
+                break;
+
+            case ConstantApp.CODE_BACKWARD :
+
+                listener = new View.OnTouchListener() {
+                    @Override
+                    public boolean onTouch(View v, MotionEvent event) {
+                        if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                            if (mHandler != null) {
+                                return true;
+                            }
+                            mHandler = new Handler();
+                            mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.backward);
+                            mHandler.postDelayed(mAction, 200);
+                            return false;
+                        } else if (event.getAction() == MotionEvent.ACTION_UP) {
+                            if (mHandler == null) {
+                                return true;
+                            }
+                            mHandler.removeCallbacks(mAction);
+                            mHandler = null;
+                            return false;
+                        }
+                        return false;
+                    }
+
+                    Runnable mAction = new Runnable() {
+                        @Override
+                        public void run() {
+
+                            mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.backward);
+                            mHandler.postDelayed(this, 200);
+                        }
+                    };
+
+                };
+                break;
+
+            case ConstantApp.CODE_LEFT :
+
+                listener = new View.OnTouchListener() {
+                    @Override
+                    public boolean onTouch(View v, MotionEvent event) {
+                        if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                            if (mHandler != null) {
+                                return true;
+                            }
+                            mHandler = new Handler();
+                            mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.left);
+                            mHandler.postDelayed(mAction, 200);
+                            return false;
+                        } else if (event.getAction() == MotionEvent.ACTION_UP) {
+                            if (mHandler == null) {
+                                return true;
+                            }
+                            mHandler.removeCallbacks(mAction);
+                            mHandler = null;
+                            return false;
+                        }
+                        return false;
+                    }
+
+                    Runnable mAction = new Runnable() {
+                        @Override
+                        public void run() {
+
+                            mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.left);
+                            mHandler.postDelayed(this, 200);
+                        }
+                    };
+
+                };
+                break;
+
+            case ConstantApp.CODE_RIGHT :
+
+                listener = new View.OnTouchListener() {
+                    @Override
+                    public boolean onTouch(View v, MotionEvent event) {
+                        if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                            if (mHandler != null) {
+                                return true;
+                            }
+                            mHandler = new Handler();
+                            mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.right);
+                            mHandler.postDelayed(mAction, 200);
+                            return false;
+                        } else if (event.getAction() == MotionEvent.ACTION_UP) {
+                            if (mHandler == null) {
+                                return true;
+                            }
+                            mHandler.removeCallbacks(mAction);
+                            mHandler = null;
+                            return false;
+                        }
+                        return false;
+                    }
+
+                    Runnable mAction = new Runnable() {
+                        @Override
+                        public void run() {
+
+                            mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.right);
+                            mHandler.postDelayed(this, 200);
+                        }
+                    };
+
+                };
+                break;
+
+            default:
+                break;
+
+        }
+
+        return listener;
+    }
 }
