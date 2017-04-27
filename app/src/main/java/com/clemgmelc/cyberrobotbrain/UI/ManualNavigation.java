@@ -68,6 +68,8 @@ public class ManualNavigation extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        Log.v(ConstantApp.TAG, "onDestroy");
+        //mBluetoothLeService.disconnect();
         unbindService(mServiceConnection);
         mBluetoothLeService = null;
     }
@@ -86,13 +88,15 @@ public class ManualNavigation extends AppCompatActivity {
             }
             if (mDeviceAddress != null) {
 
-                //if connected send a toast message
+             /*   //if connected send a toast message
                 if (mBluetoothLeService.connect(mDeviceAddress)) {
                     Log.v(ConstantApp.TAG, "Connected to: Cyber Robot from navigation");
-                }
+                }*/
+
 
                 mMovementGattService = mBluetoothLeService.getSupportedGattServices().get(mBluetoothLeService.getSupportedGattServices().size() - 1);
                 mMovementCharacteristic = mMovementGattService.getCharacteristic(ConstantApp.UUID_MOVEMENT);
+
             } else {
                 Toast.makeText(mBluetoothLeService, getResources().getString(R.string.action_disconnected), Toast.LENGTH_SHORT).show();
             }
@@ -101,6 +105,7 @@ public class ManualNavigation extends AppCompatActivity {
         @Override
         public void onServiceDisconnected(ComponentName componentName) {
             mBluetoothLeService = null;
+            Log.v(ConstantApp.TAG, "onServiceDisconnected");
         }
     };
 
@@ -121,7 +126,7 @@ public class ManualNavigation extends AppCompatActivity {
 
         switch (movement) {
 
-            case ConstantApp.CODE_FORWARD :
+            case ConstantApp.CODE_FORWARD:
 
                 listener = new View.OnTouchListener() {
                     @Override
@@ -157,7 +162,7 @@ public class ManualNavigation extends AppCompatActivity {
                 };
                 break;
 
-            case ConstantApp.CODE_BACKWARD :
+            case ConstantApp.CODE_BACKWARD:
 
                 listener = new View.OnTouchListener() {
                     @Override
@@ -193,7 +198,7 @@ public class ManualNavigation extends AppCompatActivity {
                 };
                 break;
 
-            case ConstantApp.CODE_LEFT :
+            case ConstantApp.CODE_LEFT:
 
                 listener = new View.OnTouchListener() {
                     @Override
@@ -229,7 +234,7 @@ public class ManualNavigation extends AppCompatActivity {
                 };
                 break;
 
-            case ConstantApp.CODE_RIGHT :
+            case ConstantApp.CODE_RIGHT:
 
                 listener = new View.OnTouchListener() {
                     @Override

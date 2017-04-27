@@ -1,6 +1,8 @@
 package com.clemgmelc.cyberrobotbrain.UI;
 
 import android.app.Activity;
+import android.bluetooth.BluetoothGattServer;
+import android.bluetooth.BluetoothGattService;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
@@ -23,6 +25,8 @@ import android.widget.Toast;
 import com.clemgmelc.cyberrobotbrain.Data.BluetoothLeService;
 import com.clemgmelc.cyberrobotbrain.R;
 import com.clemgmelc.cyberrobotbrain.Util.ConstantApp;
+
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -56,13 +60,14 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
 
-                if (!mConnected && !mReady) {
+                if (!mConnected) {
                     Intent launchScan = new Intent(MainActivity.this, DeviceScanActivity.class);
                     startActivityForResult(launchScan, SCAN_DEVICE_REQUEST);
                 } else {
 
 
                     mBluetoothLeService.disconnect();
+                    mConnected = false;
                     mFab.setEnabled(false);
 
 
@@ -78,12 +83,16 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
 
-                if (mConnected && mReady) {
+               List<BluetoothGattService> list = mBluetoothLeService.getSupportedGattServices();
+
+                if (mConnected && list.size() == 9) {
                     Intent startManualNav = new Intent(MainActivity.this, ManualNavigation.class);
                     startManualNav.putExtra("DEVICE_ADDRESS", mDeviceAddress);
                     startActivity(startManualNav);
-                } else {
+                } else if (!mConnected){
                     Toast.makeText(mainActivity, getResources().getString(R.string.action_disconnected), Toast.LENGTH_SHORT).show();
+                } else if (list.size() != 9) {
+                    Toast.makeText(mainActivity, "Porca madonna non ci sono service", Toast.LENGTH_SHORT).show();
                 }
             }
         });
@@ -118,7 +127,7 @@ public class MainActivity extends AppCompatActivity {
             final String action = intent.getAction();
             if (BluetoothLeService.ACTION_GATT_CONNECTED.equals(action)) {
 
-                mConnected = true;
+                //mConnected = true;
 
             } else if (BluetoothLeService.ACTION_GATT_DISCONNECTED.equals(action)) {
 
@@ -138,9 +147,9 @@ public class MainActivity extends AppCompatActivity {
                                 mFab.setImageDrawable(ContextCompat.getDrawable(mainActivity, R.drawable.ic_bluetooth_standard));
                                 mFab.setBackgroundTintList(ColorStateList.valueOf(ContextCompat.getColor(mainActivity, R.color.red)));
                                 mFab.setEnabled(true);
+                                mDeviceAddress = null;
 
-                                mConnected = false;
-                                mReady = false;
+
                             }
                         });
                     }
@@ -149,6 +158,7 @@ public class MainActivity extends AppCompatActivity {
 
                 unregisterReceiver(mGattUpdateReceiver);
                 unbindService(mServiceConnection);
+                mBluetoothLeService = null;
 
                 Log.v(ConstantApp.TAG, "unregistred");
 
@@ -200,9 +210,11 @@ public class MainActivity extends AppCompatActivity {
                             public void run() {
                                 mFab.setImageDrawable(ContextCompat.getDrawable(mainActivity, R.drawable.ic_bluetooth_connected));
                                 mFab.setBackgroundTintList(ColorStateList.valueOf(ContextCompat.getColor(mainActivity, R.color.green)));
-                                Toast.makeText(mBluetoothLeService, getResources().getString(R.string.message_connected), Toast.LENGTH_SHORT).show();
+                                Toast.makeText(getApplicationContext(), getResources().getString(R.string.message_connected), Toast.LENGTH_SHORT).show();
                                 mFab.setEnabled(true);
                                 mManualNav.setEnabled(true);
+                                mConnected = true;
+                                //mReady = true;
                             }
                         });
                     }
