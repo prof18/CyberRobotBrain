@@ -6,6 +6,7 @@ import android.content.ComponentName;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -29,6 +30,8 @@ public class ManualNavigation extends AppCompatActivity {
     private BluetoothGattService mMovementGattService;
     private BluetoothGattCharacteristic mMovementCharacteristic;
     private boolean pressed = true;
+    private Handler mHandler;
+
 
 
     @Override
@@ -46,40 +49,42 @@ public class ManualNavigation extends AppCompatActivity {
         mRight = (ImageButton) findViewById(R.id.right_button);
         mLeft = (ImageButton) findViewById(R.id.left_button);
 
+       mForward.setOnTouchListener(new View.OnTouchListener() {
+           @Override
+           public boolean onTouch(View v, MotionEvent event) {
+
+               if(event.getAction() == MotionEvent.ACTION_DOWN ) {
+                   if (mHandler != null) {
+                       return true;
+                   }
+                   mHandler = new Handler();
+                   mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.forward);
+                   mHandler.postDelayed(mAction, 200);
+                   return false;
+               } else if(event.getAction() == MotionEvent.ACTION_UP) {
+                   if (mHandler == null) {
+                       return true;
+                   }
+                   mHandler.removeCallbacks(mAction);
+                   mHandler = null;
+                   return false;
+               }
+               return false;
+           }
+
+           Runnable mAction = new Runnable() {
+               @Override public void run() {
+
+                   mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.forward);
+                   mHandler.postDelayed(this, 200);
+               }
+           };
+
+       });
 
 
-       mForward.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-
-                mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.forward);
-            }
-        });
 
 
-        mBackward.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-
-                mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.backward);
-            }
-        });
-
-        mLeft.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-
-                mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.left);
-            }
-        });
-
-        mRight.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-
-                mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.right);
-            }
-        });
     }
 
 

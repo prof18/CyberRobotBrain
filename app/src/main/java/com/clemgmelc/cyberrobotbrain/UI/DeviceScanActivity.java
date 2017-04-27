@@ -390,7 +390,7 @@ public class DeviceScanActivity extends AppCompatActivity {
 
                             //add the new device to the list
                             mSwipeRefreshLayout.setRefreshing(false);
-                            if (device.getName() != null && device.getName().equals("Cyber Robot"))
+                            //if (device.getName() != null && device.getName().equals("Cyber Robot"))
                                 mLeDeviceListAdapter.addDevice(device);
                             mLeDeviceListAdapter.notifyDataSetChanged();
                         }
