@@ -30,15 +30,17 @@ public class MainActivity extends AppCompatActivity {
     //request code
     public static final int SCAN_DEVICE_REQUEST = 1;
     public String mDeviceAddress = null;
-    private BluetoothLeService mBluetoothLeService;
+    public BluetoothLeService mBluetoothLeService;
     private MainActivity mainActivity;
     private FloatingActionButton mFab;
     private boolean mConnected = false;
     private boolean mReady = false;
+    private Button mManualNav;
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main_activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
@@ -46,6 +48,10 @@ public class MainActivity extends AppCompatActivity {
         mainActivity = this;
 
         mFab = (FloatingActionButton) findViewById(R.id.fab);
+        mManualNav = (Button) findViewById(R.id.manual_nav_btn);
+        mManualNav.setEnabled(false);
+
+
         mFab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -60,14 +66,15 @@ public class MainActivity extends AppCompatActivity {
                     mFab.setEnabled(false);
 
 
+
                 }
 
 
             }
         });
 
-        Button manualNav = (Button) findViewById(R.id.manual_nav_btn);
-        manualNav.setOnClickListener(new View.OnClickListener() {
+
+        mManualNav.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
 
@@ -117,7 +124,8 @@ public class MainActivity extends AppCompatActivity {
 
 
                 Log.v(ConstantApp.TAG, "sono scollegato dio can");
-                Toast.makeText(mBluetoothLeService, getResources().getString(R.string.message_disconnected), Toast.LENGTH_SHORT).show();
+                Toast.makeText(mBluetoothLeService, getResources().getString(R.string.message_disconnecting), Toast.LENGTH_SHORT).show();
+                mManualNav.setEnabled(false);
 
                 //bad thing to respect low timing
                 Handler handler = new Handler();
@@ -130,6 +138,7 @@ public class MainActivity extends AppCompatActivity {
                                 mFab.setImageDrawable(ContextCompat.getDrawable(mainActivity, R.drawable.ic_bluetooth_standard));
                                 mFab.setBackgroundTintList(ColorStateList.valueOf(ContextCompat.getColor(mainActivity, R.color.red)));
                                 mFab.setEnabled(true);
+
                                 mConnected = false;
                                 mReady = false;
                             }
@@ -193,6 +202,7 @@ public class MainActivity extends AppCompatActivity {
                                 mFab.setBackgroundTintList(ColorStateList.valueOf(ContextCompat.getColor(mainActivity, R.color.green)));
                                 Toast.makeText(mBluetoothLeService, getResources().getString(R.string.message_connected), Toast.LENGTH_SHORT).show();
                                 mFab.setEnabled(true);
+                                mManualNav.setEnabled(true);
                             }
                         });
                     }
