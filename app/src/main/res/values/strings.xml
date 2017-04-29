@@ -4,8 +4,10 @@
     <string name="hello_robot">Hello Cyber Robot</string>
     <string name="btn_navigation">Manual Navigation</string>
     <string name="perm_error_title">Attention: Mandatory Permission</string>
-    <string name="perm_error_msg">You must accept the permission to connect to the Cyber Robot</string>
-    <string name="blue_error_title">Attention: Mandatory Feature</string>
+    <string name="perm_error_msg">You must accept the permission to connect to the Cyber Robot.\nTry again</string>
+    <string name="gps_error_title">Attention: GPS ERROR</string>
+    <string name="gps_error_msg">You must turn on the gps to connect to the Cyber Robot</string>
+    <string name="blue_error_title">Attention: BLUE ERROR</string>
     <string name="blue_error_msg">You must turn on the Bluetooth to connect to the Cyber Robot</string>
     <string name="no_name_device">Unknown Device</string>
     <string name="scan_stopped">Scan finished</string>
