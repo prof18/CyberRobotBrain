@@ -10,12 +10,11 @@
     <string name="blue_error_title">Attention: BLUE ERROR</string>
     <string name="blue_error_msg">You must turn on the Bluetooth to connect to the Cyber Robot</string>
     <string name="no_name_device">Unknown Device</string>
-    <string name="scan_stopped">Scan finished</string>
     <string name="title_connect_dialog">Connect to Cyber Robot</string>
     <string name="connect_dialog_cancel">Cancel</string>
     <string name="connect_dialog_rescan_error">The scanning is already running</string>
     <string name="rescan">Rescan</string>
-    <string name="scanning">Scanning</string>
+
     <string name="no_device">No device found</string>
     <string name="title_activity_scan">ScanActivity</string>
 
