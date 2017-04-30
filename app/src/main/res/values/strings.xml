@@ -12,10 +12,11 @@
     <string name="no_name_device">Unknown Device</string>
     <string name="title_connect_dialog">Connect to Cyber Robot</string>
     <string name="connect_dialog_cancel">Cancel</string>
-    <string name="connect_dialog_rescan_error">The scanning is already running</string>
-    <string name="rescan">Rescan</string>
+
 
     <string name="no_device">No device found</string>
+    <string name="exit">Exit scan</string>
+    <string name="rescan">Scan again</string>
     <string name="title_activity_scan">ScanActivity</string>
 
     <string name="nav_forward">Move forward</string>
@@ -29,8 +30,8 @@
     <string name="btn_auto_navigation">Auto Navigation</string>
     <string name="title_activity_camera">CameraActivity</string>
 
-    <string name="gps_required">GPS Required for device discovery</string>
-    <string name="gps_enabling">Enable GPS</string>
+    <string name="gps_required">Gps Required for device discovery</string>
+    <string name="gps_enabling">Enable Gps</string>
     <string name="gps_cancel">Cancel</string>
 
     <string name="message_connected">Connected to Cyber Robot</string>

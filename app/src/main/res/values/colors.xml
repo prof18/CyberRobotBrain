@@ -6,4 +6,9 @@
 
     <color name="red">#EA4335</color>
     <color name="green">#34A853</color>
+
+    <color name="googleRed">#EA4335</color>
+    <color name="googleGreen">#34A853</color>
+    <color name="googleBlue">#4285F4</color>
+    <color name="googleYellow">#FBBC05</color>
 </resources>

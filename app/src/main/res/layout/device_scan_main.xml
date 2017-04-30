@@ -21,7 +21,20 @@
 
     </android.support.design.widget.AppBarLayout>
 
-    <include layout="@layout/device_scan_content" />
+    <include layout="@layout/device_scan_content"
+             android:id="@+id/include"/>
+
+    <ProgressBar
+        android:id="@+id/progressBar"
+        style="@android:style/Widget.DeviceDefault.ProgressBar.Large"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical|center_horizontal"
+        android:indeterminate="true"
+        android:indeterminateTint="@color/googleBlue"
+        app:layout_anchor="@+id/include"
+        app:layout_anchorGravity="center_vertical|center_horizontal"
+        tools:targetApi="lollipop"/>
 
 
 </android.support.design.widget.CoordinatorLayout>

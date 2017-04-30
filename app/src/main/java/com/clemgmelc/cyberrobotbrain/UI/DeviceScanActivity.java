@@ -11,6 +11,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.content.res.ColorStateList;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -32,6 +33,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -48,6 +50,7 @@ public class DeviceScanActivity extends AppCompatActivity {
     private static final int REQUEST_ENABLE_BT = 1;
     private static final int ALERT_GPS = 1;
     private static final int ALERT_BLUE = 2;
+    private static final int ALERT_NO_DEVICE = 3;
     private static final int REQUEST_LOCATION_PERMISSION = 1;
     private static String[] PERMISSIONS_LOCATION = {
             Manifest.permission.ACCESS_COARSE_LOCATION,
@@ -64,11 +67,14 @@ public class DeviceScanActivity extends AppCompatActivity {
     private BroadcastReceiver mReceiver;
     private Handler mHandler;
     private boolean mScanning;
-    private static final long SCAN_PERIOD = 1500;  // Stops scanning after 1,5 seconds.
+    private static final long SCAN_PERIOD = 2000;  // Stops scanning after 1,5 seconds.
     //RECYCLERVIEW
     private RecyclerView mRecyclerView;
     private ArrayList<BluetoothDevice> bDevices;
     private SwipeRefreshLayout mSwipeRefreshLayout;
+    private AlertDialog mAlertNoDev;
+
+    private ProgressBar mProgress;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -78,6 +84,10 @@ public class DeviceScanActivity extends AppCompatActivity {
         setContentView(R.layout.device_scan_main);
         mActivity = this;
         //LAYOUT
+        mProgress = (ProgressBar) findViewById(R.id.progressBar);
+        mProgress.setIndeterminate(true);
+        mProgress.setVisibility(View.INVISIBLE);
+
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         toolbar.setTitle(getResources().getString(R.string.title_activity_scan));
@@ -92,15 +102,10 @@ public class DeviceScanActivity extends AppCompatActivity {
 
                 if (!mScanning) {
                     mLeDeviceListAdapter.clear();
-                    mSwipeRefreshLayout.setRefreshing(true);
                     scanLeDevice(true);
-                } else {
-                    Toast.makeText(mActivity, getResources().getText(R.string.connect_dialog_rescan_error), Toast.LENGTH_SHORT).show();
-                    mSwipeRefreshLayout.setRefreshing(false);
                 }
             }
         });
-
 
         final BluetoothManager mBluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
         mBluetoothAdapter = mBluetoothManager.getAdapter();
@@ -117,7 +122,11 @@ public class DeviceScanActivity extends AppCompatActivity {
 
         mHandler = new Handler();
         scanLeDevice(true);
-
+        if (mScanning) {
+            Log.v(TAG, "---------------------------------> SWIPE ENABLED FALSE");
+            mSwipeRefreshLayout.setEnabled(false);
+            mProgress.setVisibility(View.VISIBLE);
+        }
     }
 
     /**
@@ -164,6 +173,22 @@ public class DeviceScanActivity extends AppCompatActivity {
                     startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
                 }
                 break;
+            case (ALERT_NO_DEVICE):
+                alertDialog.setMessage(getResources().getString(R.string.no_device));
+                alertDialog.setCancelable(false);
+                alertDialog.setPositiveButton(getResources().getString(R.string.rescan),
+                        new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int which) {
+                                scanLeDevice(true);
+                            }
+                        });
+                alertDialog.setNegativeButton(getResources().getString(R.string.exit),
+                        new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int which) {
+                                finish();
+                            }
+                        });
+                break;
             default:
                 alertDialog = null;
                 break;
@@ -171,8 +196,10 @@ public class DeviceScanActivity extends AppCompatActivity {
         return alertDialog;
 
     }
-
-    // LocationListener manage the gps changing
+    /**LocationListener manage the gps changing
+     *
+     * @return LocationListener
+     */
     private LocationListener createLocationListener() {
         LocationListener ll = new LocationListener() {
             @Override
@@ -203,8 +230,10 @@ public class DeviceScanActivity extends AppCompatActivity {
         };
         return ll;
     }
-
-    // BroadcastReceiver manage the bluetooth changing
+    /** BroadcastReceiver manage the bluetooth changing
+     *
+     * @return BroadcastReceiver
+     */
     private BroadcastReceiver createBroadcastReciever() {
         BroadcastReceiver br = new BroadcastReceiver() {
             @Override
@@ -300,20 +329,14 @@ public class DeviceScanActivity extends AppCompatActivity {
                     if (coarseLocation == PackageManager.PERMISSION_GRANTED && fineLocation == PackageManager.PERMISSION_GRANTED) {
                         mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 20000, 10, mLocationListener);
 
-                        if (!mBluetoothAdapter.isEnabled())
-                            if (mAlertBlue == null)
-                                mAlertBlue = showAlert(ALERT_BLUE).create();
-
-                            if (!mLocationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-                                if (mAlertGps == null) {
-                                    mAlertGps = showAlert(ALERT_GPS).create();
-                                    mAlertGps.show();
-                                }
+                        if (!mBluetoothAdapter.isEnabled() && mAlertBlue == null)
+                            mAlertBlue = showAlert(ALERT_BLUE).create();
+                        if (!mLocationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) && mAlertGps == null) {
+                            mAlertGps = showAlert(ALERT_GPS).create();
+                            mAlertGps.show();
                         }
-
                         if (mBluetoothAdapter.isEnabled() && mLocationManager.isProviderEnabled(LocationManager.GPS_PROVIDER))
                             scanLeDevice(true);
-
                     }
                 } else {
                     Log.v(TAG, "Permission NOT Granted");
@@ -324,6 +347,7 @@ public class DeviceScanActivity extends AppCompatActivity {
                         mLocationManager.removeUpdates(mLocationListener);
                 }
                 break;
+
             default:
                 break;
         }
@@ -359,28 +383,30 @@ public class DeviceScanActivity extends AppCompatActivity {
     private void scanLeDevice(boolean enabled) {
 
         if (enabled) {
-            // TODO: METTERE ROTELLA
             Log.v(TAG, "SCANNING START");
             // Stops scanning after a pre-defined scan period.
             mHandler.postDelayed(new Runnable() {
                 @Override
                 public void run() {
 
-                    if (mScanning) {
+                    if (mScanning) { // if scanning stop previous scanning operation
                         mScanning = false;
-
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                             //TODO: Deal with deprecated method
+                            mBluetoothAdapter.stopLeScan(mLeScanCallback);
                         }
                         else{
                             mBluetoothAdapter.stopLeScan(mLeScanCallback);
                         }
-
                         Log.v(TAG,"SCANNING STOP");
+                        Log.v(TAG, "---------------------------------> SWIPE ENABLED TRUE");
+                        mSwipeRefreshLayout.setEnabled(true);
+                        mProgress.setVisibility(View.INVISIBLE);
 
                         if (mLeDeviceListAdapter.getItemCount() == 0) {
-                            //TODO: insert advice no device discovered
-
+                            Log.v(TAG,"NO DEVICES FOUND");
+                            mAlertNoDev  = showAlert(ALERT_NO_DEVICE).create();
+                            mAlertNoDev.show();
                         }
                     }
                     invalidateOptionsMenu();
@@ -388,19 +414,25 @@ public class DeviceScanActivity extends AppCompatActivity {
             }, SCAN_PERIOD);
 
             mScanning = true;
+            Log.v(TAG, "---------------------------------> SWIPE ENABLED FALSE");
+            mSwipeRefreshLayout.setEnabled(false);
+            mProgress.setVisibility(View.VISIBLE);
+
             bDevices = new ArrayList<BluetoothDevice>();
             mLeDeviceListAdapter = new LeDeviceAdapter(bDevices, R.layout.device_scan_row);
             mRecyclerView.setAdapter(mLeDeviceListAdapter);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                 //TODO: Deal with deprecated method
-            }
-            else{
-                mBluetoothAdapter.stopLeScan(mLeScanCallback);
+                mBluetoothAdapter.startLeScan(mLeScanCallback);
+            } else {
+                mBluetoothAdapter.startLeScan(mLeScanCallback);
             }
         } else {
+            //if previous scan was running stop that one
             mScanning = false;
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                 //TODO: Deal with deprecated method
+                mBluetoothAdapter.stopLeScan(mLeScanCallback);
             }
             else{
                 mBluetoothAdapter.stopLeScan(mLeScanCallback);
@@ -419,7 +451,6 @@ public class DeviceScanActivity extends AppCompatActivity {
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-
                             //add the new device to the list
                             mSwipeRefreshLayout.setRefreshing(false);
                             if (device.getName() != null && device.getName().equals("Cyber Robot"))
@@ -431,16 +462,6 @@ public class DeviceScanActivity extends AppCompatActivity {
             };
 
     @Override
-    protected void onPause() {
-        super.onPause();
-        Log.d(TAG, "onPause() called");
-        if (mScanning || mLeDeviceListAdapter != null) {
-            scanLeDevice(false);
-            mLeDeviceListAdapter.clear();
-        }
-    }
-
-    @Override
     public void onDestroy() {
         super.onDestroy();
         Log.d(TAG, "onDestroy() called");
@@ -448,7 +469,36 @@ public class DeviceScanActivity extends AppCompatActivity {
             mLocationManager.removeUpdates(mLocationListener);
         if (mReceiver != null)
             unregisterReceiver(mReceiver);
+        if (mScanning || mLeDeviceListAdapter != null) {
+            scanLeDevice(false);
+            mLeDeviceListAdapter.clear();
+        }
     }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        Log.d(TAG, "onPaused() called");
+        if (mScanning || mLeDeviceListAdapter != null) {
+            scanLeDevice(false);
+            mLeDeviceListAdapter.clear();
+        }
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        Log.d(TAG, "onStop() called");
+        scanLeDevice(false);
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        Log.d(TAG, "onResume() called");
+        scanLeDevice(true);
+    }
+
     //#####################################################################################
     /** This class is a support to manege the list of device discovered during the scanning
      *
@@ -535,7 +585,5 @@ public class DeviceScanActivity extends AppCompatActivity {
         }
 
     }
-
-    //TODO: gestire la lista di device se si va in on pause e poi si ripristina senza fare nulla.
 }
 
