@@ -23,6 +23,7 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.CardView;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -67,14 +68,13 @@ public class DeviceScanActivity extends AppCompatActivity {
     private BroadcastReceiver mReceiver;
     private Handler mHandler;
     private boolean mScanning;
-    private static final long SCAN_PERIOD = 2000;  // Stops scanning after 1,5 seconds.
+    private static final long SCAN_PERIOD = 1500;  // Stops scanning after 1,5 seconds.
     //RECYCLERVIEW
     private RecyclerView mRecyclerView;
     private ArrayList<BluetoothDevice> bDevices;
     private SwipeRefreshLayout mSwipeRefreshLayout;
-    private AlertDialog mAlertNoDev;
-
     private ProgressBar mProgress;
+    private TextView mNoDevice;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -88,6 +88,9 @@ public class DeviceScanActivity extends AppCompatActivity {
         mProgress.setIndeterminate(true);
         mProgress.setVisibility(View.INVISIBLE);
 
+        mNoDevice = (TextView) findViewById(R.id.nodevice);
+        mNoDevice.setVisibility(View.INVISIBLE);
+
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         toolbar.setTitle(getResources().getString(R.string.title_activity_scan));
@@ -96,16 +99,22 @@ public class DeviceScanActivity extends AppCompatActivity {
         mRecyclerView.setItemAnimator(new DefaultItemAnimator());
         mRecyclerView.setHasFixedSize(true);
         mSwipeRefreshLayout = (SwipeRefreshLayout) findViewById(R.id.container);
+        mHandler = new Handler();
+
         mSwipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
-
+                mNoDevice.setVisibility(View.INVISIBLE);
                 if (!mScanning) {
                     mLeDeviceListAdapter.clear();
                     scanLeDevice(true);
                 }
             }
         });
+        mSwipeRefreshLayout.setColorSchemeResources(R.color.googleBlue);
+        //TODO:deprecated
+        mSwipeRefreshLayout.setProgressBackgroundColor(R.color.googleYellow);
+
 
         final BluetoothManager mBluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
         mBluetoothAdapter = mBluetoothManager.getAdapter();
@@ -120,13 +129,11 @@ public class DeviceScanActivity extends AppCompatActivity {
         //this is the main routine
         verifyPermissions(mActivity);
 
-        mHandler = new Handler();
+
         scanLeDevice(true);
-        if (mScanning) {
-            Log.v(TAG, "---------------------------------> SWIPE ENABLED FALSE");
-            mSwipeRefreshLayout.setEnabled(false);
+        if (mScanning)
             mProgress.setVisibility(View.VISIBLE);
-        }
+
     }
 
     /**
@@ -391,6 +398,8 @@ public class DeviceScanActivity extends AppCompatActivity {
 
                     if (mScanning) { // if scanning stop previous scanning operation
                         mScanning = false;
+                        mSwipeRefreshLayout.setRefreshing(false);
+                        mSwipeRefreshLayout.setEnabled(true);
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                             //TODO: Deal with deprecated method
                             mBluetoothAdapter.stopLeScan(mLeScanCallback);
@@ -399,14 +408,11 @@ public class DeviceScanActivity extends AppCompatActivity {
                             mBluetoothAdapter.stopLeScan(mLeScanCallback);
                         }
                         Log.v(TAG,"SCANNING STOP");
-                        Log.v(TAG, "---------------------------------> SWIPE ENABLED TRUE");
-                        mSwipeRefreshLayout.setEnabled(true);
                         mProgress.setVisibility(View.INVISIBLE);
 
-                        if (mLeDeviceListAdapter.getItemCount() == 0) {
+                        if (mLeDeviceListAdapter.getItemCount() == 0 && mAlertBlue == null && mAlertGps == null) {
                             Log.v(TAG,"NO DEVICES FOUND");
-                            mAlertNoDev  = showAlert(ALERT_NO_DEVICE).create();
-                            mAlertNoDev.show();
+                            mNoDevice.setVisibility(View.VISIBLE);
                         }
                     }
                     invalidateOptionsMenu();
@@ -414,7 +420,7 @@ public class DeviceScanActivity extends AppCompatActivity {
             }, SCAN_PERIOD);
 
             mScanning = true;
-            Log.v(TAG, "---------------------------------> SWIPE ENABLED FALSE");
+            mSwipeRefreshLayout.setRefreshing(true);
             mSwipeRefreshLayout.setEnabled(false);
             mProgress.setVisibility(View.VISIBLE);
 
@@ -442,7 +448,7 @@ public class DeviceScanActivity extends AppCompatActivity {
 
     }
 
-    // Device scan callback: what to when a new device is discovered
+    // Device scan callback: what to do when a new device is discovered
     private BluetoothAdapter.LeScanCallback mLeScanCallback =
             new BluetoothAdapter.LeScanCallback() {
 
@@ -452,7 +458,7 @@ public class DeviceScanActivity extends AppCompatActivity {
                         @Override
                         public void run() {
                             //add the new device to the list
-                            mSwipeRefreshLayout.setRefreshing(false);
+
                             if (device.getName() != null && device.getName().equals("Cyber Robot"))
                                 mLeDeviceListAdapter.addDevice(device);
                             mLeDeviceListAdapter.notifyDataSetChanged();
@@ -498,6 +504,12 @@ public class DeviceScanActivity extends AppCompatActivity {
         Log.d(TAG, "onResume() called");
         scanLeDevice(true);
     }
+    @Override
+    public void onStart() {
+        super.onStart();
+        Log.d(TAG, "onStart() called");
+    }
+
 
     //#####################################################################################
     /** This class is a support to manege the list of device discovered during the scanning
