@@ -14,7 +14,7 @@
     <string name="connect_dialog_cancel">Cancel</string>
 
 
-    <string name="no_device">No device founded</string>
+    <string name="no_device">No device found</string>
     <string name="exit">Exit scan</string>
     <string name="rescan">Scan again</string>
     <string name="title_activity_scan">ScanActivity</string>
