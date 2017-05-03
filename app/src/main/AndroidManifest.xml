@@ -50,7 +50,7 @@
             android:theme="@style/AppTheme.NoActionBar"
             android:name=".UI.DeviceScanActivity"
             android:label="@string/title_scan"/>
-        <activity android:name=".UI.CameraActivity"
+        <activity android:name=".UI.AutoNavigation"
             android:screenOrientation="landscape"
             android:theme="@style/AppTheme.NoActionBar"/>
 

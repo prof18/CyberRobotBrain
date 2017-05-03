@@ -97,7 +97,7 @@ public class MainActivity extends AppCompatActivity {
         mAutoNavigation.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent startMan = new Intent(MainActivity.this, CameraActivity.class);
+                Intent startMan = new Intent(MainActivity.this, AutoNavigation.class);
                 startActivity(startMan);
             }
         });
