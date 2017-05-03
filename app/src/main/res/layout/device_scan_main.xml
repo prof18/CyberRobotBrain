@@ -6,6 +6,7 @@
     android:layout_height="match_parent"
     tools:context="com.clemgmelc.cyberrobotbrain.UI.MainActivity">
 
+
     <android.support.design.widget.AppBarLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -21,7 +22,34 @@
 
     </android.support.design.widget.AppBarLayout>
 
-    <include layout="@layout/device_scan_content" />
+    <include layout="@layout/device_scan_content"
+             android:id="@+id/include"/>
+
+    <ProgressBar
+        android:id="@+id/progressBar"
+        style="@android:style/Widget.DeviceDefault.ProgressBar.Large"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical|center_horizontal"
+        android:indeterminate="true"
+        android:indeterminateTint="@color/googleBlue"
+        app:layout_anchor="@+id/include"
+        app:layout_anchorGravity="center_vertical|center_horizontal"
+        tools:targetApi="lollipop"/>
+    <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                    xmlns:tools="http://schemas.android.com/tools"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_marginTop="?attr/actionBarSize">
+<TextView
+    android:id="@+id/nodevice"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_centerHorizontal="true"
+    android:textSize="24dp"
+    android:textColor="@color/googleBlue"
+    android:text="@string/no_device"/>
+    </RelativeLayout>
 
 
 </android.support.design.widget.CoordinatorLayout>

@@ -61,22 +61,19 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
 
-                if (!mConnected) {
+                Log.v(ConstantApp.TAG, "TAP on mFAB");
+                if (!mConnected || mBluetoothLeService == null) {
+                    Log.v(ConstantApp.TAG, "no connected--->reopen scan activity");
                     Intent launchScan = new Intent(MainActivity.this, DeviceScanActivity.class);
                     startActivityForResult(launchScan, SCAN_DEVICE_REQUEST);
                 } else {
-
-
-                    mBluetoothLeService.disconnect();
-                    mConnected = false;
-                    mFab.setEnabled(false);
-
-
-
+                    Log.v(ConstantApp.TAG, "INTENTIOLA REMOVAL OF CONNECTION");
+                    //if (mBluetoothLeService != null)
+                        mBluetoothLeService.disconnect();
+                        mConnected = false;
+                        mFab.setEnabled(false);
+                    }
                 }
-
-
-            }
         });
 
 
@@ -84,7 +81,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
 
-               List<BluetoothGattService> list = mBluetoothLeService.getSupportedGattServices();
+                List<BluetoothGattService> list = mBluetoothLeService.getSupportedGattServices();
 
                 if (mConnected && list.size() == 9) {
                     Intent startManualNav = new Intent(MainActivity.this, ManualNavigation.class);
@@ -93,7 +90,7 @@ public class MainActivity extends AppCompatActivity {
                 } else if (!mConnected){
                     Toast.makeText(mainActivity, getResources().getString(R.string.action_disconnected), Toast.LENGTH_SHORT).show();
                 } else if (list.size() != 9) {
-                    Toast.makeText(mainActivity, "Porca madonna non ci sono service", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(mainActivity, "non ci sono service", Toast.LENGTH_SHORT).show();
                 }
             }
         });
@@ -141,7 +138,7 @@ public class MainActivity extends AppCompatActivity {
             } else if (BluetoothLeService.ACTION_GATT_DISCONNECTED.equals(action)) {
 
 
-                Log.v(ConstantApp.TAG, "sono scollegato dio can");
+                Log.v(ConstantApp.TAG, "sono scollegato ");
                 Toast.makeText(mBluetoothLeService, getResources().getString(R.string.message_disconnecting), Toast.LENGTH_SHORT).show();
                 mManualNav.setEnabled(false);
 

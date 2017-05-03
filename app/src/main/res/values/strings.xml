@@ -4,17 +4,19 @@
     <string name="hello_robot">Hello Cyber Robot</string>
     <string name="btn_navigation">Manual Navigation</string>
     <string name="perm_error_title">Attention: Mandatory Permission</string>
-    <string name="perm_error_msg">You must accept the permission to connect to the Cyber Robot</string>
-    <string name="blue_error_title">Attention: Mandatory Feature</string>
+    <string name="perm_error_msg">You must accept the permission to connect to the Cyber Robot.\nTry again</string>
+    <string name="gps_error_title">Attention: GPS ERROR</string>
+    <string name="gps_error_msg">You must turn on the gps to connect to the Cyber Robot</string>
+    <string name="blue_error_title">Attention: BLUE ERROR</string>
     <string name="blue_error_msg">You must turn on the Bluetooth to connect to the Cyber Robot</string>
     <string name="no_name_device">Unknown Device</string>
-    <string name="scan_stopped">Scan finished</string>
     <string name="title_connect_dialog">Connect to Cyber Robot</string>
     <string name="connect_dialog_cancel">Cancel</string>
-    <string name="connect_dialog_rescan_error">The scanning is already running</string>
-    <string name="rescan">Rescan</string>
-    <string name="scanning">Scanning</string>
-    <string name="no_device">No device found</string>
+
+
+    <string name="no_device">No device founded</string>
+    <string name="exit">Exit scan</string>
+    <string name="rescan">Scan again</string>
     <string name="title_activity_scan">ScanActivity</string>
 
     <string name="nav_forward">Move forward</string>
@@ -28,8 +30,8 @@
     <string name="btn_auto_navigation">Auto Navigation</string>
     <string name="title_activity_camera">CameraActivity</string>
 
-    <string name="gps_required">GPS Required for device discovery</string>
-    <string name="gps_enabling">Enable GPS</string>
+    <string name="gps_required">Gps Required for device discovery</string>
+    <string name="gps_enabling">Enable Gps</string>
     <string name="gps_cancel">Cancel</string>
 
     <string name="message_connected">Connected to Cyber Robot</string>
