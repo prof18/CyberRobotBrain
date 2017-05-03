@@ -68,7 +68,7 @@ public class DeviceScanActivity extends AppCompatActivity {
     private BroadcastReceiver mReceiver;
     private Handler mHandler;
     private boolean mScanning;
-    private static final long SCAN_PERIOD = 1500;  // Stops scanning after 1,5 seconds.
+    private static final long SCAN_PERIOD = 3000;  // Stops scanning after 1,5 seconds.
     //RECYCLERVIEW
     private RecyclerView mRecyclerView;
     private ArrayList<BluetoothDevice> bDevices;
@@ -111,7 +111,8 @@ public class DeviceScanActivity extends AppCompatActivity {
                 }
             }
         });
-        mSwipeRefreshLayout.setColorSchemeResources(R.color.googleBlue);
+        mSwipeRefreshLayout.setColorSchemeResources(R.color.white);
+        mSwipeRefreshLayout.setProgressBackgroundColorSchemeResource(R.color.grey);
 
 
         final BluetoothManager mBluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
@@ -129,8 +130,10 @@ public class DeviceScanActivity extends AppCompatActivity {
 
 
         scanLeDevice(true);
-        if (mScanning)
+        if (mScanning) {
+            mSwipeRefreshLayout.setEnabled(false);
             mProgress.setVisibility(View.VISIBLE);
+        }
 
     }
 
@@ -419,8 +422,8 @@ public class DeviceScanActivity extends AppCompatActivity {
 
             mScanning = true;
             mSwipeRefreshLayout.setRefreshing(true);
-            mSwipeRefreshLayout.setEnabled(false);
-            mProgress.setVisibility(View.VISIBLE);
+            mSwipeRefreshLayout.setEnabled(true);
+            //mProgress.setVisibility(View.VISIBLE);
 
             bDevices = new ArrayList<BluetoothDevice>();
             mLeDeviceListAdapter = new LeDeviceAdapter(bDevices, R.layout.device_scan_row);
@@ -500,7 +503,10 @@ public class DeviceScanActivity extends AppCompatActivity {
     public void onResume() {
         super.onResume();
         Log.d(TAG, "onResume() called");
+        mNoDevice.setVisibility(View.INVISIBLE);
         scanLeDevice(true);
+        mSwipeRefreshLayout.setEnabled(false);
+        mProgress.setVisibility(View.VISIBLE);
     }
     @Override
     public void onStart() {

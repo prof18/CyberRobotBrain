@@ -27,12 +27,12 @@
 
     <ProgressBar
         android:id="@+id/progressBar"
-        style="@android:style/Widget.DeviceDefault.ProgressBar.Large"
+        style="@android:style/Widget.Holo.Light.ProgressBar"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center_vertical|center_horizontal"
         android:indeterminate="true"
-        android:indeterminateTint="@color/googleBlue"
+        android:indeterminateTint="@color/white"
         app:layout_anchor="@+id/include"
         app:layout_anchorGravity="center_vertical|center_horizontal"
         tools:targetApi="lollipop"/>

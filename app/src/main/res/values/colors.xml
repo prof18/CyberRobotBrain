@@ -12,5 +12,7 @@
     <color name="googleBlue">#4285F4</color>
     <color name="googleYellow">#FBBC05</color>
 
+    <color name="black">#000000</color>
+    <color name="grey">#212121</color>
     <color name="white">#FFFFFF</color>
 </resources>
