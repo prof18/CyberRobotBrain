@@ -38,5 +38,6 @@
 
     <string name="action_disconnected">You cannot move the Cyber Robot if you are not connected</string>
     <string name="wait_during_scan">You must wait until scanning is complete</string>
+    <string name="take_picture">Take picture</string>
 
 </resources>

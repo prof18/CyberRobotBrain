@@ -39,7 +39,7 @@ public class MainActivity extends AppCompatActivity {
     private FloatingActionButton mFab;
     private boolean mConnected = false;
     private boolean mReady = false;
-    private Button mManualNav;
+    private Button mManualNav, mAutoNavigation;
 
 
     @Override
@@ -53,6 +53,7 @@ public class MainActivity extends AppCompatActivity {
 
         mFab = (FloatingActionButton) findViewById(R.id.fab);
         mManualNav = (Button) findViewById(R.id.manual_nav_btn);
+        mAutoNavigation = (Button) findViewById(R.id.auto_navigation_btn);
         mManualNav.setEnabled(false);
 
 
@@ -94,6 +95,14 @@ public class MainActivity extends AppCompatActivity {
                 } else if (list.size() != 9) {
                     Toast.makeText(mainActivity, "Porca madonna non ci sono service", Toast.LENGTH_SHORT).show();
                 }
+            }
+        });
+
+        mAutoNavigation.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent startMan = new Intent(MainActivity.this, AutoNavigation.class);
+                startActivity(startMan);
             }
         });
     }

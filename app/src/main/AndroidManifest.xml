@@ -9,7 +9,7 @@
     <!-- Added to run on Api 23 -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-    <uses-permission android:name="androis.permission.CAMERA"/>
+    <uses-permission android:name="android.permission.CAMERA" />
 
     <uses-feature
         android:name="android.hardware.bluetooth_le"
@@ -50,11 +50,8 @@
             android:theme="@style/AppTheme.NoActionBar"
             android:name=".UI.DeviceScanActivity"
             android:label="@string/title_scan"/>
-
-        <activity
-            android:theme="@style/AppTheme.NoActionBar"
-            android:name=".UI.Camera"
-            android:label="@string/title_activity_camera"/>
+        <activity android:name=".UI.AutoNavigation"
+            android:theme="@style/AppTheme.NoActionBar"/>
 
         <service android:name=".Data.BluetoothLeService"/>
     </application>
