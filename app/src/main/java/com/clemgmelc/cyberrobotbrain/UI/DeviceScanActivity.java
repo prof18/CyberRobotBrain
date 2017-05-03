@@ -112,8 +112,6 @@ public class DeviceScanActivity extends AppCompatActivity {
             }
         });
         mSwipeRefreshLayout.setColorSchemeResources(R.color.googleBlue);
-        //TODO:deprecated
-        mSwipeRefreshLayout.setProgressBackgroundColor(R.color.googleYellow);
 
 
         final BluetoothManager mBluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
