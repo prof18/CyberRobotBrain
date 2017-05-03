@@ -50,7 +50,8 @@
             android:theme="@style/AppTheme.NoActionBar"
             android:name=".UI.DeviceScanActivity"
             android:label="@string/title_scan"/>
-        <activity android:name=".UI.AutoNavigation"
+        <activity android:name=".UI.CameraActivity"
+            android:screenOrientation="landscape"
             android:theme="@style/AppTheme.NoActionBar"/>
 
         <service android:name=".Data.BluetoothLeService"/>

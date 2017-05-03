@@ -1,7 +1,6 @@
 package com.clemgmelc.cyberrobotbrain.UI;
 
 import android.app.Activity;
-import android.bluetooth.BluetoothGattServer;
 import android.bluetooth.BluetoothGattService;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
@@ -98,7 +97,7 @@ public class MainActivity extends AppCompatActivity {
         mAutoNavigation.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent startMan = new Intent(MainActivity.this, AutoNavigation.class);
+                Intent startMan = new Intent(MainActivity.this, CameraActivity.class);
                 startActivity(startMan);
             }
         });
