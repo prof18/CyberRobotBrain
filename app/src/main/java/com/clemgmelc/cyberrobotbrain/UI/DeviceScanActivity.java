@@ -5,6 +5,12 @@ import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
+import android.bluetooth.le.BluetoothLeScanner;
+import android.bluetooth.le.ScanCallback;
+import android.bluetooth.le.ScanFilter;
+import android.bluetooth.le.ScanRecord;
+import android.bluetooth.le.ScanResult;
+import android.bluetooth.le.ScanSettings;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -42,6 +48,7 @@ import android.widget.Toast;
 import com.clemgmelc.cyberrobotbrain.R;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class DeviceScanActivity extends AppCompatActivity {
 
@@ -62,6 +69,7 @@ public class DeviceScanActivity extends AppCompatActivity {
     private LocationListener mLocationListener;
     private AlertDialog mAlertGps;  // To manage the showing GPS alert message
     //BLE
+    private BluetoothLeScanner mLeScanner;
     private LeDeviceAdapter mLeDeviceListAdapter;
     private BluetoothAdapter mBluetoothAdapter;
     private AlertDialog mAlertBlue; // To manage the showing BLE alert message
@@ -75,6 +83,9 @@ public class DeviceScanActivity extends AppCompatActivity {
     private SwipeRefreshLayout mSwipeRefreshLayout;
     private ProgressBar mProgress;
     private TextView mNoDevice;
+
+    private ScanSettings settings;
+    private List<ScanFilter> filters;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -118,6 +129,8 @@ public class DeviceScanActivity extends AppCompatActivity {
         final BluetoothManager mBluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
         mBluetoothAdapter = mBluetoothManager.getAdapter();
 
+
+
         mLocationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         mLocationListener = createLocationListener();
 
@@ -125,11 +138,15 @@ public class DeviceScanActivity extends AppCompatActivity {
         IntentFilter filter = new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED);
         registerReceiver(mReceiver, filter);
 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
+            mLeScanner = mBluetoothAdapter.getBluetoothLeScanner();
         //this is the main routine
         verifyPermissions(mActivity);
 
-
-        scanLeDevice(true);
+        if (!mScanning &&
+                mBluetoothAdapter.isEnabled() &&
+                mLocationManager.isProviderEnabled(LocationManager.GPS_PROVIDER))
+            scanLeDevice(true);
         if (mScanning) {
             mSwipeRefreshLayout.setEnabled(false);
             mProgress.setVisibility(View.VISIBLE);
@@ -402,10 +419,13 @@ public class DeviceScanActivity extends AppCompatActivity {
                         mSwipeRefreshLayout.setRefreshing(false);
                         mSwipeRefreshLayout.setEnabled(true);
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                            Log.v(TAG, "SCAN API MAGGIORE 21 STOP 1");
                             //TODO: Deal with deprecated method
-                            mBluetoothAdapter.stopLeScan(mLeScanCallback);
+                            if (mLeScanner != null)
+                                mLeScanner.stopScan(mScanCallback);
                         }
                         else{
+                            Log.v(TAG, "SCAN API minori 21 STOP 1");
                             mBluetoothAdapter.stopLeScan(mLeScanCallback);
                         }
                         Log.v(TAG,"SCANNING STOP");
@@ -429,25 +449,52 @@ public class DeviceScanActivity extends AppCompatActivity {
             mLeDeviceListAdapter = new LeDeviceAdapter(bDevices, R.layout.device_scan_row);
             mRecyclerView.setAdapter(mLeDeviceListAdapter);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                Log.v(TAG, "SCAN API MAGGIORE 21");
                 //TODO: Deal with deprecated method
-                mBluetoothAdapter.startLeScan(mLeScanCallback);
-            } else {
+                if (mLeScanner != null)
+                    mLeScanner.startScan(mScanCallback);
+                else{
+                    Log.v(TAG,"NON VAAAAAA UNA SEGAAAAAAAAAA");
+                }
+            }
+            else{
+                Log.v(TAG, "SCAN API minori 21");
                 mBluetoothAdapter.startLeScan(mLeScanCallback);
             }
         } else {
             //if previous scan was running stop that one
             mScanning = false;
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                Log.v(TAG, "SCAN API MAGGIORE 21 STOP 2");
                 //TODO: Deal with deprecated method
-                mBluetoothAdapter.stopLeScan(mLeScanCallback);
+                if (mLeScanner != null)
+                mLeScanner.stopScan(mScanCallback);
             }
             else{
+                Log.v(TAG, "SCAN API minori 21 STOP 2");
                 mBluetoothAdapter.stopLeScan(mLeScanCallback);
             }
         }
         invalidateOptionsMenu();
 
     }
+
+    private ScanCallback mScanCallback =
+            new ScanCallback() {
+                @Override
+                public void onScanResult(int callbackType, ScanResult result) {
+                    final BluetoothDevice device = result.getDevice();
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            //add the new device to the list
+                            if (device.getName() != null && device.getName().equals("Cyber Robot"))
+                                mLeDeviceListAdapter.addDevice(device);
+                            mLeDeviceListAdapter.notifyDataSetChanged();
+                        }
+                    });
+                }
+            };
 
     // Device scan callback: what to do when a new device is discovered
     private BluetoothAdapter.LeScanCallback mLeScanCallback =
@@ -456,10 +503,11 @@ public class DeviceScanActivity extends AppCompatActivity {
                 @Override
                 public void onLeScan(final BluetoothDevice device, int rssi, byte[] scanRecord) {
                     runOnUiThread(new Runnable() {
+
                         @Override
                         public void run() {
                             //add the new device to the list
-
+                            Log.v(TAG,"CALLBACK < 21 STOP SCAN");
                             if (device.getName() != null && device.getName().equals("Cyber Robot"))
                                 mLeDeviceListAdapter.addDevice(device);
                             mLeDeviceListAdapter.notifyDataSetChanged();
@@ -496,7 +544,8 @@ public class DeviceScanActivity extends AppCompatActivity {
     public void onStop() {
         super.onStop();
         Log.d(TAG, "onStop() called");
-        scanLeDevice(false);
+        if (mScanning)
+            scanLeDevice(false);
     }
 
     @Override
@@ -504,7 +553,11 @@ public class DeviceScanActivity extends AppCompatActivity {
         super.onResume();
         Log.d(TAG, "onResume() called");
         mNoDevice.setVisibility(View.INVISIBLE);
-        scanLeDevice(true);
+        if (!mScanning &&
+                mBluetoothAdapter.isEnabled() &&
+                mLocationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+            scanLeDevice(true);
+        }
         mSwipeRefreshLayout.setEnabled(false);
         mProgress.setVisibility(View.VISIBLE);
     }
@@ -540,10 +593,7 @@ public class DeviceScanActivity extends AppCompatActivity {
             mLeDevices.clear();
         }
 
-        @Override
-        public long getItemId(int i) {
-            return i;
-        }
+
 
         @Override
         public ViewHolder onCreateViewHolder(ViewGroup viewGroup, int i) {
