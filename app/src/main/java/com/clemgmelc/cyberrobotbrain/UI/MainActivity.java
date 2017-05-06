@@ -51,22 +51,29 @@ public class MainActivity extends AppCompatActivity {
         mainActivity = this;
 
         mFab = (FloatingActionButton) findViewById(R.id.fab);
+
         mManualNav = (Button) findViewById(R.id.manual_nav_btn);
-        mAutoNavigation = (Button) findViewById(R.id.auto_navigation_btn);
         mManualNav.setEnabled(false);
+        mManualNav.setTextColor(ContextCompat.getColor(mainActivity, R.color.white));
+
+        mAutoNavigation = (Button) findViewById(R.id.auto_navigation_btn);
+        //TODO:abilitare
+        //mAutoNavigation.setEnabled(false);
+        mAutoNavigation.setTextColor(ContextCompat.getColor(mainActivity, R.color.white));
+
 
 
         mFab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
 
-                Log.v(ConstantApp.TAG, "TAP on mFAB");
+                Log.v(ConstantApp.TAG, "****************************************************TAP on mFAB***********************");
                 if (!mConnected || mBluetoothLeService == null) {
                     Log.v(ConstantApp.TAG, "no connected--->reopen scan activity");
                     Intent launchScan = new Intent(MainActivity.this, DeviceScanActivity.class);
                     startActivityForResult(launchScan, SCAN_DEVICE_REQUEST);
                 } else {
-                    Log.v(ConstantApp.TAG, "INTENTIOLA REMOVAL OF CONNECTION");
+                    Log.v(ConstantApp.TAG, "INTENTIONAL REMOVAL OF CONNECTION");
                     //if (mBluetoothLeService != null)
                         mBluetoothLeService.disconnect();
                         mConnected = false;
@@ -130,16 +137,19 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onReceive(Context context, Intent intent) {
             final String action = intent.getAction();
+
             if (BluetoothLeService.ACTION_GATT_CONNECTED.equals(action)) {
 
                 //mConnected = true;
 
             } else if (BluetoothLeService.ACTION_GATT_DISCONNECTED.equals(action)) {
 
-
                 Log.v(ConstantApp.TAG, "sono scollegato ");
                 Toast.makeText(mBluetoothLeService, getResources().getString(R.string.message_disconnecting), Toast.LENGTH_SHORT).show();
                 mManualNav.setEnabled(false);
+                //TODO:abilitare
+                //mAutoNavigation.setEnabled(false);
+
 
                 //bad thing to respect low timing
                 Handler handler = new Handler();
@@ -150,7 +160,9 @@ public class MainActivity extends AppCompatActivity {
                             @Override
                             public void run() {
                                 mFab.setImageDrawable(ContextCompat.getDrawable(mainActivity, R.drawable.ic_bluetooth_standard));
-                                mFab.setBackgroundTintList(ColorStateList.valueOf(ContextCompat.getColor(mainActivity, R.color.red)));
+                                mFab.setBackgroundTintList(ColorStateList.valueOf(ContextCompat.getColor(mainActivity, R.color.googleRed)));
+                                mAutoNavigation.setTextColor(ContextCompat.getColor(mainActivity, R.color.white));
+                                mManualNav.setTextColor(ContextCompat.getColor(mainActivity, R.color.white));
                                 mFab.setEnabled(true);
                                 mDeviceAddress = null;
 
@@ -218,6 +230,10 @@ public class MainActivity extends AppCompatActivity {
                                 Toast.makeText(getApplicationContext(), getResources().getString(R.string.message_connected), Toast.LENGTH_SHORT).show();
                                 mFab.setEnabled(true);
                                 mManualNav.setEnabled(true);
+                                mManualNav.setTextColor(ContextCompat.getColor(mainActivity, R.color.googleGreen));
+                                //TODO:abilitare
+                                //mAutoNavigation.setEnabled(true);
+                                mAutoNavigation.setTextColor(ContextCompat.getColor(mainActivity, R.color.googleGreen));
                                 mConnected = true;
                                 //mReady = true;
                             }

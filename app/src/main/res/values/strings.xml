@@ -15,8 +15,6 @@
 
 
     <string name="no_device">No device found</string>
-    <string name="exit">Exit scan</string>
-    <string name="rescan">Scan again</string>
     <string name="title_activity_scan">ScanActivity</string>
 
     <string name="nav_forward">Move forward</string>

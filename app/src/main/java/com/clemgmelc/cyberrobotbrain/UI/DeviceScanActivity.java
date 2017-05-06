@@ -7,7 +7,6 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.le.BluetoothLeScanner;
 import android.bluetooth.le.ScanCallback;
-import android.bluetooth.le.ScanFilter;
 import android.bluetooth.le.ScanResult;
 import android.bluetooth.le.ScanSettings;
 import android.content.BroadcastReceiver;
@@ -44,7 +43,6 @@ import android.widget.Toast;
 import com.clemgmelc.cyberrobotbrain.R;
 
 import java.util.ArrayList;
-import java.util.List;
 
 public class DeviceScanActivity extends AppCompatActivity {
 
@@ -54,7 +52,6 @@ public class DeviceScanActivity extends AppCompatActivity {
     private static final int REQUEST_ENABLE_BT = 1;
     private static final int ALERT_GPS = 1;
     private static final int ALERT_BLUE = 2;
-    private static final int ALERT_NO_DEVICE = 3;
     private static final int REQUEST_LOCATION_PERMISSION = 1;
     private static String[] PERMISSIONS_LOCATION = {
             Manifest.permission.ACCESS_COARSE_LOCATION,
@@ -70,9 +67,11 @@ public class DeviceScanActivity extends AppCompatActivity {
     private BluetoothAdapter mBluetoothAdapter;
     private AlertDialog mAlertBlue; // To manage the showing BLE alert message
     private BroadcastReceiver mReceiver;
+    private ScanSettings mSettings;
     private Handler mHandler;
     private boolean mScanning;
-    private static final long SCAN_PERIOD = 1500;  // Stops scanning after 1,5 seconds.
+    private static final long SCAN_PERIOD = 3000;
+    private BluetoothManager mBluetoothManager;// Stops scanning after 1,5 seconds.
     //RECYCLERVIEW
     private RecyclerView mRecyclerView;
     private ArrayList<BluetoothDevice> bDevices;
@@ -80,12 +79,11 @@ public class DeviceScanActivity extends AppCompatActivity {
     private ProgressBar mProgress;
     private TextView mNoDevice;
 
-    private ScanSettings settings;
-    private List<ScanFilter> filters;
+
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
-        Log.v(TAG, "onCreate() called");
+        Log.d(TAG, "onCreate() called");
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.device_scan_main);
@@ -113,6 +111,7 @@ public class DeviceScanActivity extends AppCompatActivity {
             public void onRefresh() {
                 mNoDevice.setVisibility(View.INVISIBLE);
                 if (!mScanning) {
+                    Log.d(TAG,"mLeDeviceListAdapter cleared onrefresh");
                     mLeDeviceListAdapter.clear();
                     scanLeDevice(true);
                 }
@@ -122,9 +121,15 @@ public class DeviceScanActivity extends AppCompatActivity {
         mSwipeRefreshLayout.setProgressBackgroundColorSchemeResource(R.color.grey);
 
 
-        final BluetoothManager mBluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
+        mBluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
         mBluetoothAdapter = mBluetoothManager.getAdapter();
 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            mLeScanner = mBluetoothAdapter.getBluetoothLeScanner();
+            mSettings = new ScanSettings.Builder()
+                    .setScanMode(ScanSettings.SCAN_MODE_BALANCED)
+                    .build();
+        }
 
         mLocationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         mLocationListener = createLocationListener();
@@ -133,8 +138,6 @@ public class DeviceScanActivity extends AppCompatActivity {
         IntentFilter filter = new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED);
         registerReceiver(mReceiver, filter);
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
-            mLeScanner = mBluetoothAdapter.getBluetoothLeScanner();
         //this is the main routine
         verifyPermissions(mActivity);
 
@@ -194,22 +197,6 @@ public class DeviceScanActivity extends AppCompatActivity {
                     startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
                 }
                 break;
-            case (ALERT_NO_DEVICE):
-                alertDialog.setMessage(getResources().getString(R.string.no_device));
-                alertDialog.setCancelable(false);
-                alertDialog.setPositiveButton(getResources().getString(R.string.rescan),
-                        new DialogInterface.OnClickListener() {
-                            public void onClick(DialogInterface dialog, int which) {
-                                scanLeDevice(true);
-                            }
-                        });
-                alertDialog.setNegativeButton(getResources().getString(R.string.exit),
-                        new DialogInterface.OnClickListener() {
-                            public void onClick(DialogInterface dialog, int which) {
-                                finish();
-                            }
-                        });
-                break;
             default:
                 alertDialog = null;
                 break;
@@ -235,18 +222,18 @@ public class DeviceScanActivity extends AppCompatActivity {
 
             @Override
             public void onProviderEnabled(String provider) {
-                Log.v(TAG, "CAMBIAMENTO UTENTE ---->GPS ATTIVATO");
+                Log.d(TAG, "CAMBIAMENTO UTENTE ---->GPS ATTIVATO");
                 mAlertGps.dismiss();
                 mAlertGps = null;
                 if (!mScanning && mBluetoothAdapter.isEnabled()) {
-                    Log.v(TAG, "SCAN start from gps");
+                    Log.d(TAG, "SCAN start from gps");
                     scanLeDevice(true);
                 }
             }
 
             @Override
             public void onProviderDisabled(String provider) {
-                Log.v(TAG, "CAMBIAMENTO UTENTE ---->GPS DISATTIVATO.");
+                Log.d(TAG, "CAMBIAMENTO UTENTE ---->GPS DISATTIVATO.");
                 if (mAlertGps == null) {
                     mAlertGps = showAlert(ALERT_GPS).create();
                     mAlertGps.show();
@@ -272,15 +259,18 @@ public class DeviceScanActivity extends AppCompatActivity {
                             BluetoothAdapter.ERROR);
                     switch (state) {
                         case BluetoothAdapter.STATE_ON:
-                            Log.v(TAG, "CAMBIAMENTO---->BLUE ATTIVATO");
+                            Log.d(TAG, "CAMBIAMENTO---->BLUE ATTIVATO");
+                            if (mLeScanner == null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
+                                mLeScanner = mBluetoothAdapter.getBluetoothLeScanner();
+
                             if (!mScanning &&
                                     mLocationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-                                Log.v(TAG, "SCAN start from blue");
+                                Log.d(TAG, "SCAN start from blue");
                                 scanLeDevice(true);
                             }
                             break;
                         case BluetoothAdapter.STATE_OFF:
-                            Log.v(TAG, "CAMBIAMENTO---->BLUE DISATTIVATO");
+                            Log.d(TAG, "CAMBIAMENTO---->BLUE DISATTIVATO");
                             if (mAlertBlue == null)
                                 mAlertBlue = showAlert(ALERT_BLUE).create();
                             break;
@@ -296,7 +286,7 @@ public class DeviceScanActivity extends AppCompatActivity {
     //manage the result of the system request to turn on bluetooth
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        Log.v(TAG, "onActivityResult called");
+        Log.d(TAG, "onActivityResult called");
 
         if (requestCode == REQUEST_ENABLE_BT && resultCode == Activity.RESULT_CANCELED) {
             // User chose NOT to enable Bluetooth.
@@ -310,15 +300,14 @@ public class DeviceScanActivity extends AppCompatActivity {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
                 verifyPermissions(mActivity);
             else {
-                final BluetoothManager bluetoothManager =
-                        (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
-                mBluetoothAdapter = bluetoothManager.getAdapter();
+                mBluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
+                mBluetoothAdapter = mBluetoothManager.getAdapter();
                 scanLeDevice(true);
             }
         }
     }
 
-    //check location permissions.
+    //check location permissions and control if gps and bluetooth are enabled
     public void verifyPermissions(Activity activity) {
         int coarseLocation = ActivityCompat.checkSelfPermission(activity, PERMISSIONS_LOCATION[0]);
         int fineLocation = ActivityCompat.checkSelfPermission(activity, PERMISSIONS_LOCATION[1]);
@@ -362,8 +351,10 @@ public class DeviceScanActivity extends AppCompatActivity {
                             mAlertGps = showAlert(ALERT_GPS).create();
                             mAlertGps.show();
                         }
-                        if (mBluetoothAdapter.isEnabled() && mLocationManager.isProviderEnabled(LocationManager.GPS_PROVIDER))
+                        if (mBluetoothAdapter.isEnabled() && mLocationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+                            Log.d(TAG,"scanLeDevice(true) after permission and all enabled");
                             scanLeDevice(true);
+                        }
                     }
                 } else {
                     Log.v(TAG, "Permission NOT Granted");
@@ -420,16 +411,14 @@ public class DeviceScanActivity extends AppCompatActivity {
                         mScanning = false;
                         mSwipeRefreshLayout.setRefreshing(false);
                         mSwipeRefreshLayout.setEnabled(true);
+
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                            Log.v(TAG, "SCAN API MAGGIORE 21 STOP 1");
-                            //TODO: Deal with deprecated method
-                            if (mLeScanner != null)
-                                mLeScanner.stopScan(mScanCallback);
+                            Log.d(TAG, "stopLeScan STOP scan is ended after SCAN_PERIOD");
+                            mLeScanner.stopScan(mScanCallback);
                         } else {
-                            Log.v(TAG, "SCAN API minori 21 STOP 1");
                             mBluetoothAdapter.stopLeScan(mLeScanCallback);
                         }
-                        Log.v(TAG, "SCANNING STOP");
+
                         mProgress.setVisibility(View.INVISIBLE);
 
                         if (mLeDeviceListAdapter.getItemCount() == 0 && mAlertBlue == null && mAlertGps == null) {
@@ -449,33 +438,27 @@ public class DeviceScanActivity extends AppCompatActivity {
             bDevices = new ArrayList<BluetoothDevice>();
             mLeDeviceListAdapter = new LeDeviceAdapter(bDevices, R.layout.device_scan_row);
             mRecyclerView.setAdapter(mLeDeviceListAdapter);
+
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                Log.v(TAG, "SCAN API MAGGIORE 21");
-                //TODO: Deal with deprecated method
-                if (mLeScanner != null)
-                    mLeScanner.startScan(mScanCallback);
-                else {
-                    Log.v(TAG, "NON VAAAAAA UNA SEGAAAAAAAAAA");
-                }
+                Log.d(TAG, "StartLeScan START NEW SCAN");
+                mLeScanner.startScan(null, mSettings, mScanCallback);
             } else {
-                Log.v(TAG, "SCAN API minori 21");
                 mBluetoothAdapter.startLeScan(mLeScanCallback);
             }
+
         } else {
             //if previous scan was running stop that one
             mScanning = false;
+
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                Log.v(TAG, "SCAN API MAGGIORE 21 STOP 2");
-                //TODO: Deal with deprecated method
-                if (mLeScanner != null)
-                    mLeScanner.stopScan(mScanCallback);
+                Log.d(TAG, "stopLeScan STOP scan is ended after SCAN_PERIOD");
+                mLeScanner.stopScan(mScanCallback);
             } else {
-                Log.v(TAG, "SCAN API minori 21 STOP 2");
                 mBluetoothAdapter.stopLeScan(mLeScanCallback);
             }
         }
-        invalidateOptionsMenu();
 
+        invalidateOptionsMenu();
     }
 
     private ScanCallback mScanCallback =
@@ -506,7 +489,6 @@ public class DeviceScanActivity extends AppCompatActivity {
                         @Override
                         public void run() {
                             //add the new device to the list
-                            Log.v(TAG, "CALLBACK < 21 STOP SCAN");
                             if (device.getName() != null && device.getName().equals("Cyber Robot"))
                                 mLeDeviceListAdapter.addDevice(device);
                             mLeDeviceListAdapter.notifyDataSetChanged();
@@ -523,7 +505,9 @@ public class DeviceScanActivity extends AppCompatActivity {
             mLocationManager.removeUpdates(mLocationListener);
         if (mReceiver != null)
             unregisterReceiver(mReceiver);
-        if (mScanning || mLeDeviceListAdapter != null) {
+        if (mScanning || (mLeDeviceListAdapter != null && mLeDeviceListAdapter.getItemCount() > 0) ) {
+            Log.d(TAG,"scanLeDevice(false) in onDestroy()");
+            Log.d(TAG,"mLeDeviceListAdapter cleared in onDestroy()");
             scanLeDevice(false);
             mLeDeviceListAdapter.clear();
         }
@@ -533,8 +517,12 @@ public class DeviceScanActivity extends AppCompatActivity {
     public void onPause() {
         super.onPause();
         Log.d(TAG, "onPaused() called");
-        if (mScanning || mLeDeviceListAdapter != null) {
+        if (mScanning) {
+            Log.d(TAG,"scanLeDevice(false) in onPause()");
             scanLeDevice(false);
+        }
+        if (mLeDeviceListAdapter != null && mLeDeviceListAdapter.getItemCount() > 0) {
+            Log.d(TAG,"mLeDeviceListAdapter cleared in onPause()");
             mLeDeviceListAdapter.clear();
         }
     }
@@ -543,8 +531,10 @@ public class DeviceScanActivity extends AppCompatActivity {
     public void onStop() {
         super.onStop();
         Log.d(TAG, "onStop() called");
-        if (mScanning)
+        if (mScanning) {
             scanLeDevice(false);
+            Log.d(TAG,"scanLeDevice(false) in onStop()");
+        }
     }
 
     @Override
@@ -555,18 +545,12 @@ public class DeviceScanActivity extends AppCompatActivity {
         if (!mScanning &&
                 mBluetoothAdapter.isEnabled() &&
                 mLocationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+            Log.d(TAG,"scanLeDevice(true) in onResume()");
             scanLeDevice(true);
         }
         mSwipeRefreshLayout.setEnabled(false);
         mProgress.setVisibility(View.VISIBLE);
     }
-
-    @Override
-    public void onStart() {
-        super.onStart();
-        Log.d(TAG, "onStart() called");
-    }
-
 
     //#####################################################################################
 

@@ -2,6 +2,7 @@ package com.clemgmelc.cyberrobotbrain.UI;
 
 import android.Manifest;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.pm.PackageManager;
 import android.graphics.ImageFormat;
 import android.graphics.SurfaceTexture;
@@ -24,6 +25,7 @@ import android.os.HandlerThread;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.util.Size;
@@ -60,6 +62,8 @@ public class AutoNavigation extends AppCompatActivity {
     private  CameraCharacteristics characteristics;
     private CameraManager manager;
     private CaptureRequest.Builder captureBuilder;
+    private static final int ALERT_CAMERA = 1;
+    private static final int ALERT_FILE = 2;
     private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
 
 
@@ -96,6 +100,8 @@ public class AutoNavigation extends AppCompatActivity {
         textureView = (TextureView) findViewById(R.id.texture);
         textureView.setSurfaceTextureListener(textureListener);
         mFab = (FloatingActionButton) findViewById(R.id.floatingActionButton);
+
+
 
         //TODO: REQUEST PERMISSIONS
 
@@ -349,9 +355,12 @@ public class AutoNavigation extends AppCompatActivity {
             assert map != null;
             imageDimension = map.getOutputSizes(SurfaceTexture.class)[0];
             // Add permission for camera and let user grant the permission
-            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(AutoNavigation.this, new String[]{Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE}, REQUEST_CAMERA_PERMISSION);
-                return;
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED &&
+             ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+
+                ActivityCompat.requestPermissions(AutoNavigation.this, new String[]{Manifest.permission.CAMERA,
+                            Manifest.permission.WRITE_EXTERNAL_STORAGE}, REQUEST_CAMERA_PERMISSION);
+                            return;
             }
             manager.openCamera(mCameraId, stateCallback, null);*/
         } catch (CameraAccessException e) {
@@ -501,4 +510,5 @@ public class AutoNavigation extends AppCompatActivity {
         stopBackgroundThread();
         super.onPause();
     }
+
 }

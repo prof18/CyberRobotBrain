@@ -128,10 +128,15 @@ public class ManualNavigation extends AppCompatActivity {
 
             case ConstantApp.CODE_FORWARD:
 
+
                 listener = new View.OnTouchListener() {
                     @Override
                     public boolean onTouch(View v, MotionEvent event) {
                         if (event.getAction() == MotionEvent.ACTION_DOWN) {
+
+                            mBackward.setEnabled(false);
+                            mRight.setEnabled(false);
+                            mLeft.setEnabled(false);
                             if (mHandler != null) {
                                 return true;
                             }
@@ -140,6 +145,9 @@ public class ManualNavigation extends AppCompatActivity {
                             mHandler.postDelayed(mAction, 200);
                             return false;
                         } else if (event.getAction() == MotionEvent.ACTION_UP) {
+                            mBackward.setEnabled(true);
+                            mRight.setEnabled(true);
+                            mLeft.setEnabled(true);
                             if (mHandler == null) {
                                 return true;
                             }
@@ -168,6 +176,9 @@ public class ManualNavigation extends AppCompatActivity {
                     @Override
                     public boolean onTouch(View v, MotionEvent event) {
                         if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                            mForward.setEnabled(false);
+                            mRight.setEnabled(false);
+                            mLeft.setEnabled(false);
                             if (mHandler != null) {
                                 return true;
                             }
@@ -176,6 +187,9 @@ public class ManualNavigation extends AppCompatActivity {
                             mHandler.postDelayed(mAction, 200);
                             return false;
                         } else if (event.getAction() == MotionEvent.ACTION_UP) {
+                            mForward.setEnabled(true);
+                            mRight.setEnabled(true);
+                            mLeft.setEnabled(true);
                             if (mHandler == null) {
                                 return true;
                             }
@@ -204,6 +218,9 @@ public class ManualNavigation extends AppCompatActivity {
                     @Override
                     public boolean onTouch(View v, MotionEvent event) {
                         if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                            mForward.setEnabled(false);
+                            mRight.setEnabled(false);
+                            mBackward.setEnabled(false);
                             if (mHandler != null) {
                                 return true;
                             }
@@ -212,6 +229,9 @@ public class ManualNavigation extends AppCompatActivity {
                             mHandler.postDelayed(mAction, 200);
                             return false;
                         } else if (event.getAction() == MotionEvent.ACTION_UP) {
+                            mForward.setEnabled(true);
+                            mRight.setEnabled(true);
+                            mBackward.setEnabled(true);
                             if (mHandler == null) {
                                 return true;
                             }
@@ -240,6 +260,9 @@ public class ManualNavigation extends AppCompatActivity {
                     @Override
                     public boolean onTouch(View v, MotionEvent event) {
                         if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                            mForward.setEnabled(false);
+                            mLeft.setEnabled(false);
+                            mBackward.setEnabled(false);
                             if (mHandler != null) {
                                 return true;
                             }
@@ -248,6 +271,9 @@ public class ManualNavigation extends AppCompatActivity {
                             mHandler.postDelayed(mAction, 200);
                             return false;
                         } else if (event.getAction() == MotionEvent.ACTION_UP) {
+                            mForward.setEnabled(true);
+                            mLeft.setEnabled(true);
+                            mBackward.setEnabled(true);
                             if (mHandler == null) {
                                 return true;
                             }
