@@ -29,8 +29,11 @@ public class ManualNavigation extends AppCompatActivity {
     private BluetoothGattService mMovementGattService;
     private BluetoothGattCharacteristic mMovementCharacteristic;
     private boolean pressed = true;
-    private Handler mHandler;
 
+    private Handler mHandlerF;
+    private Handler mHandlerB;
+    private Handler mHandlerL;
+    private Handler mHandlerR;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -106,6 +109,7 @@ public class ManualNavigation extends AppCompatActivity {
         public void onServiceDisconnected(ComponentName componentName) {
             mBluetoothLeService = null;
             Log.v(ConstantApp.TAG, "onServiceDisconnected");
+
         }
     };
 
@@ -126,176 +130,239 @@ public class ManualNavigation extends AppCompatActivity {
 
         switch (movement) {
 
-            case ConstantApp.CODE_FORWARD:
+            case ConstantApp.CODE_FORWARD: {
 
+                listener = new View.OnTouchListener() {
+                    @Override
+                    public boolean onTouch(View v, MotionEvent event) {
+                        if (event.getAction() == MotionEvent.ACTION_DOWN) {
+
+                            if (mHandlerF != null) {
+                                return true;
+                            }
+
+                            if (mHandlerB == null && mHandlerL == null && mHandlerR == null) {
+                                mHandlerF = new Handler();
+                                Log.d(ConstantApp.TAG, "FORWARD1");
+                                mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.forward);
+                                mHandlerF.postDelayed(mActionF, 200);
+                            }
+                            return false;
+
+                        } else if (event.getAction() == MotionEvent.ACTION_UP) {
+
+                            if (mHandlerF == null) {
+                                return true;
+                            }
+                            mHandlerF.removeCallbacks(mActionF);
+                            mHandlerF = null;
+                            return false;
+
+                        } else if (event.getAction() == MotionEvent.ACTION_MOVE) {
+                            if (mHandlerF != null) {
+                                return true;
+                            }
+
+                            if (mHandlerB == null && mHandlerL == null && mHandlerR == null) {
+                                mHandlerF = new Handler();
+                                mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.forward);
+                                mHandlerF.postDelayed(mActionF, 200);
+                            }
+                            return false;
+                        }
+
+                        return false;
+                    }
+
+                    Runnable mActionF = new Runnable() {
+                        @Override
+                        public void run() {
+                            if (mHandlerF == null)
+                                mHandlerF = new Handler();
+                            if (mHandlerB == null && mHandlerL == null && mHandlerR == null) {
+                                Log.d(ConstantApp.TAG, "FORWARD2");
+                                mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.forward);
+                                mHandlerF.postDelayed(this, 200);
+                            }
+                        }
+                    };
+
+                };
+                break;
+            }
+
+            case ConstantApp.CODE_BACKWARD: {
 
                 listener = new View.OnTouchListener() {
                     @Override
                     public boolean onTouch(View v, MotionEvent event) {
                         if (event.getAction() == MotionEvent.ACTION_DOWN) {
 
-                            mBackward.setEnabled(false);
-                            mRight.setEnabled(false);
-                            mLeft.setEnabled(false);
-                            if (mHandler != null) {
+                            if (mHandlerB != null) {
                                 return true;
                             }
-                            mHandler = new Handler();
-                            mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.forward);
-                            mHandler.postDelayed(mAction, 200);
+
+                            if (mHandlerF == null && mHandlerL == null && mHandlerR == null) {
+                                mHandlerB = new Handler();
+                                mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.backward);
+                                mHandlerB.postDelayed(mActionB, 200);
+                            }
                             return false;
+
                         } else if (event.getAction() == MotionEvent.ACTION_UP) {
-                            mBackward.setEnabled(true);
-                            mRight.setEnabled(true);
-                            mLeft.setEnabled(true);
-                            if (mHandler == null) {
+
+                            if (mHandlerB == null) {
                                 return true;
                             }
-                            mHandler.removeCallbacks(mAction);
-                            mHandler = null;
+                            mHandlerB.removeCallbacks(mActionB);
+                            mHandlerB = null;
+                            return false;
+
+                        } else if (event.getAction() == MotionEvent.ACTION_MOVE) {
+
+                            if (mHandlerB != null) {
+                                return true;
+                            }
+                            if (mHandlerF == null && mHandlerL == null && mHandlerR == null ) {
+                                mHandlerB = new Handler();
+                                mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.backward);
+                                mHandlerB.postDelayed(mActionB, 200);
+                            }
                             return false;
                         }
+
                         return false;
                     }
 
-                    Runnable mAction = new Runnable() {
+                    Runnable mActionB = new Runnable() {
                         @Override
                         public void run() {
-
-                            mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.forward);
-                            mHandler.postDelayed(this, 200);
+                            if (mHandlerF == null && mHandlerL == null && mHandlerR == null) {
+                                if (mHandlerB == null)
+                                    mHandlerB = new Handler();
+                                mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.backward);
+                                mHandlerB.postDelayed(this, 200);
+                            }
                         }
                     };
 
                 };
                 break;
+            }
 
-            case ConstantApp.CODE_BACKWARD:
+            case ConstantApp.CODE_LEFT: {
 
                 listener = new View.OnTouchListener() {
                     @Override
                     public boolean onTouch(View v, MotionEvent event) {
                         if (event.getAction() == MotionEvent.ACTION_DOWN) {
-                            mForward.setEnabled(false);
-                            mRight.setEnabled(false);
-                            mLeft.setEnabled(false);
-                            if (mHandler != null) {
+
+                            if (mHandlerL != null) {
                                 return true;
                             }
-                            mHandler = new Handler();
-                            mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.backward);
-                            mHandler.postDelayed(mAction, 200);
+
+                            if (mHandlerF == null && mHandlerB == null && mHandlerR == null) {
+                                mHandlerL = new Handler();
+                                mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.left);
+                                mHandlerL.postDelayed(mActionL, 200);
+                            }
                             return false;
                         } else if (event.getAction() == MotionEvent.ACTION_UP) {
-                            mForward.setEnabled(true);
-                            mRight.setEnabled(true);
-                            mLeft.setEnabled(true);
-                            if (mHandler == null) {
+
+                            if (mHandlerL == null) {
                                 return true;
                             }
-                            mHandler.removeCallbacks(mAction);
-                            mHandler = null;
+                            mHandlerL.removeCallbacks(mActionL);
+                            mHandlerL = null;
+                            return false;
+
+                        } else if (event.getAction() == MotionEvent.ACTION_MOVE) {
+
+                            if (mHandlerL != null) {
+                                return true;
+                            }
+                            if (mHandlerF == null && mHandlerB == null && mHandlerR == null) {
+                                mHandlerL = new Handler();
+                                mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.left);
+                                mHandlerL.postDelayed(mActionL, 200);
+                            }
                             return false;
                         }
                         return false;
                     }
 
-                    Runnable mAction = new Runnable() {
+                    Runnable mActionL = new Runnable() {
                         @Override
                         public void run() {
-
-                            mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.backward);
-                            mHandler.postDelayed(this, 200);
+                            if (mHandlerF == null && mHandlerB == null && mHandlerR == null) {
+                                if (mHandlerL == null)
+                                    mHandlerL = new Handler();
+                                mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.left);
+                                mHandlerL.postDelayed(this, 200);
+                            }
                         }
                     };
 
                 };
                 break;
+            }
 
-            case ConstantApp.CODE_LEFT:
+            case ConstantApp.CODE_RIGHT: {
 
                 listener = new View.OnTouchListener() {
                     @Override
                     public boolean onTouch(View v, MotionEvent event) {
                         if (event.getAction() == MotionEvent.ACTION_DOWN) {
-                            mForward.setEnabled(false);
-                            mRight.setEnabled(false);
-                            mBackward.setEnabled(false);
-                            if (mHandler != null) {
+
+                            if (mHandlerR != null) {
                                 return true;
                             }
-                            mHandler = new Handler();
-                            mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.left);
-                            mHandler.postDelayed(mAction, 200);
+
+                            if (mHandlerF == null && mHandlerB == null && mHandlerL == null) {
+                                mHandlerR = new Handler();
+                                mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.right);
+                                mHandlerR.postDelayed(mActionR, 200);
+                            }
                             return false;
                         } else if (event.getAction() == MotionEvent.ACTION_UP) {
-                            mForward.setEnabled(true);
-                            mRight.setEnabled(true);
-                            mBackward.setEnabled(true);
-                            if (mHandler == null) {
+
+                            if (mHandlerR == null) {
                                 return true;
                             }
-                            mHandler.removeCallbacks(mAction);
-                            mHandler = null;
+                            mHandlerR.removeCallbacks(mActionR);
+                            mHandlerR = null;
+                            return false;
+
+                        } else if (event.getAction() == MotionEvent.ACTION_MOVE) {
+
+                            if (mHandlerR != null) {
+                                return true;
+                            }
+                            if (mHandlerF == null && mHandlerB == null && mHandlerL == null ) {
+                                mHandlerR = new Handler();
+                                mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.right);
+                                mHandlerR.postDelayed(mActionR, 200);
+                            }
                             return false;
                         }
                         return false;
                     }
 
-                    Runnable mAction = new Runnable() {
+                    Runnable mActionR = new Runnable() {
                         @Override
                         public void run() {
-
-                            mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.left);
-                            mHandler.postDelayed(this, 200);
+                            if (mHandlerF == null && mHandlerB == null && mHandlerL == null ) {
+                                if (mHandlerR == null)
+                                    mHandlerR = new Handler();
+                                mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.right);
+                                mHandlerR.postDelayed(this, 200);
+                            }
                         }
                     };
 
                 };
                 break;
-
-            case ConstantApp.CODE_RIGHT:
-
-                listener = new View.OnTouchListener() {
-                    @Override
-                    public boolean onTouch(View v, MotionEvent event) {
-                        if (event.getAction() == MotionEvent.ACTION_DOWN) {
-                            mForward.setEnabled(false);
-                            mLeft.setEnabled(false);
-                            mBackward.setEnabled(false);
-                            if (mHandler != null) {
-                                return true;
-                            }
-                            mHandler = new Handler();
-                            mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.right);
-                            mHandler.postDelayed(mAction, 200);
-                            return false;
-                        } else if (event.getAction() == MotionEvent.ACTION_UP) {
-                            mForward.setEnabled(true);
-                            mLeft.setEnabled(true);
-                            mBackward.setEnabled(true);
-                            if (mHandler == null) {
-                                return true;
-                            }
-                            mHandler.removeCallbacks(mAction);
-                            mHandler = null;
-                            return false;
-                        }
-                        return false;
-                    }
-
-                    Runnable mAction = new Runnable() {
-                        @Override
-                        public void run() {
-
-                            mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.right);
-                            mHandler.postDelayed(this, 200);
-                        }
-                    };
-
-                };
-                break;
-
+            }
             default:
                 break;
 
