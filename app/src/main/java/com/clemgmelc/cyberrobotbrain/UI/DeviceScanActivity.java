@@ -139,7 +139,10 @@ public class DeviceScanActivity extends AppCompatActivity {
         registerReceiver(mReceiver, filter);
 
         //this is the main routine
-        verifyPermissions(mActivity);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
+            verifyPermissions(mActivity);
+
+        //TODO: sistemare la logina con dispositiv minori di 6.0
 
         if (!mScanning &&
                 mBluetoothAdapter.isEnabled() &&

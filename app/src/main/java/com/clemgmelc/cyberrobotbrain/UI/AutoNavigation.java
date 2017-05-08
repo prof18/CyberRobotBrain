@@ -1,6 +1,8 @@
 package com.clemgmelc.cyberrobotbrain.UI;
 
+import android.Manifest;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.pm.PackageManager;
 import android.graphics.ImageFormat;
 import android.graphics.Matrix;
@@ -16,6 +18,7 @@ import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.params.StreamConfigurationMap;
+import android.location.LocationManager;
 import android.media.Image;
 import android.media.ImageReader;
 import android.os.Bundle;
@@ -24,6 +27,8 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
+import android.support.v4.app.ActivityCompat;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.util.Size;
@@ -31,7 +36,6 @@ import android.util.SparseIntArray;
 import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
-import android.view.WindowManager;
 import android.widget.Toast;
 
 import com.clemgmelc.cyberrobotbrain.R;
@@ -82,7 +86,6 @@ public class AutoNavigation extends AppCompatActivity {
     private Size imageDimension;
     private ImageReader imageReader;
     private File file;
-    private static final int REQUEST_CAMERA_PERMISSION = 200;
     private boolean mFlashSupported;
     private Handler mBackgroundHandler;
     private HandlerThread mBackgroundThread;
@@ -97,10 +100,18 @@ public class AutoNavigation extends AppCompatActivity {
     //Max preview height that is guaranteed by Camera2 API
     private static final int MAX_PREVIEW_HEIGHT = 1080;
 
+    private static String[] PERMISSIONS_CAMERA = {
+            Manifest.permission.CAMERA,
+            Manifest.permission.WRITE_EXTERNAL_STORAGE
+    };
+    private static final int REQUEST_CAMERA_PERMISSION = 1;
+    private AutoNavigation activity;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.auto_navigation_activity);
+        setContentView(R.layout.auto_navigation_main);
+        activity = this;
 
         textureView = (TextureView) findViewById(R.id.texture);
         textureView.setSurfaceTextureListener(textureListener);
@@ -299,8 +310,8 @@ public class AutoNavigation extends AppCompatActivity {
                             int maxPreviewHeight = displaySize.y;*/
 
 
-                                int maxPreviewWidth = displaySize.y;
-                                int maxPreviewHeight = displaySize.x;
+                            int maxPreviewWidth = displaySize.y;
+                            int maxPreviewHeight = displaySize.x;
 
 
                             if (maxPreviewWidth > MAX_PREVIEW_WIDTH) {
@@ -313,7 +324,6 @@ public class AutoNavigation extends AppCompatActivity {
 
                             Size previewSize = chooseOptimalSize(map.getOutputSizes(SurfaceTexture.class),
                                     mTextureWidth, mTextureHeight, maxPreviewWidth, maxPreviewHeight, maxSize);
-
 
 
                             Matrix matrix = new Matrix();
@@ -423,28 +433,69 @@ public class AutoNavigation extends AppCompatActivity {
 
             setupCamera();
             CameraManager manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
-            manager.openCamera(mCameraId, stateCallback, null);
 
+            int cameraPerm = ActivityCompat.checkSelfPermission(activity, PERMISSIONS_CAMERA[0]);
+            int storagePerm = ActivityCompat.checkSelfPermission(activity, PERMISSIONS_CAMERA[1]);
 
-
-           /*
-            characteristics = manager.getCameraCharacteristics(mCameraId);
-            StreamConfigurationMap map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
-            assert map != null;
-            imageDimension = map.getOutputSizes(SurfaceTexture.class)[0];
-            // Add permission for camera and let user grant the permission
-            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED &&
-             ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-
-                ActivityCompat.requestPermissions(AutoNavigation.this, new String[]{Manifest.permission.CAMERA,
-                            Manifest.permission.WRITE_EXTERNAL_STORAGE}, REQUEST_CAMERA_PERMISSION);
-                            return;
+            if (cameraPerm != PackageManager.PERMISSION_GRANTED || storagePerm != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(activity, PERMISSIONS_CAMERA, REQUEST_CAMERA_PERMISSION);
+            } else {
+                manager.openCamera(mCameraId, stateCallback, null);
             }
-            manager.openCamera(mCameraId, stateCallback, null);*/
         } catch (CameraAccessException e) {
             e.printStackTrace();
         }
         Log.e(TAG, "openCamera X");
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        int cameraPerm = ActivityCompat.checkSelfPermission(activity, PERMISSIONS_CAMERA[0]);
+        int storagePerm = ActivityCompat.checkSelfPermission(activity, PERMISSIONS_CAMERA[1]);
+        switch (requestCode) {
+
+            //TODO: fa casini, tanti casini con i dialog
+
+            case (REQUEST_CAMERA_PERMISSION):
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    Log.v(TAG, "Permission Granted");
+
+                    if (cameraPerm == PackageManager.PERMISSION_GRANTED && storagePerm == PackageManager.PERMISSION_GRANTED) {
+
+                        try {
+                            manager.openCamera(mCameraId, stateCallback, null);
+
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+
+                    }
+                } else {
+                    Log.v(TAG, "Permission NOT Granted");
+                    showNegativeDialog(getResources().getString(R.string.perm_error_title),
+                            getResources().getString(R.string.camera_perm_error));
+                }
+                break;
+
+            default:
+                break;
+        }
+    }
+
+    //show a dialog of error that will close the scan activity after ok is pressed
+    private void showNegativeDialog(String title, String message) {
+
+        final AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(this);
+        dialogBuilder.setTitle(title);
+        dialogBuilder.setMessage(message);
+        dialogBuilder.setCancelable(false);
+        dialogBuilder.setNegativeButton(android.R.string.ok,
+                new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                        finish();
+                    }
+                });
+        dialogBuilder.show();
     }
 
     protected void takePicture() {
@@ -557,17 +608,6 @@ public class AutoNavigation extends AppCompatActivity {
         if (null != imageReader) {
             imageReader.close();
             imageReader = null;
-        }
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        if (requestCode == REQUEST_CAMERA_PERMISSION) {
-            if (grantResults[0] == PackageManager.PERMISSION_DENIED) {
-                // close the app
-                Toast.makeText(AutoNavigation.this, "Sorry!!!, you can't use this app without granting permission", Toast.LENGTH_LONG).show();
-                finish();
-            }
         }
     }
 

@@ -177,7 +177,7 @@ public class AutoNavigation2 extends Activity {
 
         activity = this;
 
-        setContentView(R.layout.auto_navigation_activity);
+        setContentView(R.layout.auto_navigation_content);
         mTextureView = (AutoFitTextureView) findViewById(R.id.texture);
 
         //full screen and transparent status and navigation bar
