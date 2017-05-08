@@ -54,14 +54,10 @@ public class MainActivity extends AppCompatActivity {
 
         mManualNav = (Button) findViewById(R.id.manual_nav_btn);
         mManualNav.setEnabled(false);
-        mManualNav.setTextColor(ContextCompat.getColor(mainActivity, R.color.white));
 
         mAutoNavigation = (Button) findViewById(R.id.auto_navigation_btn);
         //TODO:abilitare
         //mAutoNavigation.setEnabled(false);
-        mAutoNavigation.setTextColor(ContextCompat.getColor(mainActivity, R.color.white));
-
-
 
         mFab.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -161,8 +157,6 @@ public class MainActivity extends AppCompatActivity {
                             public void run() {
                                 mFab.setImageDrawable(ContextCompat.getDrawable(mainActivity, R.drawable.ic_bluetooth_standard));
                                 mFab.setBackgroundTintList(ColorStateList.valueOf(ContextCompat.getColor(mainActivity, R.color.googleRed)));
-                                mAutoNavigation.setTextColor(ContextCompat.getColor(mainActivity, R.color.white));
-                                mManualNav.setTextColor(ContextCompat.getColor(mainActivity, R.color.white));
                                 mFab.setEnabled(true);
                                 mDeviceAddress = null;
 
@@ -230,10 +224,8 @@ public class MainActivity extends AppCompatActivity {
                                 Toast.makeText(getApplicationContext(), getResources().getString(R.string.message_connected), Toast.LENGTH_SHORT).show();
                                 mFab.setEnabled(true);
                                 mManualNav.setEnabled(true);
-                                mManualNav.setTextColor(ContextCompat.getColor(mainActivity, R.color.googleGreen));
                                 //TODO:abilitare
                                 //mAutoNavigation.setEnabled(true);
-                                mAutoNavigation.setTextColor(ContextCompat.getColor(mainActivity, R.color.googleGreen));
                                 mConnected = true;
                                 //mReady = true;
                             }

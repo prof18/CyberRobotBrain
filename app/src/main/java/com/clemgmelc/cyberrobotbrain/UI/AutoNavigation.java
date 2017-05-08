@@ -1,10 +1,11 @@
 package com.clemgmelc.cyberrobotbrain.UI;
 
-import android.Manifest;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.pm.PackageManager;
 import android.graphics.ImageFormat;
+import android.graphics.Matrix;
+import android.graphics.Point;
+import android.graphics.RectF;
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
@@ -17,15 +18,12 @@ import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.Image;
 import android.media.ImageReader;
-import android.nfc.Tag;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
-import android.support.v4.app.ActivityCompat;
-import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.util.Size;
@@ -33,6 +31,7 @@ import android.util.SparseIntArray;
 import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.Toast;
 
 import com.clemgmelc.cyberrobotbrain.R;
@@ -46,6 +45,7 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -59,7 +59,7 @@ public class AutoNavigation extends AppCompatActivity {
     private ImageReader reader;
     private TextureView textureView;
     private List<Surface> outputSurfaces;
-    private  CameraCharacteristics characteristics;
+    private CameraCharacteristics characteristics;
     private CameraManager manager;
     private CaptureRequest.Builder captureBuilder;
     private static final int ALERT_CAMERA = 1;
@@ -92,6 +92,11 @@ public class AutoNavigation extends AppCompatActivity {
     private Size maxSize;
     private Integer mCameraOrientation;
 
+    // Max preview width that is guaranteed by Camera2 API
+    private static final int MAX_PREVIEW_WIDTH = 1920;
+    //Max preview height that is guaranteed by Camera2 API
+    private static final int MAX_PREVIEW_HEIGHT = 1080;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -102,11 +107,10 @@ public class AutoNavigation extends AppCompatActivity {
         mFab = (FloatingActionButton) findViewById(R.id.floatingActionButton);
 
 
-
         //TODO: REQUEST PERMISSIONS
 
-       //full screen and transparent status and navigation bar
-/*        getWindow().setFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS, WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+/*        //full screen and transparent status and navigation bar
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS, WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
         final View decorView = getWindow().getDecorView();
         final int uiOptions = View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_FULLSCREEN;
         decorView.setSystemUiVisibility(uiOptions);
@@ -222,8 +226,6 @@ public class AutoNavigation extends AppCompatActivity {
     }
 
 
-
-
     protected void createCameraPreview() {
 
         try {
@@ -289,7 +291,49 @@ public class AutoNavigation extends AppCompatActivity {
                             //get camera orientation
                             mCameraOrientation = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION);
 
-                            //textureView.setTransform();
+
+                            Point displaySize = new Point();
+                            getWindowManager().getDefaultDisplay().getSize(displaySize);
+                            //portrait
+/*                            int maxPreviewWidth = displaySize.x;
+                            int maxPreviewHeight = displaySize.y;*/
+
+
+                                int maxPreviewWidth = displaySize.y;
+                                int maxPreviewHeight = displaySize.x;
+
+
+                            if (maxPreviewWidth > MAX_PREVIEW_WIDTH) {
+                                maxPreviewWidth = MAX_PREVIEW_WIDTH;
+                            }
+
+                            if (maxPreviewHeight > MAX_PREVIEW_HEIGHT) {
+                                maxPreviewHeight = MAX_PREVIEW_HEIGHT;
+                            }
+
+                            Size previewSize = chooseOptimalSize(map.getOutputSizes(SurfaceTexture.class),
+                                    mTextureWidth, mTextureHeight, maxPreviewWidth, maxPreviewHeight, maxSize);
+
+
+
+                            Matrix matrix = new Matrix();
+                            RectF viewRect = new RectF(0, 0, mTextureWidth, mTextureHeight);
+                            RectF bufferRect = new RectF(0, 0, previewSize.getHeight(), previewSize.getWidth());
+
+                            float centerX = viewRect.centerX();
+                            float centerY = viewRect.centerY();
+
+                            //matrix.postRotate(270, centerX, centerY);
+
+                            bufferRect.offset(centerX - bufferRect.centerX(), centerY - bufferRect.centerY());
+                            matrix.setRectToRect(viewRect, bufferRect, Matrix.ScaleToFit.FILL);
+                            float scale = Math.max(
+                                    (float) mTextureHeight / previewSize.getHeight(),
+                                    (float) mTextureWidth / previewSize.getWidth());
+                            matrix.postScale(scale, scale, centerX, centerY);
+                            matrix.postRotate(270, centerX, centerY);
+
+                            textureView.setTransform(matrix);
 
                         }
                     }
@@ -303,6 +347,40 @@ public class AutoNavigation extends AppCompatActivity {
             Log.v(TAG, "Exception from setupCamera");
         }
 
+    }
+
+
+    private static Size chooseOptimalSize(Size[] choices, int textureViewWidth, int textureViewHeight,
+                                          int maxWidth, int maxHeight, Size aspectRatio) {
+
+        // Collect the supported resolutions that are at least as big as the preview Surface
+        List<Size> bigEnough = new ArrayList<>();
+        // Collect the supported resolutions that are smaller than the preview Surface
+        List<Size> notBigEnough = new ArrayList<>();
+        int w = aspectRatio.getWidth();
+        int h = aspectRatio.getHeight();
+        for (Size option : choices) {
+            if (option.getWidth() <= maxWidth && option.getHeight() <= maxHeight &&
+                    option.getHeight() == option.getWidth() * h / w) {
+                if (option.getWidth() >= textureViewWidth &&
+                        option.getHeight() >= textureViewHeight) {
+                    bigEnough.add(option);
+                } else {
+                    notBigEnough.add(option);
+                }
+            }
+        }
+
+        // Pick the smallest of those big enough. If there is no one big enough, pick the
+        // largest of those not big enough.
+        if (bigEnough.size() > 0) {
+            return Collections.min(bigEnough, new AutoNavigation2.CompareSizesByArea());
+        } else if (notBigEnough.size() > 0) {
+            return Collections.max(notBigEnough, new AutoNavigation2.CompareSizesByArea());
+        } else {
+            Log.e(TAG, "Couldn't find any suitable preview size");
+            return choices[0];
+        }
     }
 
     //a new image is ready to be saved
@@ -370,7 +448,7 @@ public class AutoNavigation extends AppCompatActivity {
     }
 
     protected void takePicture() {
-        if(null == cameraDevice) {
+        if (null == cameraDevice) {
             Log.e(TAG, "cameraDevice is null");
             return;
         }
@@ -397,7 +475,7 @@ public class AutoNavigation extends AppCompatActivity {
             // Orientation
             int rotation = getWindowManager().getDefaultDisplay().getRotation();
             captureBuilder.set(CaptureRequest.JPEG_ORIENTATION, ORIENTATIONS.get(rotation));
-            final File file = new File(Environment.getExternalStorageDirectory()+"/pic.jpg");
+            final File file = new File(Environment.getExternalStorageDirectory() + "/pic.jpg");
             ImageReader.OnImageAvailableListener readerListener = new ImageReader.OnImageAvailableListener() {
                 @Override
                 public void onImageAvailable(ImageReader reader) {
@@ -418,6 +496,7 @@ public class AutoNavigation extends AppCompatActivity {
                         }
                     }
                 }
+
                 private void save(byte[] bytes) throws IOException {
                     OutputStream output = null;
                     try {
@@ -448,6 +527,7 @@ public class AutoNavigation extends AppCompatActivity {
                         e.printStackTrace();
                     }
                 }
+
                 @Override
                 public void onConfigureFailed(CameraCaptureSession session) {
                 }
