@@ -53,7 +53,7 @@ public class MainActivity extends AppCompatActivity {
         mFab = (FloatingActionButton) findViewById(R.id.fab);
 
         mManualNav = (Button) findViewById(R.id.manual_nav_btn);
-        mManualNav.setEnabled(false);
+        //mManualNav.setEnabled(false);
 
         mAutoNavigation = (Button) findViewById(R.id.auto_navigation_btn);
         //TODO:abilitare
