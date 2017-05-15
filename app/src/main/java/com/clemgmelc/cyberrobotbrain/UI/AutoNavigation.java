@@ -18,11 +18,9 @@ import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.params.StreamConfigurationMap;
-import android.location.LocationManager;
 import android.media.Image;
 import android.media.ImageReader;
 import android.os.Bundle;
-import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.support.annotation.NonNull;
@@ -63,7 +61,7 @@ public class AutoNavigation extends AppCompatActivity {
     private ImageReader reader;
     private TextureView textureView;
     private List<Surface> outputSurfaces;
-    private CameraCharacteristics characteristics;
+    private CameraCharacteristics mCharacteristics;
     private CameraManager manager;
     private CaptureRequest.Builder captureBuilder;
     private static final int ALERT_CAMERA = 1;
@@ -106,6 +104,7 @@ public class AutoNavigation extends AppCompatActivity {
     };
     private static final int REQUEST_CAMERA_PERMISSION = 1;
     private AutoNavigation activity;
+    private StreamConfigurationMap map;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -281,12 +280,13 @@ public class AutoNavigation extends AppCompatActivity {
 
                 //We need only back camera
                 Integer facing = characteristics.get(CameraCharacteristics.LENS_FACING);
+
                 if (facing != null && facing == CameraCharacteristics.LENS_FACING_BACK) {
 
                     mCameraId = cameraId;
 
-                    characteristics = manager.getCameraCharacteristics(mCameraId);
-                    StreamConfigurationMap map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
+                    mCharacteristics = manager.getCameraCharacteristics(mCameraId);
+                    map = mCharacteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
 
                     if (map != null) {
                         Size[] sizeList = map.getOutputSizes(ImageFormat.JPEG);
@@ -300,7 +300,7 @@ public class AutoNavigation extends AppCompatActivity {
                             int deviceOrientation = getWindowManager().getDefaultDisplay().getRotation();
 
                             //get camera orientation
-                            mCameraOrientation = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION);
+                            mCameraOrientation = mCharacteristics.get(CameraCharacteristics.SENSOR_ORIENTATION);
 
 
                             Point displaySize = new Point();
@@ -506,9 +506,9 @@ public class AutoNavigation extends AppCompatActivity {
 
         try {
 
-            Size[] jpegSizes = null;
-            if (characteristics != null) {
-                jpegSizes = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP).getOutputSizes(ImageFormat.JPEG);
+           Size[] jpegSizes = null;
+            if (mCharacteristics != null) {
+                jpegSizes = mCharacteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP).getOutputSizes(ImageFormat.JPEG);
             }
             int width = 640;
             int height = 480;
@@ -516,17 +516,27 @@ public class AutoNavigation extends AppCompatActivity {
                 width = jpegSizes[0].getWidth();
                 height = jpegSizes[0].getHeight();
             }
-            ImageReader reader = ImageReader.newInstance(width, height, ImageFormat.JPEG, 1);
-            List<Surface> outputSurfaces = new ArrayList<Surface>(2);
+
+
+            ImageReader reader = ImageReader.newInstance(width,height , ImageFormat.JPEG, 1);
+            List<Surface> outputSurfaces = new ArrayList<>();
+
+            //preview
+            outputSurfaces.add(mImageReader.getSurface());
             outputSurfaces.add(reader.getSurface());
-            outputSurfaces.add(new Surface(textureView.getSurfaceTexture()));
+
+
             final CaptureRequest.Builder captureBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
             captureBuilder.addTarget(reader.getSurface());
             captureBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
             // Orientation
             int rotation = getWindowManager().getDefaultDisplay().getRotation();
             captureBuilder.set(CaptureRequest.JPEG_ORIENTATION, ORIENTATIONS.get(rotation));
-            final File file = new File(Environment.getExternalStorageDirectory() + "/pic.jpg");
+
+            //final File file = new File(Environment.getExternalStorageDirectory() + "/" + System.currentTimeMillis() + ".jpg");
+            final File file = new File(getApplicationContext().getExternalFilesDir(null), System.currentTimeMillis() + ".jpg");
+
+
             ImageReader.OnImageAvailableListener readerListener = new ImageReader.OnImageAvailableListener() {
                 @Override
                 public void onImageAvailable(ImageReader reader) {
@@ -560,6 +570,7 @@ public class AutoNavigation extends AppCompatActivity {
                     }
                 }
             };
+
             reader.setOnImageAvailableListener(readerListener, mBackgroundHandler);
             final CameraCaptureSession.CaptureCallback captureListener = new CameraCaptureSession.CaptureCallback() {
                 @Override
@@ -569,6 +580,7 @@ public class AutoNavigation extends AppCompatActivity {
                     createCameraPreview();
                 }
             };
+
             cameraDevice.createCaptureSession(outputSurfaces, new CameraCaptureSession.StateCallback() {
                 @Override
                 public void onConfigured(CameraCaptureSession session) {
