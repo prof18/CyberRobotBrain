@@ -330,9 +330,7 @@ public class AutoNavigation extends Activity {
             int cameraPerm = ActivityCompat.checkSelfPermission(activity, PERMISSIONS_CAMERA[0]);
             int storagePerm = ActivityCompat.checkSelfPermission(activity, PERMISSIONS_CAMERA[1]);
 
-            if (cameraPerm != PackageManager.PERMISSION_GRANTED || storagePerm != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(activity, PERMISSIONS_CAMERA, REQUEST_CAMERA_PERMISSION);
-            } else {
+            if (cameraPerm == PackageManager.PERMISSION_GRANTED && storagePerm == PackageManager.PERMISSION_GRANTED) {
                 mCameraManager.openCamera(mCameraId, stateCallback, null);
             }
 
@@ -353,16 +351,7 @@ public class AutoNavigation extends Activity {
                         && grantResults[1] == PackageManager.PERMISSION_GRANTED) {
 
                     Log.v(TAG, "Permission Granted");
-                    if (cameraPerm == PackageManager.PERMISSION_GRANTED && storagePerm == PackageManager.PERMISSION_GRANTED) {
 
-                        /*try {
-                            mCameraManager.openCamera(mCameraId, stateCallback, null);
-
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }*/
-
-                    }
                 } else {
                     Log.v(TAG, "Permission NOT Granted");
                     showNegativeDialog(getResources().getString(R.string.perm_error_title),
