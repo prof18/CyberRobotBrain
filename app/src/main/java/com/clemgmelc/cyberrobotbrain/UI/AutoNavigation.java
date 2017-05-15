@@ -1,6 +1,9 @@
 package com.clemgmelc.cyberrobotbrain.UI;
 
+import android.Manifest;
 import android.app.Activity;
+import android.content.DialogInterface;
+import android.content.pm.PackageManager;
 import android.graphics.ImageFormat;
 import android.graphics.Matrix;
 import android.graphics.Point;
@@ -23,6 +26,8 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
+import android.support.v4.app.ActivityCompat;
+import android.support.v7.app.AlertDialog;
 import android.util.Log;
 import android.util.Size;
 import android.view.Surface;
@@ -53,7 +58,7 @@ import java.util.List;
 
 public class AutoNavigation extends Activity {
 
-    private final static String TAG = "SimpleCamera";
+    private final static String TAG = "CyberRobotAuto";
     private TextureView mTextureView;
     private Size mPreviewSize;
     private Size[] mSizeList;
@@ -70,11 +75,21 @@ public class AutoNavigation extends Activity {
     private Size mMaxSize;
     private Handler mBackgroundHandler;
     private HandlerThread mBackgroundThread;
+    private static String[] PERMISSIONS_CAMERA = {
+            Manifest.permission.CAMERA,
+            Manifest.permission.WRITE_EXTERNAL_STORAGE
+    };
+    private static final int REQUEST_CAMERA_PERMISSION = 1;
+    private AutoNavigation activity;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        activity = this;
         //setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+        int cameraPerm = ActivityCompat.checkSelfPermission(this, PERMISSIONS_CAMERA[0]);
+        int storagePerm = ActivityCompat.checkSelfPermission(this, PERMISSIONS_CAMERA[1]);
+
 
         //turning off the title at the top
         requestWindowFeature(Window.FEATURE_NO_TITLE);
@@ -89,11 +104,13 @@ public class AutoNavigation extends Activity {
         mTakePictureButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Toast.makeText(getApplicationContext(),"cheeeese",Toast.LENGTH_SHORT).show();
+                Toast.makeText(getApplicationContext(), "cheeeese", Toast.LENGTH_SHORT).show();
                 takePicture();
             }
         });
-
+        if (cameraPerm != PackageManager.PERMISSION_GRANTED || storagePerm != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, PERMISSIONS_CAMERA, REQUEST_CAMERA_PERMISSION);
+        }
 
     }
 
@@ -102,7 +119,6 @@ public class AutoNavigation extends Activity {
         @Override
         public void onSurfaceTextureUpdated(SurfaceTexture surface) {
             // TODO Auto-generated method stub
-            Log.i(TAG, "onSurfaceTextureUpdated()");
         }
 
         @Override
@@ -153,9 +169,8 @@ public class AutoNavigation extends Activity {
         }
 
 
-
         try {
-            mCameraDevice.createCaptureSession(Arrays.asList(surface),new CameraCaptureSession.StateCallback() {
+            mCameraDevice.createCaptureSession(Arrays.asList(surface), new CameraCaptureSession.StateCallback() {
                 @Override
                 public void onConfigured(@NonNull CameraCaptureSession cameraCaptureSession) {
                     //The camera is already closed
@@ -192,7 +207,7 @@ public class AutoNavigation extends Activity {
         @Override
         public void onError(CameraDevice camera, int error) {
             // TODO Auto-generated method stub
-            if (mCameraDevice!= null) {
+            if (mCameraDevice != null) {
                 mCameraDevice.close();
                 mCameraDevice = null;
             }
@@ -229,7 +244,7 @@ public class AutoNavigation extends Activity {
             mPreviewSession = session;
             updatePreview();
 /*
-				mPreviewBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
+                mPreviewBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
 
 				HandlerThread backgroundThread1 = new HandlerThread("CameraPreview1");
 				backgroundThread1.start();
@@ -281,8 +296,8 @@ public class AutoNavigation extends Activity {
             if (maxResIndex != -1) {
                 mMaxSize = mSizeList[maxResIndex];
             }
-            mImageReader = ImageReader.newInstance( mMaxSize.getWidth(),mMaxSize.getHeight(), ImageFormat.JPEG,2);
-            mImageReader.setOnImageAvailableListener(mOnImageAvailableListener,mBackgroundHandler);
+            mImageReader = ImageReader.newInstance(mMaxSize.getWidth(), mMaxSize.getHeight(), ImageFormat.JPEG, 2);
+            mImageReader.setOnImageAvailableListener(mOnImageAvailableListener, mBackgroundHandler);
             Point displaySize = new Point();
             this.getWindowManager().getDefaultDisplay().getSize(displaySize);
 
@@ -312,24 +327,71 @@ public class AutoNavigation extends Activity {
             mTextureView.setTransform(matrix);
             //CAMERA SETUP FINISHED
 
+            int cameraPerm = ActivityCompat.checkSelfPermission(activity, PERMISSIONS_CAMERA[0]);
+            int storagePerm = ActivityCompat.checkSelfPermission(activity, PERMISSIONS_CAMERA[1]);
 
+            if (cameraPerm != PackageManager.PERMISSION_GRANTED || storagePerm != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(activity, PERMISSIONS_CAMERA, REQUEST_CAMERA_PERMISSION);
+            } else {
+                mCameraManager.openCamera(mCameraId, stateCallback, null);
+            }
 
         } catch (CameraAccessException e) {
             e.printStackTrace();
         }
-
-
-
-        try {
-            mCameraManager.openCamera(mCameraId, stateCallback, null);
-        } catch (CameraAccessException e) {
-            e.printStackTrace();
-        }
-
-
-
 
     }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        int cameraPerm = ActivityCompat.checkSelfPermission(activity, PERMISSIONS_CAMERA[0]);
+        int storagePerm = ActivityCompat.checkSelfPermission(activity, PERMISSIONS_CAMERA[1]);
+        switch (requestCode) {
+
+            case (REQUEST_CAMERA_PERMISSION):
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED
+                        && grantResults[1] == PackageManager.PERMISSION_GRANTED) {
+
+                    Log.v(TAG, "Permission Granted");
+                    if (cameraPerm == PackageManager.PERMISSION_GRANTED && storagePerm == PackageManager.PERMISSION_GRANTED) {
+
+                        /*try {
+                            mCameraManager.openCamera(mCameraId, stateCallback, null);
+
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }*/
+
+                    }
+                } else {
+                    Log.v(TAG, "Permission NOT Granted");
+                    showNegativeDialog(getResources().getString(R.string.perm_error_title),
+                            getResources().getString(R.string.camera_perm_error));
+                }
+
+                break;
+
+            default:
+                break;
+        }
+    }
+
+    //show a dialog of error that will close the scan activity after ok is pressed
+    private void showNegativeDialog(String title, String message) {
+
+        final AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(this);
+        dialogBuilder.setTitle(title);
+        dialogBuilder.setMessage(message);
+        dialogBuilder.setCancelable(false);
+        dialogBuilder.setNegativeButton(android.R.string.ok,
+                new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                        finish();
+                    }
+                });
+        dialogBuilder.show();
+    }
+
 
     protected void updatePreview() {
         if (mCameraDevice == null) {
@@ -379,6 +441,7 @@ public class AutoNavigation extends Activity {
             return choices[0];
         }
     }
+
     static class CompareSizesByArea implements Comparator<Size> {
 
         @Override
@@ -421,8 +484,6 @@ public class AutoNavigation extends Activity {
 
         return index;
     }
-
-
 
 
     protected void takePicture() {
@@ -488,7 +549,7 @@ public class AutoNavigation extends Activity {
                 public void onCaptureCompleted(CameraCaptureSession session, CaptureRequest request, TotalCaptureResult result) {
                     super.onCaptureCompleted(session, request, result);
                     Toast.makeText(AutoNavigation.this, "Saved:" + file, Toast.LENGTH_SHORT).show();
-                    Log.d(TAG,"FOTO SALVATA");
+                    Log.d(TAG, "FOTO SALVATA");
                     createCameraPreview();
 
                 }
@@ -524,7 +585,7 @@ public class AutoNavigation extends Activity {
             mCameraDevice.close();
             mCameraDevice = null;
         }
-        if(mImageReader != null) {
+        if (mImageReader != null) {
             mImageReader.close();
             mImageReader = null;
         }
