@@ -60,12 +60,14 @@ public class AutoNavigation3 extends AppCompatActivity {
     private static final String TAG = ConstantApp.TAG;
     private ImageReader reader;
     private TextureView textureView;
+    private Size mPreviewSize;
     private List<Surface> outputSurfaces;
     private CameraCharacteristics mCharacteristics;
     private CameraManager manager;
     private CaptureRequest.Builder captureBuilder;
     private static final int ALERT_CAMERA = 1;
     private static final int ALERT_FILE = 2;
+    private Size[] mSizeList;
     private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
 
 
@@ -270,92 +272,73 @@ public class AutoNavigation3 extends AppCompatActivity {
     }
 
     private void setupCamera() {
+        CameraCharacteristics characteristics;
+        manager = (CameraManager) getSystemService(CAMERA_SERVICE);
 
-        CameraManager manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
         try {
-
+            //get frontal camera
             for (String cameraId : manager.getCameraIdList()) {
 
-                CameraCharacteristics characteristics = manager.getCameraCharacteristics(cameraId);
-
+                characteristics = manager.getCameraCharacteristics(cameraId);
                 //We need only back camera
                 Integer facing = characteristics.get(CameraCharacteristics.LENS_FACING);
-
                 if (facing != null && facing == CameraCharacteristics.LENS_FACING_BACK) {
 
                     mCameraId = cameraId;
-
-                    mCharacteristics = manager.getCameraCharacteristics(mCameraId);
-                    map = mCharacteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
-
-                    if (map != null) {
-                        Size[] sizeList = map.getOutputSizes(ImageFormat.JPEG);
-                        int maxResIndex = maxRes(sizeList);
-                        if (maxResIndex != -1) {
-                            maxSize = sizeList[maxResIndex];
-                            mImageReader = ImageReader.newInstance(maxSize.getWidth(), maxSize.getHeight(), ImageFormat.JPEG, 1);
-                            mImageReader.setOnImageAvailableListener(mOnImageAvailableListener, mBackgroundHandler);
-
-                            //get device orientation
-                            int deviceOrientation = getWindowManager().getDefaultDisplay().getRotation();
-
-                            //get camera orientation
-                            mCameraOrientation = mCharacteristics.get(CameraCharacteristics.SENSOR_ORIENTATION);
-
-
-                            Point displaySize = new Point();
-                            getWindowManager().getDefaultDisplay().getSize(displaySize);
-                            //portrait
-/*                            int maxPreviewWidth = displaySize.x;
-                            int maxPreviewHeight = displaySize.y;*/
-
-
-                            int maxPreviewWidth = displaySize.y;
-                            int maxPreviewHeight = displaySize.x;
-
-
-                            if (maxPreviewWidth > MAX_PREVIEW_WIDTH) {
-                                maxPreviewWidth = MAX_PREVIEW_WIDTH;
-                            }
-
-                            if (maxPreviewHeight > MAX_PREVIEW_HEIGHT) {
-                                maxPreviewHeight = MAX_PREVIEW_HEIGHT;
-                            }
-
-                            Size previewSize = chooseOptimalSize(map.getOutputSizes(SurfaceTexture.class),
-                                    mTextureWidth, mTextureHeight, maxPreviewWidth, maxPreviewHeight, maxSize);
-
-
-                            Matrix matrix = new Matrix();
-                            RectF viewRect = new RectF(0, 0, mTextureWidth, mTextureHeight);
-                            RectF bufferRect = new RectF(0, 0, previewSize.getHeight(), previewSize.getWidth());
-
-                            float centerX = viewRect.centerX();
-                            float centerY = viewRect.centerY();
-
-                            //matrix.postRotate(270, centerX, centerY);
-
-                            bufferRect.offset(centerX - bufferRect.centerX(), centerY - bufferRect.centerY());
-                            matrix.setRectToRect(viewRect, bufferRect, Matrix.ScaleToFit.FILL);
-                            float scale = Math.max(
-                                    (float) mTextureHeight / previewSize.getHeight(),
-                                    (float) mTextureWidth / previewSize.getWidth());
-                            matrix.postScale(scale, scale, centerX, centerY);
-                            matrix.postRotate(270, centerX, centerY);
-
-                            textureView.setTransform(matrix);
-
-                        }
-                    }
-
                 }
+            }
+            //override characteristic of that camera
+            characteristics = manager.getCameraCharacteristics(mCameraId);
+            map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
 
+            if (map != null) {
+                mSizeList = map.getOutputSizes(ImageFormat.JPEG);
             }
 
-        } catch (Exception e) {
+            //need to get the max available size saved in mMaxSize
+            int maxResIndex = maxRes(mSizeList);
+            if (maxResIndex != -1) {
+                maxSize = mSizeList[maxResIndex];
+            }
+            mImageReader = ImageReader.newInstance( maxSize.getWidth(),maxSize.getHeight(), ImageFormat.JPEG,2);
+            mImageReader.setOnImageAvailableListener(mOnImageAvailableListener,mBackgroundHandler);
+            Point displaySize = new Point();
+            this.getWindowManager().getDefaultDisplay().getSize(displaySize);
+
+            int maxPreviewWidth = displaySize.y;
+            int maxPreviewHeight = displaySize.x;
+
+            mPreviewSize = chooseOptimalSize(map.getOutputSizes(SurfaceTexture.class),
+                    mTextureWidth, mTextureHeight, maxPreviewWidth, maxPreviewHeight, maxSize);
+
+            Matrix matrix = new Matrix();
+            RectF viewRect = new RectF(0, 0, mTextureWidth, mTextureHeight);
+            RectF bufferRect = new RectF(0, 0, mPreviewSize.getHeight(), mPreviewSize.getWidth());
+
+            float centerX = viewRect.centerX();
+            float centerY = viewRect.centerY();
+
+            //matrix.postRotate(270, centerX, centerY);
+
+            bufferRect.offset(centerX - bufferRect.centerX(), centerY - bufferRect.centerY());
+            matrix.setRectToRect(viewRect, bufferRect, Matrix.ScaleToFit.FILL);
+            float scale = Math.max(
+                    (float) mTextureHeight / mPreviewSize.getHeight(),
+                    (float) mTextureWidth / mPreviewSize.getWidth());
+            matrix.postScale(scale, scale, centerX, centerY);
+            matrix.postRotate(270, centerX, centerY);
+
+            textureView.setTransform(matrix);
+            //CAMERA SETUP FINISHED
+
+
+
+        } catch (CameraAccessException e) {
             e.printStackTrace();
-            Log.v(TAG, "Exception from setupCamera");
         }
+
+
+
 
     }
 

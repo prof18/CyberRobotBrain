@@ -62,10 +62,8 @@ public class AutoNavigation extends Activity {
     protected CaptureRequest.Builder mPreviewBuilder;
     private CameraCaptureSession mPreviewSession;
     private FloatingActionButton mTakePictureButton;
-    private TextureView.SurfaceTextureListener mSurfaceTextureListner;
     private CameraCaptureSession.StateCallback mPreviewStateCallback;
     private int mTextureHeight, mTextureWidth;
-    private CameraDevice.StateCallback mStateCallback;
     private StreamConfigurationMap mMap;
     private CameraManager mCameraManager;
     private String mCameraId;
@@ -85,15 +83,7 @@ public class AutoNavigation extends Activity {
         setContentView(R.layout.auto_navigation_main);
         mTextureView = (TextureView) findViewById(R.id.texture);
 
-        mSurfaceTextureListner = getSurfaceTextureListener();
-
-        mPreviewStateCallback = setStateCallbackCameraCaptureSession();
-
-        mStateCallback = setStateCallbackCameraDevice();
-
-        mTextureView.setSurfaceTextureListener(mSurfaceTextureListner);
-
-
+        mTextureView.setSurfaceTextureListener(mSurfaceTextureListener);
 
         mTakePictureButton = (FloatingActionButton) findViewById(R.id.floatingActionButton);
         mTakePictureButton.setOnClickListener(new View.OnClickListener() {
@@ -106,64 +96,43 @@ public class AutoNavigation extends Activity {
 
 
     }
-    private TextureView.SurfaceTextureListener getSurfaceTextureListener() {
-        TextureView.SurfaceTextureListener surfaceTextureListner = new TextureView.SurfaceTextureListener() {
 
-            @Override
-            public void onSurfaceTextureUpdated(SurfaceTexture surface) {
-                // TODO Auto-generated method stub
+    TextureView.SurfaceTextureListener mSurfaceTextureListener = new TextureView.SurfaceTextureListener() {
 
-            }
+        @Override
+        public void onSurfaceTextureUpdated(SurfaceTexture surface) {
+            // TODO Auto-generated method stub
+            Log.i(TAG, "onSurfaceTextureUpdated()");
+        }
 
-            @Override
-            public void onSurfaceTextureSizeChanged(SurfaceTexture surface, int width,
-                                                    int height) {
-                // TODO Auto-generated method stub
-                Log.i(TAG, "onSurfaceTextureSizeChanged()");
-                mTextureWidth = width;
-                mTextureHeight = height;
+        @Override
+        public void onSurfaceTextureSizeChanged(SurfaceTexture surface, int width, int height) {
+            // TODO Auto-generated method stub
+            Log.i(TAG, "onSurfaceTextureSizeChanged()");
+            mTextureWidth = width;
+            mTextureHeight = height;
 
-            }
+        }
 
-            @Override
-            public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {
-                // TODO Auto-generated method stub
-                Log.i(TAG, "onSurfaceTextureDestroyed()");
-                return false;
-            }
+        @Override
+        public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {
+            // TODO Auto-generated method stub
+            Log.i(TAG, "onSurfaceTextureDestroyed()");
+            return false;
+        }
 
-            @Override
-            public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
-                // TODO Auto-generated method stub
-                Log.i(TAG, "onSurfaceTextureAvailable()");
-                mTextureWidth = width;
-                mTextureHeight = height;
-                //when surface texture is available setup the camera
-                setupCamera();
-
-
-                try {
+        @Override
+        public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
+            // TODO Auto-generated method stub
+            Log.i(TAG, "onSurfaceTextureAvailable()");
+            mTextureWidth = width;
+            mTextureHeight = height;
+            //when surface texture is available setup the camera
+            setupCamera();
 
 
-                    for (String cameraId : mCameraManager.getCameraIdList()) {
-                        CameraCharacteristics characteristics
-                                = mCameraManager.getCameraCharacteristics(cameraId);
-
-
-                        Log.d("Img", "INFO_SUPPORTED_HARDWARE_LEVEL " + characteristics.get(CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL));
-                    }
-
-                    mCameraManager.openCamera(mCameraId, mStateCallback, null);
-                } catch (CameraAccessException e) {
-                    e.printStackTrace();
-                }
-            }
-        };
-        return surfaceTextureListner;
-    }
-
-
-
+        }
+    };
 
     protected void createCameraPreview() {
 
@@ -178,11 +147,12 @@ public class AutoNavigation extends Activity {
 
         try {
             mPreviewBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+            mPreviewBuilder.addTarget(surface);
         } catch (CameraAccessException e) {
             e.printStackTrace();
         }
 
-        mPreviewBuilder.addTarget(surface);
+
 
         try {
             mCameraDevice.createCaptureSession(Arrays.asList(surface),new CameraCaptureSession.StateCallback() {
@@ -208,65 +178,56 @@ public class AutoNavigation extends Activity {
 
     }
 
+    CameraDevice.StateCallback stateCallback = new CameraDevice.StateCallback() {
+        @Override
+        public void onOpened(CameraDevice camera) {
+            // TODO Auto-generated method stub
+            Log.i(TAG, "onOpened");
+            mCameraDevice = camera;
+            createCameraPreview();
 
 
+        }
 
-
-
-    private CameraDevice.StateCallback setStateCallbackCameraDevice() {
-        CameraDevice.StateCallback stateCallback = new CameraDevice.StateCallback() {
-            @Override
-            public void onOpened(CameraDevice camera) {
-                // TODO Auto-generated method stub
-                Log.i(TAG, "onOpened");
-                mCameraDevice = camera;
-                createCameraPreview();
-
-
+        @Override
+        public void onError(CameraDevice camera, int error) {
+            // TODO Auto-generated method stub
+            if (mCameraDevice!= null) {
+                mCameraDevice.close();
+                mCameraDevice = null;
             }
+            Log.e(TAG, "onError " + error);
 
-            @Override
-            public void onError(CameraDevice camera, int error) {
-                // TODO Auto-generated method stub
-                if (mCameraDevice!= null) {
-                    mCameraDevice.close();
-                    mCameraDevice = null;
-                }
-                Log.e(TAG, "onError " + error);
+        }
 
+        @Override
+        public void onDisconnected(CameraDevice camera) {
+            // TODO Auto-generated method stub
+            if (mCameraDevice != null) {
+                mCameraDevice.close();
+                mCameraDevice = null;
             }
-
-            @Override
-            public void onDisconnected(CameraDevice camera) {
-                // TODO Auto-generated method stub
-                if (mCameraDevice != null) {
-                    mCameraDevice.close();
-                    mCameraDevice = null;
-                }
                 /*if (mImageReader != null) {
                     mImageReader.close();
                     mImageReader = null;
                 }*/
 
-                Log.e(TAG, "onDisconnected");
+            Log.e(TAG, "onDisconnected");
 
+        }
+
+    };
+
+    CameraCaptureSession.StateCallback previewStateCallback = new CameraCaptureSession.StateCallback() {
+        @Override
+        public void onConfigured(CameraCaptureSession session) {
+            // TODO Auto-generated method stub
+            Log.d(TAG, "onConfigured");
+            if (mCameraDevice == null) {
+                return;
             }
-
-        };
-        return stateCallback;
-    }
-
-    private CameraCaptureSession.StateCallback setStateCallbackCameraCaptureSession() {
-        CameraCaptureSession.StateCallback previewStateCallback = new CameraCaptureSession.StateCallback() {
-            @Override
-            public void onConfigured(CameraCaptureSession session) {
-                // TODO Auto-generated method stub
-                Log.d(TAG, "onConfigured");
-                if (mCameraDevice == null) {
-                    return;
-                }
-                mPreviewSession = session;
-                updatePreview();
+            mPreviewSession = session;
+            updatePreview();
 /*
 				mPreviewBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
 
@@ -282,16 +243,14 @@ public class AutoNavigation extends Activity {
 				}*/
 
 
-            }
+        }
 
-            @Override
-            public void onConfigureFailed(CameraCaptureSession session) {
-                // TODO Auto-generated method stub
-                Log.e(TAG, "CameraCaptureSession Configure failed");
-            }
-        };
-        return previewStateCallback;
-    }
+        @Override
+        public void onConfigureFailed(CameraCaptureSession session) {
+            // TODO Auto-generated method stub
+            Log.e(TAG, "CameraCaptureSession Configure failed");
+        }
+    };
 
     private void setupCamera() {
         CameraCharacteristics characteristics;
@@ -361,6 +320,14 @@ public class AutoNavigation extends Activity {
 
 
 
+        try {
+            mCameraManager.openCamera(mCameraId, stateCallback, null);
+        } catch (CameraAccessException e) {
+            e.printStackTrace();
+        }
+
+
+
 
     }
 
@@ -369,7 +336,9 @@ public class AutoNavigation extends Activity {
             Log.e(TAG, "updatePreview error, return");
             return;
         }
+
         mPreviewBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
+
         try {
             mPreviewSession.setRepeatingRequest(mPreviewBuilder.build(), null, mBackgroundHandler);
         } catch (CameraAccessException e) {
@@ -477,6 +446,7 @@ public class AutoNavigation extends Activity {
             captureBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
 
             final File file = new File(Environment.getExternalStorageDirectory(), System.currentTimeMillis() + ".jpg");
+
             ImageReader.OnImageAvailableListener readerListener = new ImageReader.OnImageAvailableListener() {
                 @Override
                 public void onImageAvailable(ImageReader reader) {
@@ -547,28 +517,52 @@ public class AutoNavigation extends Activity {
     @Override
     protected void onPause() {
         // TODO Auto-generated method stub
-        Log.d(TAG, "onPause()");
+        Log.d(TAG, "onPause() called");
         super.onPause();
-
         stopBackgroundThread();
         if (mCameraDevice != null) {
             mCameraDevice.close();
             mCameraDevice = null;
         }
+        if(mImageReader != null) {
+            mImageReader.close();
+            mImageReader = null;
+        }
     }
 
     @Override
     public void onResume() {
-        Log.d(TAG, "onResume()");
+        Log.d(TAG, "onResume() called");
         super.onResume();
         startBackgroundThread();
+
         if (mTextureView.isAvailable()) {
             setupCamera();
         } else {
-            mTextureView.setSurfaceTextureListener(mSurfaceTextureListner);
+            mTextureView.setSurfaceTextureListener(mSurfaceTextureListener);
         }
 
     }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        Log.d(TAG, "onStart() called");
+    }
+
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        Log.d(TAG, "onStop() called");
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        Log.d(TAG, "onDestroy() called");
+    }
+
     private void startBackgroundThread() {
         mBackgroundThread = new HandlerThread("Camera Background");
         mBackgroundThread.start();
