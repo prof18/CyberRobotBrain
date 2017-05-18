@@ -501,21 +501,21 @@ public class AutoNavigation extends Activity {
                 @Override
                 public void onImageAvailable(ImageReader reader) {
                     Image image = null;
-                    try {
+                    //try {
                         image = reader.acquireLatestImage();
                         ByteBuffer buffer = image.getPlanes()[0].getBuffer();
                         byte[] bytes = new byte[buffer.capacity()];
                         buffer.get(bytes);
-                        save(bytes);
-                    } catch (FileNotFoundException e) {
+                        //save(bytes);
+                    /*} catch (FileNotFoundException e) {
                         e.printStackTrace();
                     } catch (IOException e) {
                         e.printStackTrace();
-                    } finally {
+                    } finally {*/
                         if (image != null) {
                             image.close();
                         }
-                    }
+                    //}
                 }
 
                 private void save(byte[] bytes) throws IOException {
