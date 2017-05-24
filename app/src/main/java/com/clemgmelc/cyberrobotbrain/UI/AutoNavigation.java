@@ -28,17 +28,21 @@ import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.support.annotation.NonNull;
+import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.FloatingActionButton;
+import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
+import android.util.AttributeSet;
 import android.util.Log;
 import android.util.Size;
 import android.util.SparseIntArray;
 import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.ImageButton;
 import android.widget.Toast;
 
@@ -56,6 +60,8 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
+
+import static android.view.View.SYSTEM_UI_FLAG_IMMERSIVE;
 
 public class AutoNavigation extends AppCompatActivity {
 
@@ -90,7 +96,8 @@ public class AutoNavigation extends AppCompatActivity {
 
         @Override
         public void onSurfaceTextureSizeChanged(SurfaceTexture surface, int width, int height) {
-
+            setupCamera(width, height);
+            connectCamera();
         }
 
         @Override
@@ -103,6 +110,7 @@ public class AutoNavigation extends AppCompatActivity {
 
         }
     };
+
     private CameraDevice mCameraDevice;
     private CameraDevice.StateCallback mCameraDeviceStateCallback = new CameraDevice.StateCallback() {
         @Override
@@ -239,9 +247,6 @@ public class AutoNavigation extends AppCompatActivity {
         }
     }
 
-    private int cameraPerm;
-    private int storagePerm;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -251,33 +256,34 @@ public class AutoNavigation extends AppCompatActivity {
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
 
-            cameraPerm = ActivityCompat.checkSelfPermission(this, PERMISSIONS_CAMERA[0]);
-            storagePerm = ActivityCompat.checkSelfPermission(this, PERMISSIONS_CAMERA[1]);
+            if (ActivityCompat.checkSelfPermission(this, PERMISSIONS_CAMERA[0]) != PackageManager.PERMISSION_GRANTED
+                    || ActivityCompat.checkSelfPermission(this, PERMISSIONS_CAMERA[1]) != PackageManager.PERMISSION_GRANTED) {
 
-            if (cameraPerm != PackageManager.PERMISSION_GRANTED || storagePerm != PackageManager.PERMISSION_GRANTED) {
                 ActivityCompat.requestPermissions(this, PERMISSIONS_CAMERA, REQUEST_CAMERA_PERMISSION);
             }
         }
 
         //mChronometer = (Chronometer) findViewById(R.id.chronometer);
         mTextureView = (TextureView) findViewById(R.id.textureView);
+        //mTextureView.setSystemUiVisibility(SYSTEM_UI_FLAG_IMMERSIVE);
         fab = (FloatingActionButton) findViewById(R.id.floatingActionButton);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                //if (!(mIsTimelapse || mIsRecording)) {
-                //checkWriteStoragePermission();
-                //}
                 lockFocus();
             }
         });
     }
+
 
     @Override
     protected void onResume() {
         super.onResume();
 
         startBackgroundThread();
+
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
+
 
         if (mTextureView.isAvailable()) {
             setupCamera(mTextureView.getWidth(), mTextureView.getHeight());
@@ -415,7 +421,8 @@ public class AutoNavigation extends AppCompatActivity {
             } else {*/
 
 
-               if (cameraPerm == PackageManager.PERMISSION_GRANTED && storagePerm == PackageManager.PERMISSION_GRANTED) {
+               if (ActivityCompat.checkSelfPermission(this, PERMISSIONS_CAMERA[0]) == PackageManager.PERMISSION_GRANTED
+                       && ActivityCompat.checkSelfPermission(this, PERMISSIONS_CAMERA[1]) == PackageManager.PERMISSION_GRANTED) {
 
                    cameraManager.openCamera(mCameraId, mCameraDeviceStateCallback, mBackgroundHandler);
                }
