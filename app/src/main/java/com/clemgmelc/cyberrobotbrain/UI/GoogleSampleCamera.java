@@ -55,8 +55,8 @@ import java.util.List;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
-//TODO: Clean all these fucking things!!
-public class AutoNavigation2 extends Activity {
+//TODO:
+public class GoogleSampleCamera extends Activity {
 
    /* private Activity activity;
     private static final String TAG = ConstantApp.TAG;
