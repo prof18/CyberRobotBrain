@@ -440,6 +440,7 @@ public class AutoNavigation2 extends Activity {
     @Override
     public void onPause() {
         closeCamera();
+        closeCamera();
         stopBackgroundThread();
         super.onPause();
     }

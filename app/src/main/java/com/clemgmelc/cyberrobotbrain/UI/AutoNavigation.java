@@ -60,6 +60,8 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
 import static android.view.View.SYSTEM_UI_FLAG_IMMERSIVE;
 
@@ -74,6 +76,7 @@ public class AutoNavigation extends AppCompatActivity {
     private Size mVideoSize;
     private Size mImageSize;
     private ImageReader mImageReader;
+    private Semaphore mCameraOpenCloseLock = new Semaphore(1);
 
 
     private static String[] PERMISSIONS_CAMERA = {
@@ -115,20 +118,22 @@ public class AutoNavigation extends AppCompatActivity {
     private CameraDevice.StateCallback mCameraDeviceStateCallback = new CameraDevice.StateCallback() {
         @Override
         public void onOpened(CameraDevice camera) {
+            mCameraOpenCloseLock.release();
             mCameraDevice = camera;
-
             startPreview();
 
         }
 
         @Override
         public void onDisconnected(CameraDevice camera) {
+            mCameraOpenCloseLock.release();
             camera.close();
             mCameraDevice = null;
         }
 
         @Override
         public void onError(CameraDevice camera, int error) {
+            mCameraOpenCloseLock.release();
             camera.close();
             mCameraDevice = null;
         }
@@ -299,7 +304,10 @@ public class AutoNavigation extends AppCompatActivity {
     protected void onPause() {
         closeCamera();
 
+        //TODO: scollegare ugo
+
         stopBackgroundThread();
+        mTextureView.setSurfaceTextureListener(null);
 
         super.onPause();
     }
@@ -323,6 +331,7 @@ public class AutoNavigation extends AppCompatActivity {
         CameraCharacteristics cameraCharacteristics = null;
 
         CameraManager cameraManager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
+
         String mCameraID;
 
         try {
@@ -424,7 +433,19 @@ public class AutoNavigation extends AppCompatActivity {
                if (ActivityCompat.checkSelfPermission(this, PERMISSIONS_CAMERA[0]) == PackageManager.PERMISSION_GRANTED
                        && ActivityCompat.checkSelfPermission(this, PERMISSIONS_CAMERA[1]) == PackageManager.PERMISSION_GRANTED) {
 
-                   cameraManager.openCamera(mCameraId, mCameraDeviceStateCallback, mBackgroundHandler);
+                   try {
+
+                       if (!mCameraOpenCloseLock.tryAcquire(2500, TimeUnit.MILLISECONDS)) {
+                           throw new RuntimeException("Time out waiting to lock camera opening.");
+                       }
+
+                       cameraManager.openCamera(mCameraId, mCameraDeviceStateCallback, mBackgroundHandler);
+
+                   } catch (InterruptedException e) {
+                       e.printStackTrace();
+                   }
+
+
                }
             //}
         } catch (CameraAccessException e) {
@@ -508,8 +529,13 @@ public class AutoNavigation extends AppCompatActivity {
                             try {
                                 mPreviewCaptureSession.setRepeatingRequest(mCaptureRequestBuilder.build(),
                                         null, mBackgroundHandler);
-                            } catch (CameraAccessException e) {
+                            } catch (Exception e) {
+                                Log.v(ConstantApp.TAG, "CULO *******");
                                 e.printStackTrace();
+                                closeCamera();
+                                //Toast.makeText(AutoNavigation.this, "Mettiti le mani nel culo", Toast.LENGTH_SHORT).show();
+                                onBackPressed();
+
                             }
                         }
 
@@ -559,9 +585,26 @@ public class AutoNavigation extends AppCompatActivity {
     }
 
     private void closeCamera() {
-        if (mCameraDevice != null) {
-            mCameraDevice.close();
-            mCameraDevice = null;
+        try {
+            mCameraOpenCloseLock.acquire();
+            if (mCameraDevice != null) {
+                mCameraDevice.close();
+                mCameraDevice = null;
+            }
+
+            if (null != mPreviewCaptureSession) {
+                mPreviewCaptureSession.close();
+                mPreviewCaptureSession = null;
+            }
+
+            if (null != mImageReader) {
+                mImageReader.close();
+                mImageReader = null;
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } finally {
+            mCameraOpenCloseLock.release();
         }
 
     }
