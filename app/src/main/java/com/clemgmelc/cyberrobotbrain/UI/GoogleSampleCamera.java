@@ -291,7 +291,7 @@ public class GoogleSampleCamera extends Activity {
     *//**
      * A {@link CameraCaptureSession.CaptureCallback} that handles events related to JPEG capture.
      *//*
-    private CameraCaptureSession.CaptureCallback mCaptureCallback = new CameraCaptureSession.CaptureCallback() {
+    private CameraCaptureSession.CaptureCallback takePicture(); = new CameraCaptureSession.CaptureCallback() {
 
         @Override
         public void onCaptureProgressed(@NonNull CameraCaptureSession session,

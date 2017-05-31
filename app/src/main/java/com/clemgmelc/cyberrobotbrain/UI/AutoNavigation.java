@@ -1,10 +1,13 @@
 package com.clemgmelc.cyberrobotbrain.UI;
 
 import android.Manifest;
+import android.app.Activity;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.ImageFormat;
 import android.graphics.Matrix;
 import android.graphics.Point;
@@ -37,11 +40,22 @@ import android.util.Size;
 import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
+import android.view.Window;
 import android.view.WindowManager;
+import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.Toast;
 
 import com.clemgmelc.cyberrobotbrain.R;
 import com.clemgmelc.cyberrobotbrain.Util.ConstantApp;
+
+import org.opencv.android.OpenCVLoader;
+import org.opencv.android.Utils;
+import org.opencv.core.Core;
+import org.opencv.core.CvType;
+import org.opencv.core.Mat;
+import org.opencv.core.Scalar;
+import org.opencv.imgproc.Imgproc;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -83,12 +97,35 @@ public class AutoNavigation extends AppCompatActivity {
     private FloatingActionButton fab;
     private File mImageFolder;
     private String mImageFileName;
+    private Button mButtonHide;
+    private Button mButtonNext;
+    private ImageView mTestImage;
+    private Activity mActivity;
+    private int k = 1;
+    private Mat mOriginal, case2, case3, case4;
+
+    private Bitmap myBitmap;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        requestWindowFeature(Window.FEATURE_NO_TITLE);
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setContentView(R.layout.auto_navigation_main);
+        mTestImage = (ImageView) findViewById(R.id.imageViewTest);
 
+
+        mActivity = this;
+
+        if (!OpenCVLoader.initDebug()) {
+            // Handle initialization error
+            Log.d(TAG, "opencv not init");
+        }
+        mButtonHide = (Button) findViewById(R.id.hide);
+        mButtonHide.setEnabled(false);
+        mButtonNext = (Button) findViewById(R.id.next);
+        mButtonNext.setEnabled(false);
         createImageFolder();
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -105,7 +142,66 @@ public class AutoNavigation extends AppCompatActivity {
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                Log.d(TAG, "FAB CLICKED");
+                fab.setEnabled(false);
+
                 takePicture();
+            }
+        });
+
+        mButtonNext.setOnClickListener(new View.OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+                switch (k) {
+                    case 1:
+                        Log.d(TAG,"case = 1");
+                        Utils.matToBitmap(mOriginal, myBitmap);
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                mTestImage.setImageBitmap(myBitmap);
+                                mTextureView.setVisibility(View.INVISIBLE);
+                                mTestImage.setVisibility(View.VISIBLE);
+                                mTestImage.getTop();
+                            }
+                        });
+
+                        k++;
+
+                        break;
+                    case 2:
+                        Log.d(TAG,"case = 2");
+                        Utils.matToBitmap(case2, myBitmap);
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                mTestImage.setImageBitmap(myBitmap);
+                                mTextureView.setVisibility(View.INVISIBLE);
+                                mTestImage.setVisibility(View.VISIBLE);
+                                mTestImage.getTop();
+                            }
+                        });
+                        k++;
+                        break;
+
+                    case 3:
+                        Log.d(TAG,"last case");
+                        Utils.matToBitmap(case3, myBitmap);
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                mTestImage.setImageBitmap(myBitmap);
+                                mTextureView.setVisibility(View.INVISIBLE);
+                                mTestImage.setVisibility(View.VISIBLE);
+                                mTestImage.getTop();
+                            }
+                        });
+                        k=1;
+                        break;
+
+                }
+
             }
         });
     }
@@ -116,7 +212,6 @@ public class AutoNavigation extends AppCompatActivity {
 
         startBackgroundThread();
 
-        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
 
         if (mTextureView.isAvailable()) {
             setupCamera(mTextureView.getWidth(), mTextureView.getHeight());
@@ -154,14 +249,22 @@ public class AutoNavigation extends AppCompatActivity {
     private TextureView.SurfaceTextureListener mSurfaceTextureListener = new TextureView.SurfaceTextureListener() {
         @Override
         public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
+            Log.d(TAG,"onSurfaceTextureAvailable");
             setupCamera(width, height);
             connectCamera();
         }
 
         @Override
         public void onSurfaceTextureSizeChanged(SurfaceTexture surface, int width, int height) {
-            setupCamera(width, height);
-            connectCamera();
+            Log.d(TAG,"onSurfaceTextureSizeChanged");
+            if (mTextureView.isAvailable()) {
+                closeCamera();
+                setupCamera(width, height);
+                connectCamera();
+            } else {
+                mTextureView.setSurfaceTextureListener(mSurfaceTextureListener);
+            }
+
         }
 
         @Override
@@ -171,7 +274,6 @@ public class AutoNavigation extends AppCompatActivity {
 
         @Override
         public void onSurfaceTextureUpdated(SurfaceTexture surface) {
-
         }
     };
 
@@ -310,7 +412,7 @@ public class AutoNavigation extends AppCompatActivity {
                                 //if the camera is closed for some reason come back to main activity
                                 e.printStackTrace();
                                 closeCamera();
-                                onBackPressed();
+                                //onBackPressed();
                             }
                         }
 
@@ -333,6 +435,7 @@ public class AutoNavigation extends AppCompatActivity {
             mCaptureRequestBuilder.addTarget(mImageReader.getSurface());
             mCaptureRequestBuilder.set(CaptureRequest.JPEG_ORIENTATION, null);
 
+
             CameraCaptureSession.CaptureCallback stillCaptureCallback = new
                     CameraCaptureSession.CaptureCallback() {
                         @Override
@@ -346,7 +449,7 @@ public class AutoNavigation extends AppCompatActivity {
                         }
                     };
 
-            mPreviewCaptureSession.capture(mCaptureRequestBuilder.build(), stillCaptureCallback, null);
+            //mPreviewCaptureSession.capture(mCaptureRequestBuilder.build(), stillCaptureCallback, mBackgroundHandler);
 
         } catch (CameraAccessException e) {
             e.printStackTrace();
@@ -355,13 +458,18 @@ public class AutoNavigation extends AppCompatActivity {
 
     private final ImageReader.OnImageAvailableListener mOnImageAvailableListener = new
             ImageReader.OnImageAvailableListener() {
+
+
                 @Override
                 public void onImageAvailable(ImageReader reader) {
+                    Log.v(TAG, "IMAGE AVAILABLE SAVE IT");
                     mBackgroundHandler.post(new ImageSaver(reader.acquireLatestImage()));
+
                 }
             };
 
     private class ImageSaver implements Runnable {
+        //scope of this class is to elaborate the image in background with openCv
 
         private final Image mImage;
 
@@ -371,12 +479,53 @@ public class AutoNavigation extends AppCompatActivity {
 
         @Override
         public void run() {
-            try {
-                ByteBuffer byteBuffer = mImage.getPlanes()[0].getBuffer();
-                byte[] bytes = new byte[byteBuffer.remaining()];
-                byteBuffer.get(bytes);
+            //try {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    mButtonHide.setEnabled(true);
+                    mButtonHide.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            k = 1;
+                            mButtonHide.setEnabled(false);
+                            mButtonNext.setEnabled(false);
+                            fab.setEnabled(true);
 
-                FileOutputStream fileOutputStream = null;
+                            mTestImage.setVisibility(View.INVISIBLE);
+                            mTextureView.setVisibility(View.VISIBLE);
+                            mTextureView.getTop();
+                        }
+                    });
+                    mButtonNext.setEnabled(true);
+
+                }
+            });
+
+            Log.v(TAG, "ImageSaver RUNNING##############");
+            ByteBuffer byteBuffer = mImage.getPlanes()[0].getBuffer();
+            byte[] bytes = new byte[byteBuffer.remaining()];
+            byteBuffer.get(bytes);
+            //pass datas into a bitmap
+            BitmapFactory.Options opt = new BitmapFactory.Options();
+            opt.inSampleSize = 2;
+            myBitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length, opt);
+
+            mOriginal = new Mat(myBitmap.getWidth(), myBitmap.getHeight(), CvType.CV_8UC3);
+            Utils.bitmapToMat(myBitmap, mOriginal);
+
+            //pass image in HSV
+            case2 = new Mat();
+            Imgproc.cvtColor(mOriginal, case2, Imgproc.COLOR_RGB2HSV);
+
+            //filter color blue
+            case3 = new Mat();
+            Scalar A = new Scalar(110,50,50);
+            Scalar B = new Scalar(130,255,255);
+            Core.inRange(case2, A, B, case3);
+
+
+                /*FileOutputStream fileOutputStream = null;
                 try {
                     fileOutputStream = new FileOutputStream(mImageFileName);
                     fileOutputStream.write(bytes);
@@ -398,8 +547,9 @@ public class AutoNavigation extends AppCompatActivity {
                     }
                 }
             } catch (Exception e) {
-                Log.v("TAG", "************skipped image");
-            }
+                e.printStackTrace();
+                Log.v(TAG, "************skipped image");
+            }*/
 
         }
     }
@@ -407,7 +557,17 @@ public class AutoNavigation extends AppCompatActivity {
 
     private void takePicture() {
         mCaptureState = STATE_WAIT_LOCK;
+
         mCaptureRequestBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER, CaptureRequest.CONTROL_AF_TRIGGER_START);
+
+        try {
+            mCaptureRequestBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
+        } catch (CameraAccessException e) {
+            e.printStackTrace();
+        }
+        mCaptureRequestBuilder.addTarget(mImageReader.getSurface());
+        mCaptureRequestBuilder.set(CaptureRequest.JPEG_ORIENTATION, null);
+
         try {
             mPreviewCaptureSession.capture(mCaptureRequestBuilder.build(), mPreviewCaptureCallback, mBackgroundHandler);
         } catch (CameraAccessException e) {
@@ -417,29 +577,41 @@ public class AutoNavigation extends AppCompatActivity {
 
     private CameraCaptureSession.CaptureCallback mPreviewCaptureCallback = new CameraCaptureSession.CaptureCallback() {
 
-                private void process(CaptureResult captureResult) {
-                    switch (mCaptureState) {
-                        case STATE_PREVIEW:
-                            // Do nothing
-                            break;
-                        case STATE_WAIT_LOCK:
-                            mCaptureState = STATE_PREVIEW;
-                            Integer afState = captureResult.get(CaptureResult.CONTROL_AF_STATE);
-                            if (afState == CaptureResult.CONTROL_AF_STATE_FOCUSED_LOCKED ||
-                                    afState == CaptureResult.CONTROL_AF_STATE_NOT_FOCUSED_LOCKED) {
-                                Toast.makeText(getApplicationContext(), "AF Locked!", Toast.LENGTH_SHORT).show();
-                                startCapturing();
-                            }
-                            break;
+        private void process(CaptureResult captureResult) {
+            switch (mCaptureState) {
+                case STATE_PREVIEW:
+                    Log.v(TAG, "STATE_PREVIEW---> stop the process");
+                    // Do nothing
+                    break;
+                case STATE_WAIT_LOCK:
+                    Log.v(TAG, "STATE_WAIT_LOCK--->continue with process");
+                    mCaptureState = STATE_PREVIEW;
+                    Integer afState = captureResult.get(CaptureResult.CONTROL_AF_STATE);
+                    if (afState == CaptureResult.CONTROL_AF_STATE_FOCUSED_LOCKED ||
+                            afState == CaptureResult.CONTROL_AF_STATE_NOT_FOCUSED_LOCKED) {
+                        Toast.makeText(getApplicationContext(), "AF Locked!", Toast.LENGTH_SHORT).show();
+                        startCapturing();
                     }
-                }
+                    break;
+            }
+        }
 
-                @Override
-                public void onCaptureCompleted(CameraCaptureSession session, CaptureRequest request, TotalCaptureResult result) {
-                    super.onCaptureCompleted(session, request, result);
-                    process(result);
-                }
-            };
+        @Override
+        public void onCaptureCompleted(CameraCaptureSession session, CaptureRequest request, TotalCaptureResult result) {
+            super.onCaptureCompleted(session, request, result);
+            process(result);
+        }
+
+        @Override
+        public void onCaptureStarted(CameraCaptureSession session, CaptureRequest request, long timestamp, long frameNumber) {
+            super.onCaptureStarted(session, request, timestamp, frameNumber);
+            try {
+                createImageFileName();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    };
 
 
     private void closeCamera() {
@@ -455,7 +627,7 @@ public class AutoNavigation extends AppCompatActivity {
                 mPreviewCaptureSession = null;
             }
 
-            if (null != mImageReader) {
+            if (mImageReader != null) {
                 mImageReader.close();
                 mImageReader = null;
             }
@@ -556,11 +728,14 @@ public class AutoNavigation extends AppCompatActivity {
         }
     }
 
+
     private File createImageFileName() throws IOException {
+
         String timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-        String prepend = "IMAGE_" + timestamp + "_";
+        String prepend = "IMG_" + timestamp + "_";
         File imageFile = File.createTempFile(prepend, ".jpg", mImageFolder);
         mImageFileName = imageFile.getAbsolutePath();
+
         return imageFile;
     }
 
@@ -575,6 +750,9 @@ public class AutoNavigation extends AppCompatActivity {
                         && grantResults[1] == PackageManager.PERMISSION_GRANTED) {
 
                     Log.v(TAG, "Permission Granted");
+                    mTextureView.setSurfaceTextureListener(mSurfaceTextureListener);
+
+
 
                 } else {
                     Log.v(TAG, "Permission NOT Granted");
