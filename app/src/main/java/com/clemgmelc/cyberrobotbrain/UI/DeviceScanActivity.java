@@ -41,12 +41,13 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.clemgmelc.cyberrobotbrain.R;
+import com.clemgmelc.cyberrobotbrain.Util.ConstantApp;
 
 import java.util.ArrayList;
 
 public class DeviceScanActivity extends AppCompatActivity {
 
-    private final String TAG = "CyberRobotSCAN";
+    private static final String TAG = ConstantApp.TAG + " - " + AutoNavigation.class.getSimpleName();
     private DeviceScanActivity mActivity;
 
     private static final int REQUEST_ENABLE_BT = 1;

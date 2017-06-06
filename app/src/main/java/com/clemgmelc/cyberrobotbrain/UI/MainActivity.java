@@ -30,6 +30,7 @@ import java.util.List;
 public class MainActivity extends AppCompatActivity {
 
 
+    private static final String TAG = ConstantApp.TAG + " - " + AutoNavigation.class.getSimpleName();
     //request code
     public static final int SCAN_DEVICE_REQUEST = 1;
     public String mDeviceAddress = null;
@@ -63,13 +64,13 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
 
-                Log.v(ConstantApp.TAG, "****************************************************TAP on mFAB***********************");
+                Log.v(TAG, "****************************************************TAP on mFAB***********************");
                 if (!mConnected || mBluetoothLeService == null) {
-                    Log.v(ConstantApp.TAG, "no connected--->reopen scan activity");
+                    Log.v(TAG, "no connected--->reopen scan activity");
                     Intent launchScan = new Intent(MainActivity.this, DeviceScanActivity.class);
                     startActivityForResult(launchScan, SCAN_DEVICE_REQUEST);
                 } else {
-                    Log.v(ConstantApp.TAG, "INTENTIONAL REMOVAL OF CONNECTION");
+                    Log.v(TAG, "INTENTIONAL REMOVAL OF CONNECTION");
                     //if (mBluetoothLeService != null)
                         mBluetoothLeService.disconnect();
                         mConnected = false;
@@ -134,13 +135,13 @@ public class MainActivity extends AppCompatActivity {
         public void onReceive(Context context, Intent intent) {
             final String action = intent.getAction();
 
-            if (BluetoothLeService.ACTION_GATT_CONNECTED.equals(action)) {
+            if (ConstantApp.ACTION_GATT_CONNECTED.equals(action)) {
 
                 //mConnected = true;
 
-            } else if (BluetoothLeService.ACTION_GATT_DISCONNECTED.equals(action)) {
+            } else if (ConstantApp.ACTION_GATT_DISCONNECTED.equals(action)) {
 
-                Log.v(ConstantApp.TAG, "sono scollegato ");
+                Log.v(TAG, "sono scollegato ");
                 Toast.makeText(mBluetoothLeService, getResources().getString(R.string.message_disconnecting), Toast.LENGTH_SHORT).show();
                 mManualNav.setEnabled(false);
                 //TODO:abilitare
@@ -171,14 +172,17 @@ public class MainActivity extends AppCompatActivity {
                 unbindService(mServiceConnection);
                 mBluetoothLeService = null;
 
-                Log.v(ConstantApp.TAG, "unregistred");
+                Log.v(TAG, "unregistred");
 
-            } else if (BluetoothLeService.ACTION_GATT_SERVICES_DISCOVERED.equals(action)) {
+            } else if (ConstantApp.ACTION_GATT_SERVICES_DISCOVERED.equals(action)) {
 
                 //check if the connected device is an iBlio Device and write the characteristic
 
-                Log.v(ConstantApp.TAG, "gatt discovered");
-                mReady = true;
+                Log.v(TAG, "gatt discovered");
+                //mReady = true;
+                mManualNav.setEnabled(true);
+                //TODO:abilitare
+                //mAutoNavigation.setEnabled(true);
 
             }
         }
@@ -187,10 +191,10 @@ public class MainActivity extends AppCompatActivity {
 
     private static IntentFilter makeGattUpdateIntentFilter() {
         final IntentFilter intentFilter = new IntentFilter();
-        intentFilter.addAction(BluetoothLeService.ACTION_GATT_CONNECTED);
-        intentFilter.addAction(BluetoothLeService.ACTION_GATT_DISCONNECTED);
-        intentFilter.addAction(BluetoothLeService.ACTION_GATT_SERVICES_DISCOVERED);
-        intentFilter.addAction(BluetoothLeService.ACTION_DATA_AVAILABLE);
+        intentFilter.addAction(ConstantApp.ACTION_GATT_CONNECTED);
+        intentFilter.addAction(ConstantApp.ACTION_GATT_DISCONNECTED);
+        intentFilter.addAction(ConstantApp.ACTION_GATT_SERVICES_DISCOVERED);
+        intentFilter.addAction(ConstantApp.ACTION_DATA_AVAILABLE);
         return intentFilter;
     }
 
@@ -209,7 +213,7 @@ public class MainActivity extends AppCompatActivity {
 
             //if connected send a toast message
             if (mBluetoothLeService.connect(mDeviceAddress)) {
-                Log.v(ConstantApp.TAG, "Connected to: Cyber Robot");
+                Log.v(TAG, "Connected to: Cyber Robot");
                 Toast.makeText(mBluetoothLeService, getResources().getString(R.string.message_connecting), Toast.LENGTH_SHORT).show();
 
                 Handler handler = new Handler();
@@ -223,9 +227,7 @@ public class MainActivity extends AppCompatActivity {
                                 mFab.setBackgroundTintList(ColorStateList.valueOf(ContextCompat.getColor(mainActivity, R.color.green)));
                                 Toast.makeText(getApplicationContext(), getResources().getString(R.string.message_connected), Toast.LENGTH_SHORT).show();
                                 mFab.setEnabled(true);
-                                mManualNav.setEnabled(true);
-                                //TODO:abilitare
-                                //mAutoNavigation.setEnabled(true);
+
                                 mConnected = true;
                                 //mReady = true;
                             }

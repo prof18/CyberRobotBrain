@@ -73,7 +73,7 @@ import java.util.concurrent.TimeUnit;
 
 public class AutoNavigation extends AppCompatActivity {
 
-    private static final String TAG = ConstantApp.TAG;
+    private static final String TAG = ConstantApp.TAG + " - " + AutoNavigation.class.getSimpleName();
     private HandlerThread mBackgroundHandlerThread;
     private Handler mBackgroundHandler;
     private String mCameraId;

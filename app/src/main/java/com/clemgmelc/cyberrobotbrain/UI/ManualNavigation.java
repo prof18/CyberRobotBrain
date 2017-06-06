@@ -23,6 +23,7 @@ import com.clemgmelc.cyberrobotbrain.Util.ConstantApp;
 
 public class ManualNavigation extends AppCompatActivity {
 
+    private static final String TAG = ConstantApp.TAG + " - " + AutoNavigation.class.getSimpleName();
     private ImageButton mForward, mBackward, mLeft, mRight;
     private BluetoothLeService mBluetoothLeService;
     private String mDeviceAddress;
@@ -71,7 +72,7 @@ public class ManualNavigation extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        Log.v(ConstantApp.TAG, "onDestroy");
+        Log.v(TAG, "onDestroy");
         //mBluetoothLeService.disconnect();
         unbindService(mServiceConnection);
         mBluetoothLeService = null;
@@ -93,7 +94,7 @@ public class ManualNavigation extends AppCompatActivity {
 
              /*   //if connected send a toast message
                 if (mBluetoothLeService.connect(mDeviceAddress)) {
-                    Log.v(ConstantApp.TAG, "Connected to: Cyber Robot from navigation");
+                    Log.v(TAG, "Connected to: Cyber Robot from navigation");
                 }*/
 
 
@@ -108,7 +109,7 @@ public class ManualNavigation extends AppCompatActivity {
         @Override
         public void onServiceDisconnected(ComponentName componentName) {
             mBluetoothLeService = null;
-            Log.v(ConstantApp.TAG, "onServiceDisconnected");
+            Log.v(TAG, "onServiceDisconnected");
 
         }
     };
@@ -143,7 +144,7 @@ public class ManualNavigation extends AppCompatActivity {
 
                             if (mHandlerB == null && mHandlerL == null && mHandlerR == null) {
                                 mHandlerF = new Handler();
-                                Log.d(ConstantApp.TAG, "FORWARD1");
+                                Log.d(TAG, "FORWARD1");
                                 mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.forward);
                                 mHandlerF.postDelayed(mActionF, 200);
                             }
@@ -180,7 +181,7 @@ public class ManualNavigation extends AppCompatActivity {
                             if (mHandlerF == null)
                                 mHandlerF = new Handler();
                             if (mHandlerB == null && mHandlerL == null && mHandlerR == null) {
-                                Log.d(ConstantApp.TAG, "FORWARD2");
+                                Log.d(TAG, "FORWARD2");
                                 mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.forward);
                                 mHandlerF.postDelayed(this, 200);
                             }
@@ -223,7 +224,7 @@ public class ManualNavigation extends AppCompatActivity {
                             if (mHandlerB != null) {
                                 return true;
                             }
-                            if (mHandlerF == null && mHandlerL == null && mHandlerR == null ) {
+                            if (mHandlerF == null && mHandlerL == null && mHandlerR == null) {
                                 mHandlerB = new Handler();
                                 mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.backward);
                                 mHandlerB.postDelayed(mActionB, 200);
@@ -338,7 +339,7 @@ public class ManualNavigation extends AppCompatActivity {
                             if (mHandlerR != null) {
                                 return true;
                             }
-                            if (mHandlerF == null && mHandlerB == null && mHandlerL == null ) {
+                            if (mHandlerF == null && mHandlerB == null && mHandlerL == null) {
                                 mHandlerR = new Handler();
                                 mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.right);
                                 mHandlerR.postDelayed(mActionR, 200);
@@ -351,7 +352,7 @@ public class ManualNavigation extends AppCompatActivity {
                     Runnable mActionR = new Runnable() {
                         @Override
                         public void run() {
-                            if (mHandlerF == null && mHandlerB == null && mHandlerL == null ) {
+                            if (mHandlerF == null && mHandlerB == null && mHandlerL == null) {
                                 if (mHandlerR == null)
                                     mHandlerR = new Handler();
                                 mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.right);
