@@ -4,7 +4,7 @@ import android.Manifest;
 import android.app.Activity;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -24,7 +24,6 @@ import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.Image;
 import android.media.ImageReader;
-import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
@@ -37,6 +36,7 @@ import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.util.Size;
+import android.view.MotionEvent;
 import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
@@ -44,8 +44,10 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
+import com.clemgmelc.cyberrobotbrain.Data.ColorBlobDetector;
 import com.clemgmelc.cyberrobotbrain.R;
 import com.clemgmelc.cyberrobotbrain.Util.ConstantApp;
 
@@ -54,11 +56,11 @@ import org.opencv.android.Utils;
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
+import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.imgproc.Imgproc;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.text.SimpleDateFormat;
@@ -103,8 +105,12 @@ public class AutoNavigation extends AppCompatActivity {
     private Activity mActivity;
     private int k = 1;
     private Mat mOriginal, caseHsv, caseRed, caseBlue, caseGreen;
+    private TextView mCalibrationInfo;
+    private FloatingActionButton mFabCalibration;
 
     private Bitmap myBitmap;
+    private ColorBlobDetector mDetector;
+    private int colorCounter;
 
 
     @Override
@@ -114,7 +120,8 @@ public class AutoNavigation extends AppCompatActivity {
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setContentView(R.layout.auto_navigation_main);
         mTestImage = (ImageView) findViewById(R.id.imageViewTest);
-
+        mCalibrationInfo = (TextView) findViewById(R.id.calibrationInfo);
+        mFabCalibration = (FloatingActionButton) findViewById(R.id.fabCalibration);
 
         mActivity = this;
 
@@ -123,9 +130,9 @@ public class AutoNavigation extends AppCompatActivity {
             Log.d(TAG, "opencv not init");
         }
         mButtonHide = (Button) findViewById(R.id.hide);
-        mButtonHide.setEnabled(false);
+        //mButtonHide.setEnabled(false);
         mButtonNext = (Button) findViewById(R.id.next);
-        mButtonNext.setEnabled(false);
+        //mButtonNext.setEnabled(false);
         createImageFolder();
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -138,24 +145,43 @@ public class AutoNavigation extends AppCompatActivity {
         }
 
         mTextureView = (TextureView) findViewById(R.id.textureView);
-        fab = (FloatingActionButton) findViewById(R.id.floatingActionButton);
+        fab = (FloatingActionButton) findViewById(R.id.fabAutoNav);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Log.d(TAG, "FAB CLICKED");
                 fab.setEnabled(false);
 
+                //check if the calibration is done
+                boolean isCalibrationDone = isCalibrationDone(getApplicationContext());
+                if (!isCalibrationDone) {
+
+                    //TODO: popup
+                    mCalibrationInfo.setVisibility(View.VISIBLE);
+                    fab.setVisibility(View.GONE);
+                    mFabCalibration.setVisibility(View.VISIBLE);
+                    colorCounter = 0;
+
+                } else
+                    //takePicture();
+                    Toast.makeText(mActivity, "Calibration Done", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        mFabCalibration.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
                 takePicture();
             }
         });
 
-        mButtonNext.setOnClickListener(new View.OnClickListener() {
+/*        mButtonNext.setOnClickListener(new View.OnClickListener() {
 
             @Override
             public void onClick(View v) {
                 switch (k) {
                     case 1:
-                        Log.d(TAG,"case = 1");
+                        Log.d(TAG, "case = 1");
                         Utils.matToBitmap(mOriginal, myBitmap);
                         runOnUiThread(new Runnable() {
                             @Override
@@ -171,7 +197,7 @@ public class AutoNavigation extends AppCompatActivity {
 
                         break;
                     case 2:
-                        Log.d(TAG,"case = 2");
+                        Log.d(TAG, "case = 2");
                         Utils.matToBitmap(caseHsv, myBitmap);
                         runOnUiThread(new Runnable() {
                             @Override
@@ -186,7 +212,7 @@ public class AutoNavigation extends AppCompatActivity {
                         break;
 
                     case 3:
-                        Log.d(TAG,"last case");
+                        Log.d(TAG, "last case");
                         Utils.matToBitmap(caseRed, myBitmap);
                         runOnUiThread(new Runnable() {
                             @Override
@@ -200,7 +226,7 @@ public class AutoNavigation extends AppCompatActivity {
                         k++;
                         break;
                     case 4:
-                        Log.d(TAG,"last case");
+                        Log.d(TAG, "last case");
                         Utils.matToBitmap(caseGreen, myBitmap);
                         runOnUiThread(new Runnable() {
                             @Override
@@ -215,7 +241,7 @@ public class AutoNavigation extends AppCompatActivity {
                         break;
 
                     case 5:
-                        Log.d(TAG,"last case");
+                        Log.d(TAG, "last case");
                         Utils.matToBitmap(caseBlue, myBitmap);
                         runOnUiThread(new Runnable() {
                             @Override
@@ -226,13 +252,13 @@ public class AutoNavigation extends AppCompatActivity {
                                 mTestImage.getTop();
                             }
                         });
-                        k=1;
+                        k = 1;
                         break;
 
                 }
 
             }
-        });
+        });*/
     }
 
     @Override
@@ -275,17 +301,52 @@ public class AutoNavigation extends AppCompatActivity {
         }
     }
 
+    private boolean isCalibrationDone(Context context) {
+
+        boolean isCalibrationDone = false;
+
+        //get a reference to the shared preferences
+        SharedPreferences sharedpreferences = context.getSharedPreferences(ConstantApp.SHARED_NAME, Context.MODE_PRIVATE);
+
+        String left_upper = sharedpreferences.getString(ConstantApp.SHARED_ROBOT_LEFT_UPPER, null);
+        String left_lower = sharedpreferences.getString(ConstantApp.SHARED_ROBOT_LEFT_LOWER, null);
+        String right_upper = sharedpreferences.getString(ConstantApp.SHARED_ROBOT_RIGHT_UPPER, null);
+        String right_lower = sharedpreferences.getString(ConstantApp.SHARED_ROBOT_RIGHT_LOWER, null);
+        String target_upper = sharedpreferences.getString(ConstantApp.SHARED_TARGET_UPPER, null);
+        String target_lower = sharedpreferences.getString(ConstantApp.SHARED_TARGET_LOWER, null);
+
+        if (left_upper != null && left_lower != null && right_upper != null && right_lower != null
+                && target_upper != null && target_lower != null)
+            isCalibrationDone = true;
+
+        return isCalibrationDone;
+        /*SharedPreferences.Editor editor = sharedpreferences.edit();
+        editor.putString("user_type", personalInfo.getType());
+        if (personalInfo.getType().equals(ConstantApp.TYPE_S))
+            editor.putBoolean("user_cc", personalInfo.getHasCreditCard());
+        Log.v(ConstantApp.TAGLOG, "put in shared: " + personalInfo.getType());
+        editor.commit();*/
+
+
+        /*
+             SharedPreferences sharedpreferences = context.getSharedPreferences("tt_shared", Context.MODE_PRIVATE);
+
+        return sharedpreferences.getBoolean("user_cc", true);
+
+         */
+    }
+
     private TextureView.SurfaceTextureListener mSurfaceTextureListener = new TextureView.SurfaceTextureListener() {
         @Override
         public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
-            Log.d(TAG,"onSurfaceTextureAvailable");
+            Log.d(TAG, "onSurfaceTextureAvailable");
             setupCamera(width, height);
             connectCamera();
         }
 
         @Override
         public void onSurfaceTextureSizeChanged(SurfaceTexture surface, int width, int height) {
-            Log.d(TAG,"onSurfaceTextureSizeChanged");
+            Log.d(TAG, "onSurfaceTextureSizeChanged");
             if (mTextureView.isAvailable()) {
                 closeCamera();
                 setupCamera(width, height);
@@ -508,28 +569,8 @@ public class AutoNavigation extends AppCompatActivity {
 
         @Override
         public void run() {
-            //try {
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    mButtonHide.setEnabled(true);
-                    mButtonHide.setOnClickListener(new View.OnClickListener() {
-                        @Override
-                        public void onClick(View v) {
-                            k = 1;
-                            mButtonHide.setEnabled(false);
-                            mButtonNext.setEnabled(false);
-                            fab.setEnabled(true);
 
-                            mTestImage.setVisibility(View.INVISIBLE);
-                            mTextureView.setVisibility(View.VISIBLE);
-                            mTextureView.getTop();
-                        }
-                    });
-                    mButtonNext.setEnabled(true);
 
-                }
-            });
 
             Log.v(TAG, "ImageSaver RUNNING##############");
             ByteBuffer byteBuffer = mImage.getPlanes()[0].getBuffer();
@@ -540,17 +581,149 @@ public class AutoNavigation extends AppCompatActivity {
             opt.inSampleSize = 2;
             myBitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length, opt);
 
-            mOriginal = new Mat(myBitmap.getWidth(), myBitmap.getHeight(), CvType.CV_8UC3);
+            //TODO: if not working, puts 3.
+            mOriginal = new Mat(myBitmap.getWidth(), myBitmap.getHeight(), CvType.CV_8UC4);
             Utils.bitmapToMat(myBitmap, mOriginal);
 
-            Scalar lowRed= new Scalar(228,100,100);
-            Scalar upRed = new Scalar(255,255,255);
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    mTestImage.setImageBitmap(myBitmap);
+                    mTextureView.setVisibility(View.INVISIBLE);
+                    mTestImage.setVisibility(View.VISIBLE);
+                    mTestImage.getTop();
+                    mCalibrationInfo.setText("Schicia el sercion in tel target");
 
-            Scalar lowBlue= new Scalar(120,100,100);
-            Scalar upBlue = new Scalar(179,255,255);
 
-            Scalar lowGreen= new Scalar(50,0,50);
-            Scalar upGreen = new Scalar(255,128,250);
+
+                }
+            });
+
+            mTestImage.setOnTouchListener(new View.OnTouchListener() {
+                @Override
+                public boolean onTouch(View v, MotionEvent event) {
+
+                    if (colorCounter > 2)
+                        //TODO: uscire dalla calibration e tornare in setting
+                        return false;
+                    int cols = mOriginal.cols();
+                    int rows = mOriginal.rows();
+
+                    int xOffset = (mTextureView.getWidth() - cols) / 2;
+                    int yOffset = (mTextureView.getHeight() - rows) / 2;
+
+                    int x = (int)event.getX() - xOffset;
+                    int y = (int)event.getY() - yOffset;
+
+                    Log.i(TAG, "Touch image coordinates: (" + x + ", " + y + ")");
+
+                    if ((x < 0) || (y < 0) || (x > cols) || (y > rows)) return false;
+
+                    Rect touchedRect = new Rect();
+
+                    touchedRect.x = (x>4) ? x-4 : 0;
+                    touchedRect.y = (y>4) ? y-4 : 0;
+
+                    touchedRect.width = (x+4 < cols) ? x + 4 - touchedRect.x : cols - touchedRect.x;
+                    touchedRect.height = (y+4 < rows) ? y + 4 - touchedRect.y : rows - touchedRect.y;
+
+                    Mat touchedRegionRgba = mOriginal.submat(touchedRect);
+
+                    Mat touchedRegionHsv = new Mat();
+                    Imgproc.cvtColor(touchedRegionRgba, touchedRegionHsv, Imgproc.COLOR_RGB2HSV_FULL);
+
+                    mDetector = new ColorBlobDetector();
+                    Mat mSpectrum = new Mat();
+                    Scalar mBlobColorRgba = new Scalar(255);
+                    Scalar mBlobColorHsv = new Scalar(255);
+                    org.opencv.core.Size SPECTRUM_SIZE = new org.opencv.core.Size(200, 64);
+                    Scalar CONTOUR_COLOR = new Scalar(255,0,0,255);
+
+                    // Calculate average color of touched region
+                    mBlobColorHsv = Core.sumElems(touchedRegionHsv);
+                    int pointCount = touchedRect.width*touchedRect.height;
+                    for (int i = 0; i < mBlobColorHsv.val.length; i++)
+                        mBlobColorHsv.val[i] /= pointCount;
+
+                    mBlobColorRgba = converScalarHsv2Rgba(mBlobColorHsv);
+                    int red = (int) mBlobColorRgba.val[0];
+                    int green = (int) mBlobColorRgba.val[1];
+                    int blue = (int) mBlobColorRgba.val[2];
+                    int alpha = (int) (int) mBlobColorRgba.val[3];
+
+                    String hex = String.format("#%02x%02x%02x%02x", red,green,blue,alpha);
+
+                    Log.i(TAG, "Touched rgba color: (" + mBlobColorRgba.val[0] + ", " + mBlobColorRgba.val[1] +
+                            ", " + mBlobColorRgba.val[2] + ", " + mBlobColorRgba.val[3] + ")");
+
+                    final AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(AutoNavigation.this);
+                    dialogBuilder.setTitle("Selected Color");
+                    dialogBuilder.setMessage("The selected color is " + hex);
+                    dialogBuilder.setCancelable(false);
+                    dialogBuilder.setNegativeButton(android.R.string.ok,
+                            new DialogInterface.OnClickListener() {
+                                public void onClick(DialogInterface dialog, int which) {
+
+                                    SharedPreferences sharedpreferences = getApplicationContext().getSharedPreferences(ConstantApp.SHARED_NAME, Context.MODE_PRIVATE);
+                                    SharedPreferences.Editor editor = sharedpreferences.edit();
+
+                                    switch (colorCounter) {
+
+                                        //target
+                                        case 0:
+                                            editor.putString(ConstantApp.SHARED_TARGET_LOWER, mDetector.getmLowerBound());
+                                            editor.putString(ConstantApp.SHARED_TARGET_UPPER, mDetector.getmUpperBound());
+                                            editor.commit();
+                                            colorCounter++;
+                                            break;
+
+                                        //right
+                                        case 1:
+                                            break;
+
+                                        //left
+                                        case 2:
+
+                                            //calibration is done
+                                            break;
+
+
+                                    }
+                                }
+                            });
+                    dialogBuilder.show();
+                    /*SharedPreferences.Editor editor = sharedpreferences.edit();
+        editor.putString("user_type", personalInfo.getType());
+        if (personalInfo.getType().equals(ConstantApp.TYPE_S))
+            editor.putBoolean("user_cc", personalInfo.getHasCreditCard());
+        Log.v(ConstantApp.TAGLOG, "put in shared: " + personalInfo.getType());
+        editor.commit();*/
+
+
+                    //editor.putString(ConstantApp.SHARED_TARGET, )
+
+
+                    mDetector.setHsvColor(mBlobColorHsv);
+
+                    Imgproc.resize(mDetector.getSpectrum(), mSpectrum, SPECTRUM_SIZE);
+
+                    //mIsColorSelected = true;
+
+                    touchedRegionRgba.release();
+                    touchedRegionHsv.release();
+
+                    return false; // don't need subsequent touch events
+                }
+            });
+
+/*            Scalar lowRed = new Scalar(228, 100, 100);
+            Scalar upRed = new Scalar(255, 255, 255);
+
+            Scalar lowBlue = new Scalar(120, 100, 100);
+            Scalar upBlue = new Scalar(179, 255, 255);
+
+            Scalar lowGreen = new Scalar(50, 0, 50);
+            Scalar upGreen = new Scalar(255, 128, 250);
 
             //pass image in HSV
             caseHsv = new Mat();
@@ -566,7 +739,7 @@ public class AutoNavigation extends AppCompatActivity {
 
             //filter color green
             caseGreen = new Mat();
-            Core.inRange(caseHsv, lowGreen, upGreen, caseGreen);
+            Core.inRange(caseHsv, lowGreen, upGreen, caseGreen);*/
 
 
                 /*FileOutputStream fileOutputStream = null;
@@ -598,8 +771,24 @@ public class AutoNavigation extends AppCompatActivity {
         }
     }
 
+    private Scalar converScalarHsv2Rgba(Scalar hsvColor) {
+        Mat pointMatRgba = new Mat();
+        Mat pointMatHsv = new Mat(1, 1, CvType.CV_8UC3, hsvColor);
+        Imgproc.cvtColor(pointMatHsv, pointMatRgba, Imgproc.COLOR_HSV2RGB_FULL, 4);
+
+        return new Scalar(pointMatRgba.get(0, 0));
+    }
+
 
     private void takePicture() {
+
+        //re-enable button
+/*        mButtonHide.setVisibility(View.VISIBLE);
+        mButtonNext.setVisibility(View.VISIBLE);*/
+
+        mFabCalibration.setVisibility(View.GONE);
+
+
         mCaptureState = STATE_WAIT_LOCK;
 
         mCaptureRequestBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER, CaptureRequest.CONTROL_AF_TRIGGER_START);
@@ -795,7 +984,6 @@ public class AutoNavigation extends AppCompatActivity {
 
                     Log.v(TAG, "Permission Granted");
                     mTextureView.setSurfaceTextureListener(mSurfaceTextureListener);
-
 
 
                 } else {

@@ -1,24 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <android.support.design.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
-                                                 xmlns:app="http://schemas.android.com/apk/res-auto"
-                                                 xmlns:tools="http://schemas.android.com/tools"
-                                                 android:layout_width="match_parent"
-                                                 android:layout_height="match_parent"
-                                                 tools:context="com.clemgmelc.cyberrobotbrain.UI.MainActivity">
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="com.clemgmelc.cyberrobotbrain.UI.MainActivity">
 
     <TextureView
         android:id="@+id/textureView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_alignParentStart="true"
-        android:layout_alignParentTop="true"/>
+        android:layout_alignParentTop="true" />
 
     <ImageView
         android:id="@+id/imageViewTest"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_centerHorizontal="true"
-        android:layout_centerVertical="true"/>
+        android:layout_centerVertical="true" />
 
     <Button
         android:id="@+id/hide"
@@ -26,16 +26,28 @@
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:layout_centerHorizontal="true"
-        android:text="HIDE IMAGE"/>
+        android:visibility="gone"
+        android:text="HIDE IMAGE" />
 
     <android.support.design.widget.FloatingActionButton
-        android:id="@+id/floatingActionButton"
+        android:id="@+id/fabAutoNav"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
         android:layout_margin="@dimen/fab_margin"
         app:backgroundTint="@color/colorPrimary"
-        app:srcCompat="@drawable/ic_start_auto"/>
+        app:srcCompat="@drawable/ic_start_auto" />
+
+
+    <android.support.design.widget.FloatingActionButton
+        android:id="@+id/fabCalibration"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="@dimen/fab_margin"
+        app:backgroundTint="@color/colorPrimary"
+        android:visibility="gone"
+        app:srcCompat="@drawable/ic_filter_tilt_shift_black_24dp" />
 
     <Button
         android:id="@+id/next"
@@ -44,8 +56,19 @@
         android:layout_alignParentBottom="true"
         android:layout_centerHorizontal="true"
         android:layout_gravity="top|right"
+        android:visibility="gone"
         android:text="NEXT STEP"
         app:layout_anchor="@+id/imageViewTest"
-        app:layout_anchorGravity="bottom|left"/>
+        app:layout_anchorGravity="bottom|left" />
+
+    <TextView
+        android:id="@+id/calibrationInfo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:gravity="center"
+        android:visibility="gone"
+        android:text="Calibration: inquadra quel porco dio di robot per calibrare i colori"
+        android:textAppearance="@style/TextAppearance.AppCompat.Title" />
 
 </android.support.design.widget.CoordinatorLayout>
