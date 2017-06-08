@@ -41,5 +41,10 @@
     <string name="take_picture">Take picture</string>
 
     <string name="camera_perm_error">You must accept the permission to use the camera</string>
+    <string name="info_target">Tap the target indicator</string>
+    <string name="info_left">Tap the left indicator of the robot</string>
+    <string name="info_right">Tap the right indicator of the robot</string>
+    <string name="button_recalibration">Recalibrate Indicators</string>
+    <string name="info_recalibration">Frame the Robot and tap the button to start the calibration of the indicators</string>
 
 </resources>

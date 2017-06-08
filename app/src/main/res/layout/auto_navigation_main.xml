@@ -21,13 +21,12 @@
         android:layout_centerVertical="true" />
 
     <Button
-        android:id="@+id/hide"
+        android:id="@+id/recalibrate"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:layout_centerHorizontal="true"
-        android:visibility="gone"
-        android:text="HIDE IMAGE" />
+        android:text="@string/button_recalibration" />
 
     <android.support.design.widget.FloatingActionButton
         android:id="@+id/fabAutoNav"
@@ -68,7 +67,7 @@
         android:layout_marginStart="16dp"
         android:gravity="center"
         android:visibility="gone"
-        android:text="Calibration: inquadra quel porco dio di robot per calibrare i colori"
+        android:text="@string/info_recalibration"
         android:textAppearance="@style/TextAppearance.AppCompat.Title" />
 
 </android.support.design.widget.CoordinatorLayout>

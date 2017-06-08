@@ -96,11 +96,12 @@ public class AutoNavigation extends AppCompatActivity {
     private CameraDevice mCameraDevice;
     private CameraCaptureSession mPreviewCaptureSession;
     private CaptureRequest.Builder mCaptureRequestBuilder;
-    private FloatingActionButton fab;
+    private FloatingActionButton mFabStartNavigation;
     private File mImageFolder;
     private String mImageFileName;
     private Button mButtonHide;
     private Button mButtonNext;
+    private Button mButtonRecalibrate;
     private ImageView mTestImage;
     private Activity mActivity;
     private int k = 1;
@@ -112,6 +113,9 @@ public class AutoNavigation extends AppCompatActivity {
     private ColorBlobDetector mDetector;
     private int colorCounter;
 
+    private Mat touchedRegionRgba;
+    private  Mat touchedRegionHsv;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -122,6 +126,7 @@ public class AutoNavigation extends AppCompatActivity {
         mTestImage = (ImageView) findViewById(R.id.imageViewTest);
         mCalibrationInfo = (TextView) findViewById(R.id.calibrationInfo);
         mFabCalibration = (FloatingActionButton) findViewById(R.id.fabCalibration);
+        mButtonRecalibrate = (Button) findViewById(R.id.recalibrate);
 
         mActivity = this;
 
@@ -129,7 +134,7 @@ public class AutoNavigation extends AppCompatActivity {
             // Handle initialization error
             Log.d(TAG, "opencv not init");
         }
-        mButtonHide = (Button) findViewById(R.id.hide);
+        //mButtonHide = (Button) findViewById(R.id.hide);
         //mButtonHide.setEnabled(false);
         mButtonNext = (Button) findViewById(R.id.next);
         //mButtonNext.setEnabled(false);
@@ -145,12 +150,12 @@ public class AutoNavigation extends AppCompatActivity {
         }
 
         mTextureView = (TextureView) findViewById(R.id.textureView);
-        fab = (FloatingActionButton) findViewById(R.id.fabAutoNav);
-        fab.setOnClickListener(new View.OnClickListener() {
+        mFabStartNavigation = (FloatingActionButton) findViewById(R.id.fabAutoNav);
+        mFabStartNavigation.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Log.d(TAG, "FAB CLICKED");
-                fab.setEnabled(false);
+                mFabStartNavigation.setEnabled(false);
 
                 //check if the calibration is done
                 boolean isCalibrationDone = isCalibrationDone(getApplicationContext());
@@ -158,13 +163,27 @@ public class AutoNavigation extends AppCompatActivity {
 
                     //TODO: popup
                     mCalibrationInfo.setVisibility(View.VISIBLE);
-                    fab.setVisibility(View.GONE);
+                    mFabStartNavigation.setVisibility(View.GONE);
                     mFabCalibration.setVisibility(View.VISIBLE);
+                    mButtonRecalibrate.setVisibility(View.GONE);
                     colorCounter = 0;
 
-                } else
+                } else {
                     //takePicture();
                     Toast.makeText(mActivity, "Calibration Done", Toast.LENGTH_SHORT).show();
+                    mFabStartNavigation.setEnabled(true);
+                }
+            }
+        });
+
+        mButtonRecalibrate.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mCalibrationInfo.setVisibility(View.VISIBLE);
+                mFabStartNavigation.setVisibility(View.GONE);
+                mFabCalibration.setVisibility(View.VISIBLE);
+                colorCounter = 0;
+                mButtonRecalibrate.setVisibility(View.GONE);
             }
         });
 
@@ -320,20 +339,6 @@ public class AutoNavigation extends AppCompatActivity {
             isCalibrationDone = true;
 
         return isCalibrationDone;
-        /*SharedPreferences.Editor editor = sharedpreferences.edit();
-        editor.putString("user_type", personalInfo.getType());
-        if (personalInfo.getType().equals(ConstantApp.TYPE_S))
-            editor.putBoolean("user_cc", personalInfo.getHasCreditCard());
-        Log.v(ConstantApp.TAGLOG, "put in shared: " + personalInfo.getType());
-        editor.commit();*/
-
-
-        /*
-             SharedPreferences sharedpreferences = context.getSharedPreferences("tt_shared", Context.MODE_PRIVATE);
-
-        return sharedpreferences.getBoolean("user_cc", true);
-
-         */
     }
 
     private TextureView.SurfaceTextureListener mSurfaceTextureListener = new TextureView.SurfaceTextureListener() {
@@ -592,8 +597,8 @@ public class AutoNavigation extends AppCompatActivity {
                     mTextureView.setVisibility(View.INVISIBLE);
                     mTestImage.setVisibility(View.VISIBLE);
                     mTestImage.getTop();
-                    mCalibrationInfo.setText("Schicia el sercion in tel target");
 
+                    mCalibrationInfo.setText(getResources().getString(R.string.info_target));
 
 
                 }
@@ -603,9 +608,21 @@ public class AutoNavigation extends AppCompatActivity {
                 @Override
                 public boolean onTouch(View v, MotionEvent event) {
 
-                    if (colorCounter > 2)
-                        //TODO: uscire dalla calibration e tornare in setting
+                    if (colorCounter > 2) {
+                        colorCounter = 0;
+                        touchedRegionRgba.release();
+                        touchedRegionHsv.release();
+                        //return to the "classic" camera view
+                        mTestImage.setVisibility(View.INVISIBLE);
+                        mTextureView.setVisibility(View.VISIBLE);
+                        mTextureView.getTop();
+                        mFabCalibration.setVisibility(View.GONE);
+                        mFabStartNavigation.setVisibility(View.VISIBLE);
+                        mButtonRecalibrate.setVisibility(View.VISIBLE);
+                        mFabStartNavigation.setEnabled(true);
                         return false;
+                    }
+
                     int cols = mOriginal.cols();
                     int rows = mOriginal.rows();
 
@@ -627,9 +644,9 @@ public class AutoNavigation extends AppCompatActivity {
                     touchedRect.width = (x+4 < cols) ? x + 4 - touchedRect.x : cols - touchedRect.x;
                     touchedRect.height = (y+4 < rows) ? y + 4 - touchedRect.y : rows - touchedRect.y;
 
-                    Mat touchedRegionRgba = mOriginal.submat(touchedRect);
+                    touchedRegionRgba = mOriginal.submat(touchedRect);
 
-                    Mat touchedRegionHsv = new Mat();
+                    touchedRegionHsv = new Mat();
                     Imgproc.cvtColor(touchedRegionRgba, touchedRegionHsv, Imgproc.COLOR_RGB2HSV_FULL);
 
                     mDetector = new ColorBlobDetector();
@@ -637,7 +654,7 @@ public class AutoNavigation extends AppCompatActivity {
                     Scalar mBlobColorRgba = new Scalar(255);
                     Scalar mBlobColorHsv = new Scalar(255);
                     org.opencv.core.Size SPECTRUM_SIZE = new org.opencv.core.Size(200, 64);
-                    Scalar CONTOUR_COLOR = new Scalar(255,0,0,255);
+                    final Scalar CONTOUR_COLOR = new Scalar(255,0,0,255);
 
                     // Calculate average color of touched region
                     mBlobColorHsv = Core.sumElems(touchedRegionHsv);
@@ -656,6 +673,10 @@ public class AutoNavigation extends AppCompatActivity {
                     Log.i(TAG, "Touched rgba color: (" + mBlobColorRgba.val[0] + ", " + mBlobColorRgba.val[1] +
                             ", " + mBlobColorRgba.val[2] + ", " + mBlobColorRgba.val[3] + ")");
 
+                    mDetector.setHsvColor(mBlobColorHsv);
+
+                    Imgproc.resize(mDetector.getSpectrum(), mSpectrum, SPECTRUM_SIZE);
+
                     final AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(AutoNavigation.this);
                     dialogBuilder.setTitle("Selected Color");
                     dialogBuilder.setMessage("The selected color is " + hex);
@@ -672,19 +693,52 @@ public class AutoNavigation extends AppCompatActivity {
                                         //target
                                         case 0:
                                             editor.putString(ConstantApp.SHARED_TARGET_LOWER, mDetector.getmLowerBound());
+                                            Log.v(TAG, "TARGET_LOWER: " + mDetector.getmLowerBound());
                                             editor.putString(ConstantApp.SHARED_TARGET_UPPER, mDetector.getmUpperBound());
+                                            Log.v(TAG, "TARGET_UPPER: " + mDetector.getmUpperBound());
                                             editor.commit();
                                             colorCounter++;
+                                            mCalibrationInfo.setText(getResources().getString(R.string.info_right));
+                                            touchedRegionRgba.release();
+                                            touchedRegionHsv.release();
                                             break;
 
                                         //right
                                         case 1:
+                                            editor.putString(ConstantApp.SHARED_ROBOT_RIGHT_LOWER, mDetector.getmLowerBound());
+                                            Log.v(TAG, "RIGHT_LOWER: " + mDetector.getmLowerBound());
+                                            editor.putString(ConstantApp.SHARED_ROBOT_RIGHT_UPPER, mDetector.getmUpperBound());
+                                            Log.v(TAG, "RIGHT_UPPER: " + mDetector.getmUpperBound());
+                                            editor.commit();
+                                            colorCounter++;
+                                            mCalibrationInfo.setText(getResources().getString(R.string.info_left));
+                                            touchedRegionRgba.release();
+                                            touchedRegionHsv.release();
                                             break;
 
                                         //left
                                         case 2:
-
+                                            editor.putString(ConstantApp.SHARED_ROBOT_LEFT_LOWER, mDetector.getmLowerBound());
+                                            Log.v(TAG, "LEFT_LOWER: " + mDetector.getmLowerBound());
+                                            editor.putString(ConstantApp.SHARED_ROBOT_LEFT_UPPER, mDetector.getmUpperBound());
+                                            Log.v(TAG, "LEFT_UPPER: " + mDetector.getmUpperBound());
+                                            editor.commit();
                                             //calibration is done
+                                            mCalibrationInfo.setVisibility(View.GONE);
+                                            colorCounter = 0;
+                                            touchedRegionRgba.release();
+                                            touchedRegionHsv.release();
+                                            //return to the "classic" camera view
+                                            mTestImage.setVisibility(View.INVISIBLE);
+                                            mTextureView.setVisibility(View.VISIBLE);
+                                            mTextureView.getTop();
+                                            mFabCalibration.setVisibility(View.GONE);
+                                            mFabStartNavigation.setVisibility(View.VISIBLE);
+                                            mButtonRecalibrate.setVisibility(View.VISIBLE);
+                                            mFabStartNavigation.setEnabled(true);
+                                            break;
+
+                                        default:
                                             break;
 
 
@@ -692,27 +746,8 @@ public class AutoNavigation extends AppCompatActivity {
                                 }
                             });
                     dialogBuilder.show();
-                    /*SharedPreferences.Editor editor = sharedpreferences.edit();
-        editor.putString("user_type", personalInfo.getType());
-        if (personalInfo.getType().equals(ConstantApp.TYPE_S))
-            editor.putBoolean("user_cc", personalInfo.getHasCreditCard());
-        Log.v(ConstantApp.TAGLOG, "put in shared: " + personalInfo.getType());
-        editor.commit();*/
-
-
-                    //editor.putString(ConstantApp.SHARED_TARGET, )
-
-
-                    mDetector.setHsvColor(mBlobColorHsv);
-
-                    Imgproc.resize(mDetector.getSpectrum(), mSpectrum, SPECTRUM_SIZE);
-
-                    //mIsColorSelected = true;
-
-                    touchedRegionRgba.release();
-                    touchedRegionHsv.release();
-
-                    return false; // don't need subsequent touch events
+                    //false because we need only a single touch event
+                    return false;
                 }
             });
 
