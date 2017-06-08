@@ -102,7 +102,7 @@ public class AutoNavigation extends AppCompatActivity {
     private ImageView mTestImage;
     private Activity mActivity;
     private int k = 1;
-    private Mat mOriginal, case2, case3, case4;
+    private Mat mOriginal, caseHsv, caseRed, caseBlue, caseGreen;
 
     private Bitmap myBitmap;
 
@@ -172,7 +172,7 @@ public class AutoNavigation extends AppCompatActivity {
                         break;
                     case 2:
                         Log.d(TAG,"case = 2");
-                        Utils.matToBitmap(case2, myBitmap);
+                        Utils.matToBitmap(caseHsv, myBitmap);
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
@@ -187,7 +187,36 @@ public class AutoNavigation extends AppCompatActivity {
 
                     case 3:
                         Log.d(TAG,"last case");
-                        Utils.matToBitmap(case3, myBitmap);
+                        Utils.matToBitmap(caseRed, myBitmap);
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                mTestImage.setImageBitmap(myBitmap);
+                                mTextureView.setVisibility(View.INVISIBLE);
+                                mTestImage.setVisibility(View.VISIBLE);
+                                mTestImage.getTop();
+                            }
+                        });
+                        k++;
+                        break;
+                    case 4:
+                        Log.d(TAG,"last case");
+                        Utils.matToBitmap(caseGreen, myBitmap);
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                mTestImage.setImageBitmap(myBitmap);
+                                mTextureView.setVisibility(View.INVISIBLE);
+                                mTestImage.setVisibility(View.VISIBLE);
+                                mTestImage.getTop();
+                            }
+                        });
+                        k++;
+                        break;
+
+                    case 5:
+                        Log.d(TAG,"last case");
+                        Utils.matToBitmap(caseBlue, myBitmap);
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
@@ -514,15 +543,30 @@ public class AutoNavigation extends AppCompatActivity {
             mOriginal = new Mat(myBitmap.getWidth(), myBitmap.getHeight(), CvType.CV_8UC3);
             Utils.bitmapToMat(myBitmap, mOriginal);
 
+            Scalar lowRed= new Scalar(228,100,100);
+            Scalar upRed = new Scalar(255,255,255);
+
+            Scalar lowBlue= new Scalar(120,100,100);
+            Scalar upBlue = new Scalar(179,255,255);
+
+            Scalar lowGreen= new Scalar(50,0,50);
+            Scalar upGreen = new Scalar(255,128,250);
+
             //pass image in HSV
-            case2 = new Mat();
-            Imgproc.cvtColor(mOriginal, case2, Imgproc.COLOR_RGB2HSV);
+            caseHsv = new Mat();
+            Imgproc.cvtColor(mOriginal, caseHsv, Imgproc.COLOR_RGB2HSV);
+
+            //filter color red
+            caseRed = new Mat();
+            Core.inRange(caseHsv, lowRed, upRed, caseRed);
 
             //filter color blue
-            case3 = new Mat();
-            Scalar A = new Scalar(110,50,50);
-            Scalar B = new Scalar(130,255,255);
-            Core.inRange(case2, A, B, case3);
+            caseBlue = new Mat();
+            Core.inRange(caseHsv, lowBlue, upBlue, caseBlue);
+
+            //filter color green
+            caseGreen = new Mat();
+            Core.inRange(caseHsv, lowGreen, upGreen, caseGreen);
 
 
                 /*FileOutputStream fileOutputStream = null;
