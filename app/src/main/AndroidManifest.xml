@@ -43,7 +43,8 @@
         <activity
             android:name=".UI.ManualNavigation"
             android:label="@string/title_navigation"
-            android:theme="@style/AppTheme.NoActionBar" />
+            android:theme="@style/AppTheme.NoActionBar"
+           />
         <activity
             android:name=".UI.DeviceScanActivity"
             android:label="@string/title_scan"

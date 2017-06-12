@@ -35,7 +35,7 @@ public class ConstantApp {
     public static final String SHARED_ROBOT_LEFT_LOWER = "robot_left_lower";
     public static final String SHARED_ROBOT_RIGHT_UPPER = "robot_right_upper";
     public static final String SHARED_ROBOT_RIGHT_LOWER = "robot_right_lower";
-    public static final String SHARED_TARGET_UPPER = "target";
-    public static final String SHARED_TARGET_LOWER = "target";
+    public static final String SHARED_TARGET_UPPER = "target_upper";
+    public static final String SHARED_TARGET_LOWER = "target_lower";
 
 }

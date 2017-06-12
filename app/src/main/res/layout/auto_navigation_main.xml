@@ -34,7 +34,7 @@
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
         android:layout_margin="@dimen/fab_margin"
-        app:backgroundTint="@color/colorPrimary"
+        app:backgroundTint="@color/googleGreen"
         app:srcCompat="@drawable/ic_start_auto" />
 
 
@@ -47,6 +47,16 @@
         app:backgroundTint="@color/colorPrimary"
         android:visibility="gone"
         app:srcCompat="@drawable/ic_filter_tilt_shift_black_24dp" />
+
+    <android.support.design.widget.FloatingActionButton
+        android:id="@+id/fabStop"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="@dimen/fab_margin"
+        app:backgroundTint="@color/googleRed"
+        android:visibility="gone"
+        app:srcCompat="@drawable/ic_stop" />
 
     <Button
         android:id="@+id/next"

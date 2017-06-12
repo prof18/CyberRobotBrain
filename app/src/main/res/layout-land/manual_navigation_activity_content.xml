@@ -4,13 +4,52 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:gravity="center_vertical|center_horizontal">
+    android:orientation="horizontal"
+    android:gravity="center_horizontal|bottom">
 
     <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
+        android:gravity="bottom|left"
+        android:layout_marginBottom="20dp"
+        >
+
+    </LinearLayout>
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="bottom|left"
+        android:layout_marginBottom="20dp"
+        >
+        <ImageButton
+            android:id="@+id/left_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:title="@string/nav_left"
+            android:src="@drawable/ic_left_arrow"
+            android:background="@android:color/transparent"
+            android:clickable="true"
+            android:layout_marginRight="40dp"
+            />
+        <ImageButton
+            android:id="@+id/right_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:title="@string/nav_right"
+            android:src="@drawable/ic_right_arrow"
+            android:background="@android:color/transparent"
+            android:clickable="true"
+            />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginLeft="350dp"
+        android:layout_marginBottom="20dp"
         >
         <ImageButton
             android:id="@+id/forward_button"
@@ -20,53 +59,7 @@
             android:src="@drawable/ic_up_arrow"
             android:background="@android:color/transparent"
             android:clickable="true"
-            android:layout_marginTop="20dp"
             />
-    </LinearLayout>
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            >
-            <ImageButton
-                android:id="@+id/left_button"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:title="@string/nav_left"
-                android:src="@drawable/ic_left_arrow"
-                android:background="@android:color/transparent"
-                android:clickable="true"
-                android:layout_marginRight="40dp"
-                android:paddingTop="60dp"
-                />
-            <ImageButton
-                android:id="@+id/sound_button"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:title="@string/sound"
-                android:src="@drawable/ic_bell"
-                android:background="@android:color/transparent"
-                android:clickable="true"
-                android:layout_marginRight="40dp"
-                android:paddingTop="60dp"
-                />
-            <ImageButton
-                android:id="@+id/right_button"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:title="@string/nav_right"
-                android:src="@drawable/ic_right_arrow"
-                android:background="@android:color/transparent"
-                android:clickable="true"
-                android:paddingTop="60dp"
-                />
-
-    </LinearLayout>
-    <LinearLayout
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        >
         <ImageButton
             android:id="@+id/backward_button"
             android:layout_width="wrap_content"
@@ -75,7 +68,7 @@
             android:src="@drawable/ic_down_arrow"
             android:background="@android:color/transparent"
             android:clickable="true"
-            android:paddingTop="60dp"
+            android:layout_marginTop="40dp"
             />
     </LinearLayout>
 </LinearLayout>
