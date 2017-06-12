@@ -189,6 +189,7 @@ public class AutoNavigation extends AppCompatActivity {
                 mButtonRecalibrate.setVisibility(View.VISIBLE);
                 mFabStop.setVisibility(View.GONE);
                 mFabStartNavigation.setVisibility(View.VISIBLE);
+                mCalibrationInfo.setVisibility(View.GONE);
 
                 //return to the "classic" camera view
                 mTestImage.setVisibility(View.INVISIBLE);
@@ -230,6 +231,8 @@ public class AutoNavigation extends AppCompatActivity {
 
                     case 1:
                         Log.d(TAG, "HSV MASK");
+                        mCalibrationInfo.setVisibility(View.VISIBLE);
+                        mCalibrationInfo.setText("HSV MASK");
                         Utils.matToBitmap(caseHsv, myBitmap);
                         runOnUiThread(new Runnable() {
                             @Override
@@ -248,7 +251,8 @@ public class AutoNavigation extends AppCompatActivity {
 
                         /*org.opencv.core.Point center = findCentroid(caseLeft);
                         Imgproc.circle(caseLeft,center,3,new Scalar(0,255,0),3);*/
-
+                        mCalibrationInfo.setVisibility(View.VISIBLE);
+                        mCalibrationInfo.setText("CASE LEFT");
 
                         Utils.matToBitmap(caseLeft, myBitmap);
                         runOnUiThread(new Runnable() {
@@ -267,6 +271,8 @@ public class AutoNavigation extends AppCompatActivity {
 
                        /* org.opencv.core.Point center2 = findCentroid(caseTarget);
                         Imgproc.circle(caseTarget,center2,3,new Scalar(0,255,0),3);*/
+                        mCalibrationInfo.setVisibility(View.VISIBLE);
+                       mCalibrationInfo.setText("CASE TARGET");
 
                         Utils.matToBitmap(caseTarget, myBitmap);
                         runOnUiThread(new Runnable() {
@@ -286,6 +292,8 @@ public class AutoNavigation extends AppCompatActivity {
 
                        /* org.opencv.core.Point center3 = findCentroid(caseRight);
                         Imgproc.circle(caseRight,center3,3,new Scalar(0,255,0),3);*/
+                        mCalibrationInfo.setVisibility(View.VISIBLE);
+                        mCalibrationInfo.setText("CASE RIGHT");
 
                         Utils.matToBitmap(caseRight, myBitmap);
                         runOnUiThread(new Runnable() {
@@ -671,7 +679,7 @@ public class AutoNavigation extends AppCompatActivity {
 
             //pass image in HSV
             caseHsv = new Mat();
-            Imgproc.cvtColor(mOriginal, caseHsv, Imgproc.COLOR_RGB2HSV);
+            Imgproc.cvtColor(mOriginal, caseHsv, Imgproc.COLOR_RGB2HSV_FULL);
 
             //filter color left
             caseLeft = new Mat();
