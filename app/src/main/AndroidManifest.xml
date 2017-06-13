@@ -41,7 +41,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".UI.ManualNavigation"
+            android:name=".UI.ManualNavigationActivity"
             android:label="@string/title_navigation"
             android:theme="@style/AppTheme.NoActionBar"
            />
@@ -50,7 +50,7 @@
             android:label="@string/title_scan"
             android:theme="@style/AppTheme.NoActionBar" />
         <activity
-            android:name=".UI.AutoNavigation"
+            android:name=".UI.AutoNavigationActivity"
             android:screenOrientation="landscape"
             android:theme="@style/AppTheme.NoActionBar" />
 

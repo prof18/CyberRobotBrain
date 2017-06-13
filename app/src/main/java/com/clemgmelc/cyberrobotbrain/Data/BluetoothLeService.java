@@ -10,8 +10,6 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCallback;
 import android.bluetooth.BluetoothGattCharacteristic;
-import android.bluetooth.BluetoothGattDescriptor;
-import android.bluetooth.BluetoothGattServer;
 import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
@@ -21,11 +19,10 @@ import android.os.Binder;
 import android.os.IBinder;
 import android.util.Log;
 
-import com.clemgmelc.cyberrobotbrain.UI.AutoNavigation;
+import com.clemgmelc.cyberrobotbrain.UI.AutoNavigationActivity;
 import com.clemgmelc.cyberrobotbrain.Util.ConstantApp;
 
 import java.util.List;
-import java.util.UUID;
 
 /**
  *
@@ -34,7 +31,7 @@ import java.util.UUID;
  */
 public class BluetoothLeService extends Service {
 
-    private static final String TAG = ConstantApp.TAG + " - " + AutoNavigation.class.getSimpleName();
+    private static final String TAG = ConstantApp.TAG + " - " + AutoNavigationActivity.class.getSimpleName();
     private BluetoothManager mBluetoothManager;
     private BluetoothAdapter mBluetoothAdapter;
     private String mBluetoothDeviceAddress;

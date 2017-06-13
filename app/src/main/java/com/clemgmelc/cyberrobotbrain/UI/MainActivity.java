@@ -30,7 +30,7 @@ import java.util.List;
 public class MainActivity extends AppCompatActivity {
 
 
-    private static final String TAG = ConstantApp.TAG + " - " + AutoNavigation.class.getSimpleName();
+    private static final String TAG = ConstantApp.TAG + " - " + AutoNavigationActivity.class.getSimpleName();
     //request code
     public static final int SCAN_DEVICE_REQUEST = 1;
     public String mDeviceAddress = null;
@@ -38,7 +38,6 @@ public class MainActivity extends AppCompatActivity {
     private MainActivity mainActivity;
     private FloatingActionButton mFab;
     private boolean mConnected = false;
-    private boolean mReady = false;
     private Button mManualNav, mAutoNavigation;
 
 
@@ -71,7 +70,6 @@ public class MainActivity extends AppCompatActivity {
                     startActivityForResult(launchScan, SCAN_DEVICE_REQUEST);
                 } else {
                     Log.v(TAG, "INTENTIONAL REMOVAL OF CONNECTION");
-                    //if (mBluetoothLeService != null)
                         mBluetoothLeService.disconnect();
                         mConnected = false;
                         mFab.setEnabled(false);
@@ -87,13 +85,13 @@ public class MainActivity extends AppCompatActivity {
                 List<BluetoothGattService> list = mBluetoothLeService.getSupportedGattServices();
 
                 if (mConnected && list.size() == 9) {
-                    Intent startManualNav = new Intent(MainActivity.this, ManualNavigation.class);
-                    startManualNav.putExtra("DEVICE_ADDRESS", mDeviceAddress);
+                    Intent startManualNav = new Intent(MainActivity.this, ManualNavigationActivity.class);
+                    startManualNav.putExtra(ConstantApp.DEVICE_ADDRESS, mDeviceAddress);
                     startActivity(startManualNav);
                 } else if (!mConnected){
                     Toast.makeText(mainActivity, getResources().getString(R.string.action_disconnected), Toast.LENGTH_SHORT).show();
                 } else if (list.size() != 9) {
-                    Toast.makeText(mainActivity, "non ci sono service", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(mainActivity, getResources().getString(R.string.error_occured), Toast.LENGTH_SHORT).show();
                 }
             }
         });
@@ -101,7 +99,7 @@ public class MainActivity extends AppCompatActivity {
         mAutoNavigation.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent startMan = new Intent(MainActivity.this, AutoNavigation.class);
+                Intent startMan = new Intent(MainActivity.this, AutoNavigationActivity.class);
                 startActivity(startMan);
             }
         });
@@ -115,10 +113,8 @@ public class MainActivity extends AppCompatActivity {
 
             if (resultCode == Activity.RESULT_OK) {
 
-                String address = data.getStringExtra("DEVICE_ADDRESS");
-                mDeviceAddress = address;
+                mDeviceAddress = data.getStringExtra(ConstantApp.DEVICE_ADDRESS);
                 mFab.setEnabled(false);
-                //Toast.makeText(this, address, Toast.LENGTH_SHORT).show();
 
                 registerReceiver(mGattUpdateReceiver, makeGattUpdateIntentFilter());
 
@@ -147,7 +143,6 @@ public class MainActivity extends AppCompatActivity {
                 //TODO:abilitare
                 //mAutoNavigation.setEnabled(false);
 
-
                 //bad thing to respect low timing
                 Handler handler = new Handler();
                 handler.postDelayed(new Runnable() {
@@ -167,7 +162,6 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }, 2000);
 
-
                 unregisterReceiver(mGattUpdateReceiver);
                 unbindService(mServiceConnection);
                 mBluetoothLeService = null;
@@ -176,10 +170,7 @@ public class MainActivity extends AppCompatActivity {
 
             } else if (ConstantApp.ACTION_GATT_SERVICES_DISCOVERED.equals(action)) {
 
-                //check if the connected device is an iBlio Device and write the characteristic
-
                 Log.v(TAG, "gatt discovered");
-                //mReady = true;
                 mManualNav.setEnabled(true);
                 //TODO:abilitare
                 //mAutoNavigation.setEnabled(true);
@@ -206,7 +197,7 @@ public class MainActivity extends AppCompatActivity {
         public void onServiceConnected(ComponentName componentName, IBinder service) {
             mBluetoothLeService = ((BluetoothLeService.LocalBinder) service).getService();
             if (!mBluetoothLeService.initialize()) {
-                Log.e("", "Unable to initialize Bluetooth");
+                Log.v("", "Unable to initialize Bluetooth");
                 finish();
             }
 

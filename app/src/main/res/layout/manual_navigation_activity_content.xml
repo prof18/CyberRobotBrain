@@ -36,7 +36,7 @@
                 android:src="@drawable/ic_left_arrow"
                 android:background="@android:color/transparent"
                 android:clickable="true"
-                android:layout_marginRight="40dp"
+                android:layout_marginEnd="40dp"
                 android:paddingTop="60dp"
                 />
             <ImageButton
@@ -47,7 +47,7 @@
                 android:src="@drawable/ic_bell"
                 android:background="@android:color/transparent"
                 android:clickable="true"
-                android:layout_marginRight="40dp"
+                android:layout_marginEnd="40dp"
                 android:paddingTop="60dp"
                 />
             <ImageButton

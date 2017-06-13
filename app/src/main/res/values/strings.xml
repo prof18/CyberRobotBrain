@@ -46,5 +46,6 @@
     <string name="info_right">Tap the right indicator of the robot</string>
     <string name="button_recalibration">Recalibrate Indicators</string>
     <string name="info_recalibration">Frame the Robot and tap the button to start the calibration of the indicators</string>
+    <string name="error_occured">An unexpected error has occurred. Please retry and if the problem persist, reconnect to the Cyber Robot</string>
 
 </resources>

@@ -48,9 +48,11 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.clemgmelc.cyberrobotbrain.Data.ColorBlobDetector;
+import com.clemgmelc.cyberrobotbrain.Computation.Calibration;
+import com.clemgmelc.cyberrobotbrain.Computation.Navigation;
 import com.clemgmelc.cyberrobotbrain.R;
 import com.clemgmelc.cyberrobotbrain.Util.ConstantApp;
+import com.clemgmelc.cyberrobotbrain.Util.Utility;
 
 import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
@@ -58,29 +60,23 @@ import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfPoint;
-import org.opencv.core.Point3;
 import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.imgproc.Imgproc;
-import org.opencv.imgproc.Moments;
 
-import java.io.File;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
-public class AutoNavigation extends AppCompatActivity {
+public class AutoNavigationActivity extends AppCompatActivity {
 
-    private static final String TAG = ConstantApp.TAG + " - " + AutoNavigation.class.getSimpleName();
+    private static final String TAG = ConstantApp.TAG + " - " + AutoNavigationActivity.class.getSimpleName();
     private HandlerThread mBackgroundHandlerThread;
     private Handler mBackgroundHandler;
     private String mCameraId;
-    private Size mPreviewSize;
+    private Size mPreviewSize, mMaxSize;
     private Size mImageSize;
     private ImageReader mImageReader;
     private Semaphore mCameraOpenCloseLock = new Semaphore(1);
@@ -92,29 +88,19 @@ public class AutoNavigation extends AppCompatActivity {
     private static final int STATE_PREVIEW = 0;
     private static final int STATE_WAIT_LOCK = 1;
     private int mCaptureState = STATE_PREVIEW;
-    private Size mMaxSize;
     private TextureView mTextureView;
     private CameraDevice mCameraDevice;
     private CameraCaptureSession mPreviewCaptureSession;
     private CaptureRequest.Builder mCaptureRequestBuilder;
     private FloatingActionButton mFabStartNavigation, mFabCalibration, mFabStop;
-    private File mImageFolder;
-    private String mImageFileName;
-    private Button mButtonHide;
-    private Button mButtonNext;
-    private Button mButtonRecalibrate;
+    private Button mButtonNext, mButtonRecalibrate;
     private ImageView mTestImage;
     private Activity mActivity;
-    private int k = 1;
-    private Mat mOriginal, caseHsv, caseLeft, caseRight, caseTarget;
+    private int k = 1, colorCounter;
+    private Mat mOriginal, caseHsv, caseLeft, caseRight, caseTarget, touchedRegionHsv, touchedRegionRgba;
     private TextView mCalibrationInfo;
-
     private Bitmap myBitmap;
-    private ColorBlobDetector mDetector;
-    private int colorCounter;
-
-    private Mat touchedRegionRgba;
-    private  Mat touchedRegionHsv;
+    private Calibration mDetector;
     private boolean mIsCalibrating = false;
 
 
@@ -152,8 +138,8 @@ public class AutoNavigation extends AppCompatActivity {
 
         mTextureView = (TextureView) findViewById(R.id.textureView);
         mFabStartNavigation = (FloatingActionButton) findViewById(R.id.fabAutoNav);
-        if (!isCalibrationDone(getApplicationContext()))
-            mFabStartNavigation.setBackgroundTintList(ColorStateList.valueOf(ContextCompat.getColor(getApplicationContext(),R.color.googleRed)));
+        if (!Utility.isCalibrationDone(getApplicationContext()))
+            mFabStartNavigation.setBackgroundTintList(ColorStateList.valueOf(ContextCompat.getColor(getApplicationContext(), R.color.googleRed)));
 
         mFabStartNavigation.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -162,7 +148,7 @@ public class AutoNavigation extends AppCompatActivity {
                 mFabStartNavigation.setEnabled(false);
 
                 //check if the calibration is done
-                boolean isCalibrationDone = isCalibrationDone(getApplicationContext());
+                boolean isCalibrationDone = Utility.isCalibrationDone(getApplicationContext());
                 if (!isCalibrationDone) {
 
                     //TODO: popup
@@ -272,7 +258,7 @@ public class AutoNavigation extends AppCompatActivity {
                        /* org.opencv.core.Point center2 = findCentroid(caseTarget);
                         Imgproc.circle(caseTarget,center2,3,new Scalar(0,255,0),3);*/
                         mCalibrationInfo.setVisibility(View.VISIBLE);
-                       mCalibrationInfo.setText("CASE TARGET");
+                        mCalibrationInfo.setText("CASE TARGET");
 
                         Utils.matToBitmap(caseTarget, myBitmap);
                         runOnUiThread(new Runnable() {
@@ -354,26 +340,6 @@ public class AutoNavigation extends AppCompatActivity {
         }
     }
 
-    private boolean isCalibrationDone(Context context) {
-
-        boolean isCalibrationDone = false;
-
-        //get a reference to the shared preferences
-        SharedPreferences sharedpreferences = context.getSharedPreferences(ConstantApp.SHARED_NAME, Context.MODE_PRIVATE);
-
-        String leftUpper = sharedpreferences.getString(ConstantApp.SHARED_ROBOT_LEFT_UPPER, null);
-        String leftLower = sharedpreferences.getString(ConstantApp.SHARED_ROBOT_LEFT_LOWER, null);
-        String rightUpper = sharedpreferences.getString(ConstantApp.SHARED_ROBOT_RIGHT_UPPER, null);
-        String rightLower = sharedpreferences.getString(ConstantApp.SHARED_ROBOT_RIGHT_LOWER, null);
-        String targetUpper = sharedpreferences.getString(ConstantApp.SHARED_TARGET_UPPER, null);
-        String targetLower = sharedpreferences.getString(ConstantApp.SHARED_TARGET_LOWER, null);
-
-        if (leftUpper != null && leftLower != null && rightUpper != null && rightLower != null
-                && targetUpper != null && targetLower != null)
-            isCalibrationDone = true;
-
-        return isCalibrationDone;
-    }
 
     private TextureView.SurfaceTextureListener mSurfaceTextureListener = new TextureView.SurfaceTextureListener() {
         @Override
@@ -456,7 +422,7 @@ public class AutoNavigation extends AppCompatActivity {
                 mSizeList = mMap.getOutputSizes(ImageFormat.JPEG);
             }
 
-            int maxResIndex = maxRes(mSizeList);
+            int maxResIndex = Utility.maxRes(mSizeList);
             if (maxResIndex != -1) {
                 mMaxSize = mSizeList[maxResIndex];
             }
@@ -470,8 +436,8 @@ public class AutoNavigation extends AppCompatActivity {
             int maxPreviewWidth = displaySize.y;
             int maxPreviewHeight = displaySize.x;
 
-            mPreviewSize = chooseOptimalSize(mMap.getOutputSizes(SurfaceTexture.class), width, height, maxPreviewWidth, maxPreviewHeight, mMaxSize);
-            mImageSize = chooseOptimalSize(mMap.getOutputSizes(ImageFormat.JPEG), width, height, maxPreviewWidth, maxPreviewHeight, mMaxSize);
+            mPreviewSize = Utility.chooseOptimalSize(mMap.getOutputSizes(SurfaceTexture.class), width, height, maxPreviewWidth, maxPreviewHeight, mMaxSize);
+            //mImageSize = chooseOptimalSize(mMap.getOutputSizes(ImageFormat.JPEG), width, height, maxPreviewWidth, maxPreviewHeight, mMaxSize);
 
             Matrix matrix = new Matrix();
             RectF viewRect = new RectF(0, 0, width, height);
@@ -565,21 +531,6 @@ public class AutoNavigation extends AppCompatActivity {
             mCaptureRequestBuilder.set(CaptureRequest.JPEG_ORIENTATION, null);
 
 
-           /* CameraCaptureSession.CaptureCallback stillCaptureCallback = new
-                    CameraCaptureSession.CaptureCallback() {
-                        @Override
-                        public void onCaptureStarted(CameraCaptureSession session, CaptureRequest request, long timestamp, long frameNumber) {
-                            super.onCaptureStarted(session, request, timestamp, frameNumber);
-                            try {
-                                createImageFileName();
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            }
-                        }
-                    };*/
-
-            //mPreviewCaptureSession.capture(mCaptureRequestBuilder.build(), stillCaptureCallback, mBackgroundHandler);
-
         } catch (CameraAccessException e) {
             e.printStackTrace();
         }
@@ -588,16 +539,16 @@ public class AutoNavigation extends AppCompatActivity {
     private final ImageReader.OnImageAvailableListener mOnImageAvailableListener = new ImageReader.OnImageAvailableListener() {
 
 
-                @Override
-                public void onImageAvailable(ImageReader reader) {
-                    Log.v(TAG, "IMAGE AVAILABLE SAVE IT");
-                    if (mIsCalibrating)
-                        mBackgroundHandler.post(new CalibrationThread(reader.acquireLatestImage()));
-                    else
-                        mBackgroundHandler.post(new NavigationThread(reader.acquireLatestImage()));
+        @Override
+        public void onImageAvailable(ImageReader reader) {
+            Log.v(TAG, "IMAGE AVAILABLE SAVE IT");
+            if (mIsCalibrating)
+                mBackgroundHandler.post(new CalibrationThread(reader.acquireLatestImage()));
+            else
+                mBackgroundHandler.post(new NavigationThread(reader.acquireLatestImage()));
 
-                }
-            };
+        }
+    };
 
 
     private class NavigationThread implements Runnable {
@@ -650,12 +601,12 @@ public class AutoNavigation extends AppCompatActivity {
             String[] targetLower = sharedpreferences.getString(ConstantApp.SHARED_TARGET_LOWER, null).split(":");
 
 
-            for (int i = 0; i < 3 ; i++) {
+            for (int i = 0; i < 3; i++) {
                 if (Double.valueOf(leftUpper[i]) >= 255)
                     leftUpper[i] = "255";
                 else if (Double.valueOf(rightUpper[i]) >= 255)
                     leftUpper[i] = "255";
-                else  if (Double.valueOf(targetUpper[i]) >= 255)
+                else if (Double.valueOf(targetUpper[i]) >= 255)
                     leftUpper[i] = "255";
             }
 
@@ -684,87 +635,55 @@ public class AutoNavigation extends AppCompatActivity {
             //filter color left
             caseLeft = new Mat();
             Core.inRange(caseHsv, lowLeft, upLeft, caseLeft);
-            List<MatOfPoint> contoursLeft = findContours(caseLeft);
+            List<MatOfPoint> contoursLeft = Navigation.findContours(caseLeft);
             if (contoursLeft.isEmpty()) {
                 mImage.close();
-                takePicture();
-                Toast.makeText(mActivity, "Retake picture", Toast.LENGTH_SHORT).show();
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        takePicture();
+                        Toast.makeText(mActivity, "Retake picture", Toast.LENGTH_SHORT).show();
+                    }
+                });
+
             }
-            org.opencv.core.Point centerLeft = findCentroid(contoursLeft);
-            Imgproc.circle(caseLeft,centerLeft,3,new Scalar(0,255,0),3);
+            org.opencv.core.Point centerLeft = Navigation.findCentroid(contoursLeft);
+            Imgproc.circle(caseLeft, centerLeft, 3, new Scalar(0, 255, 0), 3);
 
             //filter color right
             caseRight = new Mat();
             Core.inRange(caseHsv, lowRight, upRight, caseRight);
-            List<MatOfPoint> contoursRight = findContours(caseRight);
+            List<MatOfPoint> contoursRight = Navigation.findContours(caseRight);
             if (contoursRight.isEmpty()) {
                 mImage.close();
-                takePicture();
-                Toast.makeText(mActivity, "Retake picture", Toast.LENGTH_SHORT).show();
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        takePicture();
+                        Toast.makeText(mActivity, "Retake picture", Toast.LENGTH_SHORT).show();
+                    }
+                });
             }
-            org.opencv.core.Point centerRight = findCentroid(contoursRight);
-            Imgproc.circle(caseRight,centerRight,3,new Scalar(0,255,0),3);
+            org.opencv.core.Point centerRight = Navigation.findCentroid(contoursRight);
+            Imgproc.circle(caseRight, centerRight, 3, new Scalar(0, 255, 0), 3);
 
             //filter color target
             caseTarget = new Mat();
             Core.inRange(caseHsv, lowTarget, upTarget, caseTarget);
-            List<MatOfPoint> contoursTarget = findContours(caseTarget);
+            List<MatOfPoint> contoursTarget = Navigation.findContours(caseTarget);
             if (contoursTarget.isEmpty()) {
                 mImage.close();
-                takePicture();
-                Toast.makeText(mActivity, "Retake picture", Toast.LENGTH_SHORT).show();
-            }
-            org.opencv.core.Point centerTarget = findCentroid(contoursTarget);
-            Imgproc.circle(caseTarget,centerTarget,3,new Scalar(0,255,0),3);
 
+            }
+            org.opencv.core.Point centerTarget = Navigation.findCentroid(contoursTarget);
+            Imgproc.circle(caseTarget, centerTarget, 3, new Scalar(0, 255, 0), 3);
 
 
             mImage.close();
 
 
-
-
-
         }
     }
-
-    private List<MatOfPoint> findContours(Mat matImage) {
-        List<MatOfPoint> contours = new ArrayList<>();
-        Mat hierarchy = new Mat();
-        Imgproc.findContours(matImage, contours, hierarchy, Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE);
-
-        return contours;
-    }
-
-    private org.opencv.core.Point findCentroid(List<MatOfPoint> contours) {
-
-
-
-        double maxArea = 0;
-        int index = -1;
-
-        for (MatOfPoint mop : contours) {
-
-            double area = Imgproc.contourArea(mop);
-            if (area > maxArea) {
-                maxArea = area;
-                index = contours.indexOf(mop);
-            }
-        }
-
-
-        //List<Moments> mu = new ArrayList<>(contours.size());
-
-
-
-        Moments m = Imgproc.moments(contours.get(index), false);
-        int x = (int) (m.get_m10() / m.get_m00());
-        int y = (int) (m.get_m01() / m.get_m00());
-        org.opencv.core.Point centroid = new org.opencv.core.Point(x,y);
-
-      return centroid;
-    }
-
 
 
     private class CalibrationThread implements Runnable {
@@ -778,7 +697,6 @@ public class AutoNavigation extends AppCompatActivity {
 
         @Override
         public void run() {
-
 
 
             Log.v(TAG, "Calibration Thread RUNNING##############");
@@ -833,8 +751,8 @@ public class AutoNavigation extends AppCompatActivity {
                     int xOffset = (mTextureView.getWidth() - cols) / 2;
                     int yOffset = (mTextureView.getHeight() - rows) / 2;
 
-                    int x = (int)event.getX() - xOffset;
-                    int y = (int)event.getY() - yOffset;
+                    int x = (int) event.getX() - xOffset;
+                    int y = (int) event.getY() - yOffset;
 
                     Log.i(TAG, "Touch image coordinates: (" + x + ", " + y + ")");
 
@@ -842,48 +760,48 @@ public class AutoNavigation extends AppCompatActivity {
 
                     Rect touchedRect = new Rect();
 
-                    touchedRect.x = (x>4) ? x-4 : 0;
-                    touchedRect.y = (y>4) ? y-4 : 0;
+                    touchedRect.x = (x > 4) ? x - 4 : 0;
+                    touchedRect.y = (y > 4) ? y - 4 : 0;
 
-                    touchedRect.width = (x+4 < cols) ? x + 4 - touchedRect.x : cols - touchedRect.x;
-                    touchedRect.height = (y+4 < rows) ? y + 4 - touchedRect.y : rows - touchedRect.y;
+                    touchedRect.width = (x + 4 < cols) ? x + 4 - touchedRect.x : cols - touchedRect.x;
+                    touchedRect.height = (y + 4 < rows) ? y + 4 - touchedRect.y : rows - touchedRect.y;
 
                     touchedRegionRgba = mOriginal.submat(touchedRect);
 
                     touchedRegionHsv = new Mat();
                     Imgproc.cvtColor(touchedRegionRgba, touchedRegionHsv, Imgproc.COLOR_RGB2HSV_FULL);
 
-                    mDetector = new ColorBlobDetector();
+                    mDetector = new Calibration();
                     Mat mSpectrum = new Mat();
                     Scalar mBlobColorRgba = new Scalar(255);
                     Scalar mBlobColorHsv = new Scalar(255);
                     org.opencv.core.Size SPECTRUM_SIZE = new org.opencv.core.Size(200, 64);
-                    final Scalar CONTOUR_COLOR = new Scalar(255,0,0,255);
+                    final Scalar CONTOUR_COLOR = new Scalar(255, 0, 0, 255);
 
                     // Calculate average color of touched region
                     mBlobColorHsv = Core.sumElems(touchedRegionHsv);
-                    int pointCount = touchedRect.width*touchedRect.height;
+                    int pointCount = touchedRect.width * touchedRect.height;
                     for (int i = 0; i < mBlobColorHsv.val.length; i++)
                         mBlobColorHsv.val[i] /= pointCount;
 
-                    mBlobColorRgba = converScalarHsv2Rgba(mBlobColorHsv);
+                    mBlobColorRgba = Calibration.hsvToRGBA(mBlobColorHsv);
                     int red = (int) mBlobColorRgba.val[0];
                     int green = (int) mBlobColorRgba.val[1];
                     int blue = (int) mBlobColorRgba.val[2];
                     int alpha = (int) (int) mBlobColorRgba.val[3];
 
-                    String hex = String.format("#%02x%02x%02x%02x", red,green,blue,alpha);
+                    String hex = String.format("#%02x%02x%02x%02x", red, green, blue, alpha);
 
                     Log.v(TAG, "COLOR CLICKED: " + hex);
 
                     Log.i(TAG, "Touched rgba color: (" + mBlobColorRgba.val[0] + ", " + mBlobColorRgba.val[1] +
                             ", " + mBlobColorRgba.val[2] + ", " + mBlobColorRgba.val[3] + ")");
 
-                    mDetector.setHsvColor(mBlobColorHsv);
+                    mDetector.setHsvRange(mBlobColorHsv);
 
-                    Imgproc.resize(mDetector.getSpectrum(), mSpectrum, SPECTRUM_SIZE);
+                    //Imgproc.resize(mDetector.getSpectrum(), mSpectrum, SPECTRUM_SIZE);
 
-                    final AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(AutoNavigation.this);
+                    final AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(AutoNavigationActivity.this);
                     dialogBuilder.setTitle("Selected Color");
                     dialogBuilder.setMessage("The selected color is " + hex);
                     dialogBuilder.setCancelable(false);
@@ -898,10 +816,10 @@ public class AutoNavigation extends AppCompatActivity {
 
                                         //target
                                         case 0:
-                                            editor.putString(ConstantApp.SHARED_TARGET_LOWER, mDetector.getmLowerBound());
-                                            Log.v(TAG, "TARGET_LOWER: " + mDetector.getmLowerBound());
-                                            editor.putString(ConstantApp.SHARED_TARGET_UPPER, mDetector.getmUpperBound());
-                                            Log.v(TAG, "TARGET_UPPER: " + mDetector.getmUpperBound());
+                                            editor.putString(ConstantApp.SHARED_TARGET_LOWER, mDetector.getLowerBound());
+                                            Log.v(TAG, "TARGET_LOWER: " + mDetector.getLowerBound());
+                                            editor.putString(ConstantApp.SHARED_TARGET_UPPER, mDetector.getUpperBound());
+                                            Log.v(TAG, "TARGET_UPPER: " + mDetector.getUpperBound());
                                             editor.commit();
                                             colorCounter++;
                                             mCalibrationInfo.setText(getResources().getString(R.string.info_right));
@@ -911,10 +829,10 @@ public class AutoNavigation extends AppCompatActivity {
 
                                         //right
                                         case 1:
-                                            editor.putString(ConstantApp.SHARED_ROBOT_RIGHT_LOWER, mDetector.getmLowerBound());
-                                            Log.v(TAG, "RIGHT_LOWER: " + mDetector.getmLowerBound());
-                                            editor.putString(ConstantApp.SHARED_ROBOT_RIGHT_UPPER, mDetector.getmUpperBound());
-                                            Log.v(TAG, "RIGHT_UPPER: " + mDetector.getmUpperBound());
+                                            editor.putString(ConstantApp.SHARED_ROBOT_RIGHT_LOWER, mDetector.getLowerBound());
+                                            Log.v(TAG, "RIGHT_LOWER: " + mDetector.getLowerBound());
+                                            editor.putString(ConstantApp.SHARED_ROBOT_RIGHT_UPPER, mDetector.getUpperBound());
+                                            Log.v(TAG, "RIGHT_UPPER: " + mDetector.getUpperBound());
                                             editor.commit();
                                             colorCounter++;
                                             mCalibrationInfo.setText(getResources().getString(R.string.info_left));
@@ -924,10 +842,10 @@ public class AutoNavigation extends AppCompatActivity {
 
                                         //left
                                         case 2:
-                                            editor.putString(ConstantApp.SHARED_ROBOT_LEFT_LOWER, mDetector.getmLowerBound());
-                                            Log.v(TAG, "LEFT_LOWER: " + mDetector.getmLowerBound());
-                                            editor.putString(ConstantApp.SHARED_ROBOT_LEFT_UPPER, mDetector.getmUpperBound());
-                                            Log.v(TAG, "LEFT_UPPER: " + mDetector.getmUpperBound());
+                                            editor.putString(ConstantApp.SHARED_ROBOT_LEFT_LOWER, mDetector.getLowerBound());
+                                            Log.v(TAG, "LEFT_LOWER: " + mDetector.getLowerBound());
+                                            editor.putString(ConstantApp.SHARED_ROBOT_LEFT_UPPER, mDetector.getUpperBound());
+                                            Log.v(TAG, "LEFT_UPPER: " + mDetector.getUpperBound());
                                             editor.commit();
                                             //calibration is done
                                             mCalibrationInfo.setVisibility(View.GONE);
@@ -942,7 +860,7 @@ public class AutoNavigation extends AppCompatActivity {
                                             mFabStartNavigation.setVisibility(View.VISIBLE);
                                             mButtonRecalibrate.setVisibility(View.VISIBLE);
                                             mFabStartNavigation.setEnabled(true);
-                                            mFabStartNavigation.setBackgroundTintList(ColorStateList.valueOf(ContextCompat.getColor(getApplicationContext(),R.color.googleGreen)));
+                                            mFabStartNavigation.setBackgroundTintList(ColorStateList.valueOf(ContextCompat.getColor(getApplicationContext(), R.color.googleGreen)));
                                             mIsCalibrating = false;
                                             mFabCalibration.setEnabled(true);
                                             break;
@@ -962,75 +880,12 @@ public class AutoNavigation extends AppCompatActivity {
 
             mImage.close();
 
-/*            Scalar lowRed = new Scalar(228, 100, 100);
-            Scalar upRed = new Scalar(255, 255, 255);
-
-            Scalar lowBlue = new Scalar(120, 100, 100);
-            Scalar upBlue = new Scalar(179, 255, 255);
-
-            Scalar lowGreen = new Scalar(50, 0, 50);
-            Scalar upGreen = new Scalar(255, 128, 250);
-
-            //pass image in HSV
-            caseHsv = new Mat();
-            Imgproc.cvtColor(mOriginal, caseHsv, Imgproc.COLOR_RGB2HSV);
-
-            //filter color red
-            caseLeft = new Mat();
-            Core.inRange(caseHsv, lowRed, upRed, caseLeft);
-
-            //filter color blue
-            caseRight = new Mat();
-            Core.inRange(caseHsv, lowBlue, upBlue, caseRight);
-
-            //filter color green
-            caseTarget = new Mat();
-            Core.inRange(caseHsv, lowGreen, upGreen, caseTarget);*/
-
-
-                /*FileOutputStream fileOutputStream = null;
-                try {
-                    fileOutputStream = new FileOutputStream(mImageFileName);
-                    fileOutputStream.write(bytes);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                } finally {
-                    mImage.close();
-
-                    Intent mediaStoreUpdateIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
-                    mediaStoreUpdateIntent.setData(Uri.fromFile(new File(mImageFileName)));
-                    sendBroadcast(mediaStoreUpdateIntent);
-
-                    if (fileOutputStream != null) {
-                        try {
-                            fileOutputStream.close();
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-                Log.v(TAG, "************skipped image");
-            }*/
 
         }
     }
 
-    private Scalar converScalarHsv2Rgba(Scalar hsvColor) {
-        Mat pointMatRgba = new Mat();
-        Mat pointMatHsv = new Mat(1, 1, CvType.CV_8UC3, hsvColor);
-        Imgproc.cvtColor(pointMatHsv, pointMatRgba, Imgproc.COLOR_HSV2RGB_FULL, 4);
-
-        return new Scalar(pointMatRgba.get(0, 0));
-    }
-
 
     private void takePicture() {
-
-        //re-enable button
-/*        mButtonHide.setVisibility(View.VISIBLE);
-        mButtonNext.setVisibility(View.VISIBLE);*/
 
         mFabCalibration.setVisibility(View.GONE);
 
@@ -1080,16 +935,6 @@ public class AutoNavigation extends AppCompatActivity {
             super.onCaptureCompleted(session, request, result);
             process(result);
         }
-
-/*        @Override
-        public void onCaptureStarted(CameraCaptureSession session, CaptureRequest request, long timestamp, long frameNumber) {
-            super.onCaptureStarted(session, request, timestamp, frameNumber);
-            *//*try {
-                createImageFileName();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }*//*
-        }*/
     };
 
 
@@ -1134,89 +979,6 @@ public class AutoNavigation extends AppCompatActivity {
             e.printStackTrace();
         }
     }
-
-    private static Size chooseOptimalSize(Size[] choices, int textureViewWidth, int textureViewHeight,
-                                          int maxWidth, int maxHeight, Size aspectRatio) {
-
-        // Collect the supported resolutions that are at least as big as the preview Surface
-        List<Size> bigEnough = new ArrayList<>();
-        // Collect the supported resolutions that are smaller than the preview Surface
-        List<Size> notBigEnough = new ArrayList<>();
-        int w = aspectRatio.getWidth();
-        int h = aspectRatio.getHeight();
-        for (Size option : choices) {
-            if (option.getWidth() <= maxWidth && option.getHeight() <= maxHeight &&
-                    option.getHeight() == option.getWidth() * h / w) {
-                if (option.getWidth() >= textureViewWidth &&
-                        option.getHeight() >= textureViewHeight) {
-                    bigEnough.add(option);
-                } else {
-                    notBigEnough.add(option);
-                }
-            }
-        }
-
-        // Pick the smallest of those big enough. If there is no one big enough, pick the
-        // largest of those not big enough.
-        if (bigEnough.size() > 0) {
-            return Collections.min(bigEnough, new CompareSizesByArea());
-        } else if (notBigEnough.size() > 0) {
-            return Collections.max(notBigEnough, new CompareSizesByArea());
-        } else {
-            Log.e(TAG, "Couldn't find any suitable preview size");
-            return choices[0];
-        }
-    }
-
-    private static class CompareSizesByArea implements Comparator<Size> {
-
-        @Override
-        public int compare(Size lhs, Size rhs) {
-            // We cast here to ensure the multiplications won't overflow
-            return Long.signum((long) lhs.getWidth() * lhs.getHeight() -
-                    (long) rhs.getWidth() * rhs.getHeight());
-        }
-
-    }
-
-    private int maxRes(Size[] sizeList) {
-        long surface = 0;
-        int index = -1;
-
-        for (int i = 0; i < sizeList.length; i++) {
-
-            Size size = sizeList[i];
-
-            long tempSurface = size.getHeight() * size.getWidth();
-
-            if (tempSurface > surface) {
-
-                surface = tempSurface;
-                index = i;
-            }
-        }
-
-        return index;
-    }
-
-/*    private void createImageFolder() {
-        File imageFile = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
-        mImageFolder = new File(imageFile, "clemlecCamera");
-        if (!mImageFolder.exists()) {
-            mImageFolder.mkdirs();
-        }
-    }
-
-
-    private File createImageFileName() throws IOException {
-
-        String timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-        String prepend = "IMG_" + timestamp + "_";
-        File imageFile = File.createTempFile(prepend, ".jpg", mImageFolder);
-        mImageFileName = imageFile.getAbsolutePath();
-
-        return imageFile;
-    }*/
 
 
     @Override

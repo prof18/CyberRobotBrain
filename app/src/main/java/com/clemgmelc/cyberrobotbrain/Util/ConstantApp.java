@@ -10,6 +10,7 @@ public class ConstantApp {
 
     public static final String TAG = "CyberRobot";
     public static final UUID UUID_MOVEMENT = UUID.fromString("0000fff5-0000-1000-8000-00805f9b34fb");
+    public static final String DEVICE_ADDRESS = "DEVICE_ADDRESS";
 
     //byte array for the movements of the robot
     public static final byte[] forward = {0x31, 0x32, 0x44, 0x30, 0x53, 0x2d, 0x31};

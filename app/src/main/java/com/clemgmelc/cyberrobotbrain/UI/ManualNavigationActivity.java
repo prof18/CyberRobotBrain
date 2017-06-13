@@ -21,20 +21,15 @@ import com.clemgmelc.cyberrobotbrain.Data.BluetoothLeService;
 import com.clemgmelc.cyberrobotbrain.R;
 import com.clemgmelc.cyberrobotbrain.Util.ConstantApp;
 
-public class ManualNavigation extends AppCompatActivity {
+public class ManualNavigationActivity extends AppCompatActivity {
 
-    private static final String TAG = ConstantApp.TAG + " - " + AutoNavigation.class.getSimpleName();
+    private static final String TAG = ConstantApp.TAG + " - " + AutoNavigationActivity.class.getSimpleName();
     private ImageButton mForward, mBackward, mLeft, mRight;
     private BluetoothLeService mBluetoothLeService;
     private String mDeviceAddress;
     private BluetoothGattService mMovementGattService;
     private BluetoothGattCharacteristic mMovementCharacteristic;
-    private boolean pressed = true;
-
-    private Handler mHandlerF;
-    private Handler mHandlerB;
-    private Handler mHandlerL;
-    private Handler mHandlerR;
+    private Handler mHandlerF, mHandlerB, mHandlerL, mHandlerR;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,8 +38,7 @@ public class ManualNavigation extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        mDeviceAddress = getIntent().getStringExtra("DEVICE_ADDRESS");
-
+        mDeviceAddress = getIntent().getStringExtra(ConstantApp.DEVICE_ADDRESS);
 
         mForward = (ImageButton) findViewById(R.id.forward_button);
         mBackward = (ImageButton) findViewById(R.id.backward_button);

@@ -47,13 +47,10 @@ import java.util.ArrayList;
 
 public class DeviceScanActivity extends AppCompatActivity {
 
-    private static final String TAG = ConstantApp.TAG + " - " + AutoNavigation.class.getSimpleName();
+    private static final String TAG = ConstantApp.TAG + " - " + AutoNavigationActivity.class.getSimpleName();
     private DeviceScanActivity mActivity;
 
-    private static final int REQUEST_ENABLE_BT = 1;
-    private static final int ALERT_GPS = 1;
-    private static final int ALERT_BLUE = 2;
-    private static final int REQUEST_LOCATION_PERMISSION = 1;
+    private static final int REQUEST_ENABLE_BT = 1, ALERT_GPS = 1, ALERT_BLUE = 2, REQUEST_LOCATION_PERMISSION = 1;
     private static String[] PERMISSIONS_LOCATION = {
             Manifest.permission.ACCESS_COARSE_LOCATION,
             Manifest.permission.ACCESS_FINE_LOCATION
@@ -79,8 +76,6 @@ public class DeviceScanActivity extends AppCompatActivity {
     private SwipeRefreshLayout mSwipeRefreshLayout;
     private ProgressBar mProgress;
     private TextView mNoDevice;
-
-
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -169,7 +164,7 @@ public class DeviceScanActivity extends AppCompatActivity {
         AlertDialog.Builder alertDialog = new AlertDialog.Builder(this);
         switch (type) {
             case (ALERT_GPS):
-                Log.d(TAG, "partito ALERT di attivazione GPS");
+                Log.d(TAG, "Activation GPS ALERT started");
                 alertDialog.setMessage(getResources().getString(R.string.gps_required));
                 alertDialog.setCancelable(false);
                 alertDialog.setPositiveButton(getResources().getString(R.string.gps_enabling),
@@ -195,7 +190,7 @@ public class DeviceScanActivity extends AppCompatActivity {
 
                 break;
             case (ALERT_BLUE):
-                Log.d(TAG, "partito ALERT di attivazione BLE");
+                Log.d(TAG, "Activation BLE ALERT Started");
                 if (mAlertBlue == null) {
                     Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
                     startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
