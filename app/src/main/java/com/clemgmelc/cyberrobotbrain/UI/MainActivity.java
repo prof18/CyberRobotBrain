@@ -57,7 +57,7 @@ public class MainActivity extends AppCompatActivity {
 
         mAutoNavigation = (Button) findViewById(R.id.auto_navigation_btn);
         //TODO:abilitare
-        //mAutoNavigation.setEnabled(false);
+        mAutoNavigation.setEnabled(false);
 
         mFab.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -99,8 +99,18 @@ public class MainActivity extends AppCompatActivity {
         mAutoNavigation.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent startMan = new Intent(MainActivity.this, AutoNavigationActivity.class);
-                startActivity(startMan);
+
+                List<BluetoothGattService> list = mBluetoothLeService.getSupportedGattServices();
+
+                if (mConnected && list.size() == 9){
+                    Intent startMan = new Intent(MainActivity.this, AutoNavigationActivity.class);
+                    startMan.putExtra(ConstantApp.DEVICE_ADDRESS, mDeviceAddress);
+                    startActivity(startMan);
+                } else if (!mConnected) {
+                    Toast.makeText(mainActivity, getResources().getString(R.string.action_disconnected), Toast.LENGTH_SHORT).show();
+                } else if (list.size() != 9) {
+                    Toast.makeText(mainActivity, getResources().getString(R.string.error_occured), Toast.LENGTH_SHORT).show();
+                }
             }
         });
     }
@@ -141,7 +151,7 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(mBluetoothLeService, getResources().getString(R.string.message_disconnecting), Toast.LENGTH_SHORT).show();
                 mManualNav.setEnabled(false);
                 //TODO:abilitare
-                //mAutoNavigation.setEnabled(false);
+                mAutoNavigation.setEnabled(false);
 
                 //bad thing to respect low timing
                 Handler handler = new Handler();
@@ -173,7 +183,7 @@ public class MainActivity extends AppCompatActivity {
                 Log.v(TAG, "gatt discovered");
                 mManualNav.setEnabled(true);
                 //TODO:abilitare
-                //mAutoNavigation.setEnabled(true);
+                mAutoNavigation.setEnabled(true);
 
             }
         }

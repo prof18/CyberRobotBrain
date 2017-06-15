@@ -25,9 +25,11 @@ public class Navigation {
 
     public static Point findCentroid(List<MatOfPoint> contours) {
 
-
-        double maxArea = 0;
+        //this value is taken from the experience
+        double maxArea = 5000;
         int index = -1;
+
+        if (!contours.isEmpty()) {
 
         for (MatOfPoint mop : contours) {
 
@@ -42,12 +44,14 @@ public class Navigation {
         //List<Moments> mu = new ArrayList<>(contours.size());
 
 
-        Moments m = Imgproc.moments(contours.get(index), false);
-        int x = (int) (m.get_m10() / m.get_m00());
-        int y = (int) (m.get_m01() / m.get_m00());
-        org.opencv.core.Point centroid = new org.opencv.core.Point(x, y);
+            Moments m = Imgproc.moments(contours.get(index), false);
+            int x = (int) (m.get_m10() / m.get_m00());
+            int y = (int) (m.get_m01() / m.get_m00());
+            org.opencv.core.Point centroid = new org.opencv.core.Point(x, y);
 
-        return centroid;
+            return centroid;
+        }
+        return null;
     }
 
 }

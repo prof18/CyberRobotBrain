@@ -2,8 +2,13 @@ package com.clemgmelc.cyberrobotbrain.UI;
 
 import android.Manifest;
 import android.app.Activity;
+import android.bluetooth.BluetoothGattCharacteristic;
+import android.bluetooth.BluetoothGattService;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
+import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
@@ -29,6 +34,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.os.IBinder;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
@@ -50,6 +56,7 @@ import android.widget.Toast;
 
 import com.clemgmelc.cyberrobotbrain.Computation.Calibration;
 import com.clemgmelc.cyberrobotbrain.Computation.Navigation;
+import com.clemgmelc.cyberrobotbrain.Data.BluetoothLeService;
 import com.clemgmelc.cyberrobotbrain.R;
 import com.clemgmelc.cyberrobotbrain.Util.ConstantApp;
 import com.clemgmelc.cyberrobotbrain.Util.Utility;
@@ -102,6 +109,13 @@ public class AutoNavigationActivity extends AppCompatActivity {
     private Bitmap myBitmap;
     private Calibration mDetector;
     private boolean mIsCalibrating = false;
+    private org.opencv.core.Point centerLeft, centerRight, centerTarget, centerMean;
+    private BluetoothLeService mBluetoothLeService;
+    private String mDeviceAddress;
+    private BluetoothGattService mMovementGattService;
+    private BluetoothGattCharacteristic mMovementCharacteristic;
+    private NavigationThread navigationThread;
+    private boolean stop = false;
 
 
     @Override
@@ -115,6 +129,8 @@ public class AutoNavigationActivity extends AppCompatActivity {
         mFabCalibration = (FloatingActionButton) findViewById(R.id.fabCalibration);
         mButtonRecalibrate = (Button) findViewById(R.id.recalibrate);
         mFabStop = (FloatingActionButton) findViewById(R.id.fabStop);
+
+        mDeviceAddress = getIntent().getStringExtra(ConstantApp.DEVICE_ADDRESS);
 
         mActivity = this;
 
@@ -163,6 +179,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
                     mButtonRecalibrate.setVisibility(View.GONE);
                     mFabStartNavigation.setVisibility(View.GONE);
                     mFabStop.setVisibility(View.VISIBLE);
+                    stop = false;
                     takePicture();
                     mFabStartNavigation.setEnabled(true);
                 }
@@ -182,6 +199,9 @@ public class AutoNavigationActivity extends AppCompatActivity {
                 mTextureView.setVisibility(View.VISIBLE);
                 mTextureView.getTop();
                 mFabStartNavigation.setEnabled(true);
+                myBitmap = null;
+
+                stop = true;
 
             }
         });
@@ -313,8 +333,55 @@ public class AutoNavigationActivity extends AppCompatActivity {
         } else {
             mTextureView.setSurfaceTextureListener(mSurfaceTextureListener);
         }
+
+        Intent gattServiceIntent = new Intent(this, BluetoothLeService.class);
+        bindService(gattServiceIntent, mServiceConnection, BIND_AUTO_CREATE);
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        Log.v(TAG, "onDestroy");
+        //mBluetoothLeService.disconnect();
+        unbindService(mServiceConnection);
+        mBluetoothLeService = null;
+    }
+
+    // Manage Service lifecycle.
+    private final ServiceConnection mServiceConnection = new ServiceConnection() {
+
+        //what to do when connected to the service
+        @Override
+        public void onServiceConnected(ComponentName componentName, IBinder service) {
+
+            mBluetoothLeService = ((BluetoothLeService.LocalBinder) service).getService();
+            if (!mBluetoothLeService.initialize()) {
+                Log.e("", "Unable to initialize Bluetooth");
+                finish();
+            }
+            if (mDeviceAddress != null) {
+
+             /*   //if connected send a toast message
+                if (mBluetoothLeService.connect(mDeviceAddress)) {
+                    Log.v(TAG, "Connected to: Cyber Robot from navigation");
+                }*/
+
+
+                mMovementGattService = mBluetoothLeService.getSupportedGattServices().get(mBluetoothLeService.getSupportedGattServices().size() - 1);
+                mMovementCharacteristic = mMovementGattService.getCharacteristic(ConstantApp.UUID_MOVEMENT);
+
+            } else {
+                Toast.makeText(mBluetoothLeService, getResources().getString(R.string.action_disconnected), Toast.LENGTH_SHORT).show();
+            }
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName componentName) {
+            mBluetoothLeService = null;
+            Log.v(TAG, "onServiceDisconnected");
+
+        }
+    };
 
     @Override
     protected void onPause() {
@@ -544,8 +611,10 @@ public class AutoNavigationActivity extends AppCompatActivity {
             Log.v(TAG, "IMAGE AVAILABLE SAVE IT");
             if (mIsCalibrating)
                 mBackgroundHandler.post(new CalibrationThread(reader.acquireLatestImage()));
-            else
-                mBackgroundHandler.post(new NavigationThread(reader.acquireLatestImage()));
+            else {
+                navigationThread = new NavigationThread(reader.acquireLatestImage());
+                mBackgroundHandler.post(navigationThread);
+            }
 
         }
     };
@@ -563,124 +632,171 @@ public class AutoNavigationActivity extends AppCompatActivity {
         @Override
         public void run() {
 
-            Log.v(TAG, "Navigation Thread RUNNING##############");
-            ByteBuffer byteBuffer = mImage.getPlanes()[0].getBuffer();
-            byte[] bytes = new byte[byteBuffer.remaining()];
-            byteBuffer.get(bytes);
-            //pass datas into a bitmap
-            BitmapFactory.Options opt = new BitmapFactory.Options();
-            opt.inSampleSize = 2;
-            myBitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length, opt);
+            if (!stop) {
 
-            //TODO: if not working, puts 3.
-            mOriginal = new Mat(myBitmap.getWidth(), myBitmap.getHeight(), CvType.CV_8UC4);
-            Utils.bitmapToMat(myBitmap, mOriginal);
+                mTestImage.setOnTouchListener(null);
 
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    mTestImage.setImageBitmap(myBitmap);
-                    mTextureView.setVisibility(View.INVISIBLE);
-                    mTestImage.setVisibility(View.VISIBLE);
-                    mTestImage.getTop();
-                    mButtonNext.setVisibility(View.VISIBLE);
+                Log.v(TAG, "Navigation Thread RUNNING##############");
+                ByteBuffer byteBuffer = mImage.getPlanes()[0].getBuffer();
+                byte[] bytes = new byte[byteBuffer.remaining()];
+                byteBuffer.get(bytes);
+                //pass datas into a bitmap
+                BitmapFactory.Options opt = new BitmapFactory.Options();
+                opt.inSampleSize = 2;
+                myBitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length, opt);
 
+
+                //TODO: if not working, puts 3.
+                mOriginal = new Mat(myBitmap.getWidth(), myBitmap.getHeight(), CvType.CV_8UC4);
+                Utils.bitmapToMat(myBitmap, mOriginal);
+
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        mTestImage.setImageBitmap(myBitmap);
+                        mTextureView.setVisibility(View.INVISIBLE);
+                        mTestImage.setVisibility(View.VISIBLE);
+                        mTestImage.getTop();
+                        mButtonNext.setVisibility(View.VISIBLE);
+
+                    }
+                });
+
+                //get a reference to the shared preferences
+                SharedPreferences sharedpreferences = getApplicationContext().getSharedPreferences(ConstantApp.SHARED_NAME, Context.MODE_PRIVATE);
+
+                String[] leftUpper = sharedpreferences.getString(ConstantApp.SHARED_ROBOT_LEFT_UPPER, null).split(":");
+                String[] leftLower = sharedpreferences.getString(ConstantApp.SHARED_ROBOT_LEFT_LOWER, null).split(":");
+
+                String[] rightUpper = sharedpreferences.getString(ConstantApp.SHARED_ROBOT_RIGHT_UPPER, null).split(":");
+                String[] rightLower = sharedpreferences.getString(ConstantApp.SHARED_ROBOT_RIGHT_LOWER, null).split(":");
+
+                String[] targetUpper = sharedpreferences.getString(ConstantApp.SHARED_TARGET_UPPER, null).split(":");
+                String[] targetLower = sharedpreferences.getString(ConstantApp.SHARED_TARGET_LOWER, null).split(":");
+
+
+                for (int i = 0; i < 3; i++) {
+                    if (Double.valueOf(leftUpper[i]) >= 255)
+                        leftUpper[i] = "255";
+                    else if (Double.valueOf(rightUpper[i]) >= 255)
+                        leftUpper[i] = "255";
+                    else if (Double.valueOf(targetUpper[i]) >= 255)
+                        leftUpper[i] = "255";
                 }
-            });
 
-            //get a reference to the shared preferences
-            SharedPreferences sharedpreferences = getApplicationContext().getSharedPreferences(ConstantApp.SHARED_NAME, Context.MODE_PRIVATE);
+                Log.v(TAG, "leftUpper: " + leftUpper[0] + " " + leftUpper[1] + " " + leftUpper[2]);
+                Log.v(TAG, "leftLower: " + leftLower[0] + " " + leftLower[1] + " " + leftLower[2]);
 
-            String[] leftUpper = sharedpreferences.getString(ConstantApp.SHARED_ROBOT_LEFT_UPPER, null).split(":");
-            String[] leftLower = sharedpreferences.getString(ConstantApp.SHARED_ROBOT_LEFT_LOWER, null).split(":");
+                Log.v(TAG, "rightUpper: " + rightUpper[0] + " " + rightUpper[1] + " " + rightUpper[2]);
+                Log.v(TAG, "rightLower: " + rightLower[0] + " " + rightLower[1] + " " + rightLower[2]);
 
-            String[] rightUpper = sharedpreferences.getString(ConstantApp.SHARED_ROBOT_RIGHT_UPPER, null).split(":");
-            String[] rightLower = sharedpreferences.getString(ConstantApp.SHARED_ROBOT_RIGHT_LOWER, null).split(":");
+                Log.v(TAG, "targetUpper: " + targetUpper[0] + " " + targetUpper[1] + " " + targetUpper[2]);
+                Log.v(TAG, "targetLower: " + targetLower[0] + " " + targetLower[1] + " " + targetLower[2]);
 
-            String[] targetUpper = sharedpreferences.getString(ConstantApp.SHARED_TARGET_UPPER, null).split(":");
-            String[] targetLower = sharedpreferences.getString(ConstantApp.SHARED_TARGET_LOWER, null).split(":");
+                Scalar lowLeft = new Scalar(Double.valueOf(leftLower[0]), Double.valueOf(leftLower[1]), Double.valueOf(leftLower[2]));
+                Scalar upLeft = new Scalar(Double.valueOf(leftUpper[0]), Double.valueOf(leftUpper[1]), Double.valueOf(leftUpper[2]));
+
+                Scalar lowRight = new Scalar(Double.valueOf(rightLower[0]), Double.valueOf(rightLower[1]), Double.valueOf(rightLower[2]));
+                Scalar upRight = new Scalar(Double.valueOf(rightUpper[0]), Double.valueOf(rightUpper[1]), Double.valueOf(rightUpper[2]));
+
+                Scalar lowTarget = new Scalar(Double.valueOf(targetLower[0]), Double.valueOf(targetLower[1]), Double.valueOf(targetLower[2]));
+                Scalar upTarget = new Scalar(Double.valueOf(targetUpper[0]), Double.valueOf(targetUpper[1]), Double.valueOf(targetUpper[2]));
+
+                //pass image in HSV
+                caseHsv = new Mat();
+                Imgproc.cvtColor(mOriginal, caseHsv, Imgproc.COLOR_RGB2HSV_FULL);
+
+                //filter color left
+                caseLeft = new Mat();
+                Core.inRange(caseHsv, lowLeft, upLeft, caseLeft);
+                try {
+                    List<MatOfPoint> contoursLeft = Navigation.findContours(caseLeft);
+                    centerLeft = Navigation.findCentroid(contoursLeft);
+                    Imgproc.circle(caseLeft, centerLeft, 3, new Scalar(0, 255, 0), 3);
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    mImage.close();
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            finish();
+                            Toast.makeText(mActivity, getResources().getString(R.string.error_occured_camera), Toast.LENGTH_LONG).show();
+                        }
+                    });
+                }
+
+                //filter color right
+                caseRight = new Mat();
+                Core.inRange(caseHsv, lowRight, upRight, caseRight);
+                try {
+                    List<MatOfPoint> contoursRight = Navigation.findContours(caseRight);
+                    centerRight = Navigation.findCentroid(contoursRight);
+                    Imgproc.circle(caseRight, centerRight, 3, new Scalar(0, 255, 0), 3);
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            onBackPressed();
+                            Toast.makeText(mActivity, getResources().getString(R.string.error_occured_camera), Toast.LENGTH_LONG).show();
+                        }
+                    });
+                }
 
 
-            for (int i = 0; i < 3; i++) {
-                if (Double.valueOf(leftUpper[i]) >= 255)
-                    leftUpper[i] = "255";
-                else if (Double.valueOf(rightUpper[i]) >= 255)
-                    leftUpper[i] = "255";
-                else if (Double.valueOf(targetUpper[i]) >= 255)
-                    leftUpper[i] = "255";
-            }
+                //filter color target
+                caseTarget = new Mat();
+                Core.inRange(caseHsv, lowTarget, upTarget, caseTarget);
+                try {
 
-            Log.v(TAG, "leftUpper: " + leftUpper[0] + " " + leftUpper[1] + " " + leftUpper[2]);
-            Log.v(TAG, "leftLower: " + leftLower[0] + " " + leftLower[1] + " " + leftLower[2]);
+                    List<MatOfPoint> contoursTarget = Navigation.findContours(caseTarget);
+                    centerTarget = Navigation.findCentroid(contoursTarget);
+                    Imgproc.circle(caseTarget, centerTarget, 3, new Scalar(0, 255, 0), 3);
 
-            Log.v(TAG, "rightUpper: " + rightUpper[0] + " " + rightUpper[1] + " " + rightUpper[2]);
-            Log.v(TAG, "rightLower: " + rightLower[0] + " " + rightLower[1] + " " + rightLower[2]);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    mImage.close();
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            finish();
+                            Toast.makeText(mActivity, getResources().getString(R.string.error_occured_camera), Toast.LENGTH_LONG).show();
+                        }
+                    });
+                }
 
-            Log.v(TAG, "targetUpper: " + targetUpper[0] + " " + targetUpper[1] + " " + targetUpper[2]);
-            Log.v(TAG, "targetLower: " + targetLower[0] + " " + targetLower[1] + " " + targetLower[2]);
-
-            Scalar lowLeft = new Scalar(Double.valueOf(leftLower[0]), Double.valueOf(leftLower[1]), Double.valueOf(leftLower[2]));
-            Scalar upLeft = new Scalar(Double.valueOf(leftUpper[0]), Double.valueOf(leftUpper[1]), Double.valueOf(leftUpper[2]));
-
-            Scalar lowRight = new Scalar(Double.valueOf(rightLower[0]), Double.valueOf(rightLower[1]), Double.valueOf(rightLower[2]));
-            Scalar upRight = new Scalar(Double.valueOf(rightUpper[0]), Double.valueOf(rightUpper[1]), Double.valueOf(rightUpper[2]));
-
-            Scalar lowTarget = new Scalar(Double.valueOf(targetLower[0]), Double.valueOf(targetLower[1]), Double.valueOf(targetLower[2]));
-            Scalar upTarget = new Scalar(Double.valueOf(targetUpper[0]), Double.valueOf(targetUpper[1]), Double.valueOf(targetUpper[2]));
-
-            //pass image in HSV
-            caseHsv = new Mat();
-            Imgproc.cvtColor(mOriginal, caseHsv, Imgproc.COLOR_RGB2HSV_FULL);
-
-            //filter color left
-            caseLeft = new Mat();
-            Core.inRange(caseHsv, lowLeft, upLeft, caseLeft);
-            List<MatOfPoint> contoursLeft = Navigation.findContours(caseLeft);
-            if (contoursLeft.isEmpty()) {
                 mImage.close();
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        takePicture();
-                        Toast.makeText(mActivity, "Retake picture", Toast.LENGTH_SHORT).show();
+
+                if (centerTarget != null && centerLeft != null && centerRight != null) {
+
+                    double meanX = (centerLeft.x + centerRight.x) / 2;
+                    double meanY = (centerLeft.y + centerRight.y) / 2;
+                    centerMean = new org.opencv.core.Point(meanX, meanY);
+                    Log.v(TAG, "CenterLeft: " + centerLeft.x + "," + centerLeft.y);
+                    Log.v(TAG, "CenterRight: " + centerRight.x + "," + centerRight.y);
+                    Log.v(TAG, "The mean point is: " + meanX + "," + meanY);
+
+                    Log.v(TAG, "centerTarget: " + centerTarget.x + "," + centerTarget.y);
+
+                    if (meanX != centerTarget.x) {
+                        mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.forward);
                     }
-                });
 
-            }
-            org.opencv.core.Point centerLeft = Navigation.findCentroid(contoursLeft);
-            Imgproc.circle(caseLeft, centerLeft, 3, new Scalar(0, 255, 0), 3);
-
-            //filter color right
-            caseRight = new Mat();
-            Core.inRange(caseHsv, lowRight, upRight, caseRight);
-            List<MatOfPoint> contoursRight = Navigation.findContours(caseRight);
-            if (contoursRight.isEmpty()) {
-                mImage.close();
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        takePicture();
-                        Toast.makeText(mActivity, "Retake picture", Toast.LENGTH_SHORT).show();
+                    try {
+                        Thread.sleep(1000);
+                    } catch (Exception e) {
+                        e.printStackTrace();
                     }
-                });
+
+                    takePicture();
+                } else if (centerTarget == null) {
+                    Toast.makeText(mActivity, getResources().getString(R.string.target_null_arrived), Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(mActivity, getResources().getString(R.string.null_center), Toast.LENGTH_SHORT).show();
+                }
             }
-            org.opencv.core.Point centerRight = Navigation.findCentroid(contoursRight);
-            Imgproc.circle(caseRight, centerRight, 3, new Scalar(0, 255, 0), 3);
-
-            //filter color target
-            caseTarget = new Mat();
-            Core.inRange(caseHsv, lowTarget, upTarget, caseTarget);
-            List<MatOfPoint> contoursTarget = Navigation.findContours(caseTarget);
-            if (contoursTarget.isEmpty()) {
-                mImage.close();
-
-            }
-            org.opencv.core.Point centerTarget = Navigation.findCentroid(contoursTarget);
-            Imgproc.circle(caseTarget, centerTarget, 3, new Scalar(0, 255, 0), 3);
-
-
-            mImage.close();
-
 
         }
     }
@@ -896,16 +1012,13 @@ public class AutoNavigationActivity extends AppCompatActivity {
 
         try {
             mCaptureRequestBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
-        } catch (CameraAccessException e) {
-            e.printStackTrace();
-        }
-        mCaptureRequestBuilder.addTarget(mImageReader.getSurface());
-        mCaptureRequestBuilder.set(CaptureRequest.JPEG_ORIENTATION, null);
-
-        try {
+            mCaptureRequestBuilder.addTarget(mImageReader.getSurface());
+            mCaptureRequestBuilder.set(CaptureRequest.JPEG_ORIENTATION, null);
             mPreviewCaptureSession.capture(mCaptureRequestBuilder.build(), mPreviewCaptureCallback, mBackgroundHandler);
-        } catch (CameraAccessException e) {
+        } catch (Exception e) {
             e.printStackTrace();
+            finish();
+            //Toast.makeText(mActivity, getResources().getString(R.string.error_occured_camera), Toast.LENGTH_SHORT).show();
         }
     }
 

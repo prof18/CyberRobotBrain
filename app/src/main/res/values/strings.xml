@@ -47,5 +47,8 @@
     <string name="button_recalibration">Recalibrate Indicators</string>
     <string name="info_recalibration">Frame the Robot and tap the button to start the calibration of the indicators</string>
     <string name="error_occured">An unexpected error has occurred. Please retry and if the problem persist, reconnect to the Cyber Robot</string>
+    <string name="error_occured_camera">An unexpected error has occurred. Please retry.</string>
+    <string name="null_center">The target is not framed! Try again</string>
+    <string name="target_null_arrived">Target not found, you may be arrived</string>
 
 </resources>
