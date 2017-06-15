@@ -107,7 +107,7 @@ public class DeviceScanActivity extends AppCompatActivity {
             public void onRefresh() {
                 mNoDevice.setVisibility(View.INVISIBLE);
                 if (!mScanning) {
-                    Log.d(TAG,"mLeDeviceListAdapter cleared onrefresh");
+                    Log.d(TAG, "mLeDeviceListAdapter cleared onrefresh");
                     mLeDeviceListAdapter.clear();
                     scanLeDevice(true);
                 }
@@ -137,6 +137,26 @@ public class DeviceScanActivity extends AppCompatActivity {
         //this is the main routine
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
             verifyPermissions(mActivity);
+        else {
+
+            int coarseLocation = ActivityCompat.checkSelfPermission(this, PERMISSIONS_LOCATION[0]);
+            int fineLocation = ActivityCompat.checkSelfPermission(this, PERMISSIONS_LOCATION[1]);
+
+            if (coarseLocation == PackageManager.PERMISSION_GRANTED || fineLocation == PackageManager.PERMISSION_GRANTED) {
+                mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 20000, 10, mLocationListener);
+                if (!mBluetoothAdapter.isEnabled())
+                    if (mAlertBlue == null) {
+                        mAlertBlue = showAlert(ALERT_BLUE).create();
+                    }
+                if (!mLocationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+                    if (mAlertGps == null) {
+                        mAlertGps = showAlert(ALERT_GPS).create();
+                        mAlertGps.show();
+                    }
+                }
+            }
+
+        }
 
         //TODO: sistemare la logina con dispositiv minori di 6.0
 
@@ -351,7 +371,7 @@ public class DeviceScanActivity extends AppCompatActivity {
                             mAlertGps.show();
                         }
                         if (mBluetoothAdapter.isEnabled() && mLocationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-                            Log.d(TAG,"scanLeDevice(true) after permission and all enabled");
+                            Log.d(TAG, "scanLeDevice(true) after permission and all enabled");
                             scanLeDevice(true);
                         }
                     }
@@ -504,9 +524,9 @@ public class DeviceScanActivity extends AppCompatActivity {
             mLocationManager.removeUpdates(mLocationListener);
         if (mReceiver != null)
             unregisterReceiver(mReceiver);
-        if (mScanning || (mLeDeviceListAdapter != null && mLeDeviceListAdapter.getItemCount() > 0) ) {
-            Log.d(TAG,"scanLeDevice(false) in onDestroy()");
-            Log.d(TAG,"mLeDeviceListAdapter cleared in onDestroy()");
+        if (mScanning || (mLeDeviceListAdapter != null && mLeDeviceListAdapter.getItemCount() > 0)) {
+            Log.d(TAG, "scanLeDevice(false) in onDestroy()");
+            Log.d(TAG, "mLeDeviceListAdapter cleared in onDestroy()");
             scanLeDevice(false);
             mLeDeviceListAdapter.clear();
         }
@@ -517,11 +537,11 @@ public class DeviceScanActivity extends AppCompatActivity {
         super.onPause();
         Log.d(TAG, "onPaused() called");
         if (mScanning) {
-            Log.d(TAG,"scanLeDevice(false) in onPause()");
+            Log.d(TAG, "scanLeDevice(false) in onPause()");
             scanLeDevice(false);
         }
         if (mLeDeviceListAdapter != null && mLeDeviceListAdapter.getItemCount() > 0) {
-            Log.d(TAG,"mLeDeviceListAdapter cleared in onPause()");
+            Log.d(TAG, "mLeDeviceListAdapter cleared in onPause()");
             mLeDeviceListAdapter.clear();
         }
     }
@@ -532,7 +552,7 @@ public class DeviceScanActivity extends AppCompatActivity {
         Log.d(TAG, "onStop() called");
         if (mScanning) {
             scanLeDevice(false);
-            Log.d(TAG,"scanLeDevice(false) in onStop()");
+            Log.d(TAG, "scanLeDevice(false) in onStop()");
         }
     }
 
@@ -544,7 +564,7 @@ public class DeviceScanActivity extends AppCompatActivity {
         if (!mScanning &&
                 mBluetoothAdapter.isEnabled() &&
                 mLocationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-            Log.d(TAG,"scanLeDevice(true) in onResume()");
+            Log.d(TAG, "scanLeDevice(true) in onResume()");
             scanLeDevice(true);
         }
         mSwipeRefreshLayout.setEnabled(false);

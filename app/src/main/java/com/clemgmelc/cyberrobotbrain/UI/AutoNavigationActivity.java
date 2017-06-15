@@ -109,13 +109,13 @@ public class AutoNavigationActivity extends AppCompatActivity {
     private Bitmap myBitmap;
     private Calibration mDetector;
     private boolean mIsCalibrating = false;
-    private org.opencv.core.Point centerLeft, centerRight, centerTarget, centerMean;
+    private org.opencv.core.Point centerLeft, centerRight, centerTarget, centerMean, upperTarget, lowerTarget;
     private BluetoothLeService mBluetoothLeService;
     private String mDeviceAddress;
     private BluetoothGattService mMovementGattService;
     private BluetoothGattCharacteristic mMovementCharacteristic;
     private NavigationThread navigationThread;
-    private boolean stop = false;
+    private boolean stop = false, isAligned = false, isFacing = false;
 
 
     @Override
@@ -182,6 +182,8 @@ public class AutoNavigationActivity extends AppCompatActivity {
                     stop = false;
                     takePicture();
                     mFabStartNavigation.setEnabled(true);
+                    isAligned = false;
+                    isFacing = false;
                 }
             }
         });
@@ -199,7 +201,6 @@ public class AutoNavigationActivity extends AppCompatActivity {
                 mTextureView.setVisibility(View.VISIBLE);
                 mTextureView.getTop();
                 mFabStartNavigation.setEnabled(true);
-                myBitmap = null;
 
                 stop = true;
 
@@ -653,10 +654,10 @@ public class AutoNavigationActivity extends AppCompatActivity {
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        mTestImage.setImageBitmap(myBitmap);
-                        mTextureView.setVisibility(View.INVISIBLE);
-                        mTestImage.setVisibility(View.VISIBLE);
-                        mTestImage.getTop();
+                        //mTestImage.setImageBitmap(myBitmap);
+                        //mTextureView.setVisibility(View.INVISIBLE);
+                        //mTestImage.setVisibility(View.VISIBLE);
+                        //mTestImage.getTop();
                         mButtonNext.setVisibility(View.VISIBLE);
 
                     }
@@ -684,7 +685,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
                         leftUpper[i] = "255";
                 }
 
-                Log.v(TAG, "leftUpper: " + leftUpper[0] + " " + leftUpper[1] + " " + leftUpper[2]);
+               /* Log.v(TAG, "leftUpper: " + leftUpper[0] + " " + leftUpper[1] + " " + leftUpper[2]);
                 Log.v(TAG, "leftLower: " + leftLower[0] + " " + leftLower[1] + " " + leftLower[2]);
 
                 Log.v(TAG, "rightUpper: " + rightUpper[0] + " " + rightUpper[1] + " " + rightUpper[2]);
@@ -692,7 +693,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
 
                 Log.v(TAG, "targetUpper: " + targetUpper[0] + " " + targetUpper[1] + " " + targetUpper[2]);
                 Log.v(TAG, "targetLower: " + targetLower[0] + " " + targetLower[1] + " " + targetLower[2]);
-
+*/
                 Scalar lowLeft = new Scalar(Double.valueOf(leftLower[0]), Double.valueOf(leftLower[1]), Double.valueOf(leftLower[2]));
                 Scalar upLeft = new Scalar(Double.valueOf(leftUpper[0]), Double.valueOf(leftUpper[1]), Double.valueOf(leftUpper[2]));
 
@@ -709,12 +710,12 @@ public class AutoNavigationActivity extends AppCompatActivity {
                 //filter color left
                 caseLeft = new Mat();
                 Core.inRange(caseHsv, lowLeft, upLeft, caseLeft);
-                try {
-                    List<MatOfPoint> contoursLeft = Navigation.findContours(caseLeft);
-                    centerLeft = Navigation.findCentroid(contoursLeft);
-                    Imgproc.circle(caseLeft, centerLeft, 3, new Scalar(0, 255, 0), 3);
+                //try {
+                List<MatOfPoint> contoursLeft = Navigation.findContours(caseLeft);
+                centerLeft = Navigation.findCentroid(contoursLeft);
+                //Imgproc.circle(caseLeft, centerLeft, 3, new Scalar(0, 255, 0), 3);
 
-                } catch (Exception e) {
+/*                } catch (ArrayIndexOutOfBoundsException e) {
                     e.printStackTrace();
                     mImage.close();
                     runOnUiThread(new Runnable() {
@@ -724,17 +725,17 @@ public class AutoNavigationActivity extends AppCompatActivity {
                             Toast.makeText(mActivity, getResources().getString(R.string.error_occured_camera), Toast.LENGTH_LONG).show();
                         }
                     });
-                }
+                }*/
 
                 //filter color right
                 caseRight = new Mat();
                 Core.inRange(caseHsv, lowRight, upRight, caseRight);
-                try {
-                    List<MatOfPoint> contoursRight = Navigation.findContours(caseRight);
-                    centerRight = Navigation.findCentroid(contoursRight);
-                    Imgproc.circle(caseRight, centerRight, 3, new Scalar(0, 255, 0), 3);
+                // try {
+                List<MatOfPoint> contoursRight = Navigation.findContours(caseRight);
+                centerRight = Navigation.findCentroid(contoursRight);
+                //Imgproc.circle(caseRight, centerRight, 3, new Scalar(0, 255, 0), 3);
 
-                } catch (Exception e) {
+                /*} catch (Exception e) {
                     e.printStackTrace();
                     runOnUiThread(new Runnable() {
                         @Override
@@ -743,19 +744,28 @@ public class AutoNavigationActivity extends AppCompatActivity {
                             Toast.makeText(mActivity, getResources().getString(R.string.error_occured_camera), Toast.LENGTH_LONG).show();
                         }
                     });
-                }
+                }*/
 
 
                 //filter color target
                 caseTarget = new Mat();
                 Core.inRange(caseHsv, lowTarget, upTarget, caseTarget);
-                try {
+                // try {
 
-                    List<MatOfPoint> contoursTarget = Navigation.findContours(caseTarget);
-                    centerTarget = Navigation.findCentroid(contoursTarget);
-                    Imgproc.circle(caseTarget, centerTarget, 3, new Scalar(0, 255, 0), 3);
+                List<MatOfPoint> contoursTarget = Navigation.findContours(caseTarget);
+                centerTarget = Navigation.findCentroid(contoursTarget);
 
-                } catch (Exception e) {
+                //one movement is about 100 pixel, so we take a bound of 200 pixels
+                //TODO: controllare se con i negativi va bene
+                if (centerTarget != null) {
+                    upperTarget = new org.opencv.core.Point(centerTarget.x, centerTarget.y + 75);
+                    lowerTarget = new org.opencv.core.Point(centerTarget.x, centerTarget.y - 75);
+                }
+
+
+                //Imgproc.circle(caseTarget, centerTarget, 3, new Scalar(0, 255, 0), 3);
+
+                /*} catch (Exception e) {
                     e.printStackTrace();
                     mImage.close();
                     runOnUiThread(new Runnable() {
@@ -765,7 +775,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
                             Toast.makeText(mActivity, getResources().getString(R.string.error_occured_camera), Toast.LENGTH_LONG).show();
                         }
                     });
-                }
+                }*/
 
                 mImage.close();
 
@@ -780,9 +790,51 @@ public class AutoNavigationActivity extends AppCompatActivity {
 
                     Log.v(TAG, "centerTarget: " + centerTarget.x + "," + centerTarget.y);
 
-                    if (meanX != centerTarget.x) {
+                    //se la y è maggiore o minore dellla y del target
+                    //  si cambiano i movimenti in base a questo
+
+                    if (!(meanY >= lowerTarget.y && meanY <= upperTarget.y) && !isAligned) {
+
                         mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.forward);
+                        Log.v(TAG, "Moving in the bound");
+
+                    } else {
+                        isAligned = true;
+                        Log.v(TAG, "Arrived in the bound");
                     }
+
+                   /* if (isAligned && meanX <= centerTarget.x) {
+                        //move to the right
+                        mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.right);
+                    } else if (isAligned && meanX >= centerTarget.x) {
+                        //move to the left
+                        mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.left);
+
+                    }*/
+
+                   if (isAligned && !isFacing) {
+
+                       Log.v(TAG, "isFacing: " + isFacing );
+
+                       //turn right
+                       if (Navigation.turnDirection(centerTarget,centerLeft,centerRight, isFacing)) {
+                           mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.right);
+
+                           //turn right
+                       } else {
+                           mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.left);
+
+                       }
+                   } else if (isAligned && isFacing) {
+                       mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.forward);
+
+                   }
+
+
+
+                   /* if (meanX != centerTarget.x) {
+                        mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.forward);
+                    }*/
 
                     try {
                         Thread.sleep(1000);
@@ -792,9 +844,42 @@ public class AutoNavigationActivity extends AppCompatActivity {
 
                     takePicture();
                 } else if (centerTarget == null) {
-                    Toast.makeText(mActivity, getResources().getString(R.string.target_null_arrived), Toast.LENGTH_SHORT).show();
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            mButtonRecalibrate.setVisibility(View.VISIBLE);
+                            mFabStop.setVisibility(View.GONE);
+                            mFabStartNavigation.setVisibility(View.VISIBLE);
+                            mCalibrationInfo.setVisibility(View.GONE);
+
+                            //return to the "classic" camera view
+                            mTestImage.setVisibility(View.INVISIBLE);
+                            mTextureView.setVisibility(View.VISIBLE);
+                            mTextureView.getTop();
+                            mFabStartNavigation.setEnabled(true);
+                            myBitmap = null;
+                        }
+                    });
+
+                    Toast.makeText(mActivity, getResources().getString(R.string.target_null_arrived), Toast.LENGTH_LONG).show();
                 } else {
-                    Toast.makeText(mActivity, getResources().getString(R.string.null_center), Toast.LENGTH_SHORT).show();
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            mButtonRecalibrate.setVisibility(View.VISIBLE);
+                            mFabStop.setVisibility(View.GONE);
+                            mFabStartNavigation.setVisibility(View.VISIBLE);
+                            mCalibrationInfo.setVisibility(View.GONE);
+
+                            //return to the "classic" camera view
+                            mTestImage.setVisibility(View.INVISIBLE);
+                            mTextureView.setVisibility(View.VISIBLE);
+                            mTextureView.getTop();
+                            mFabStartNavigation.setEnabled(true);
+                            myBitmap = null;
+                        }
+                    });
+                    Toast.makeText(mActivity, getResources().getString(R.string.null_center), Toast.LENGTH_LONG).show();
                 }
             }
 
@@ -1018,7 +1103,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
         } catch (Exception e) {
             e.printStackTrace();
             finish();
-            //Toast.makeText(mActivity, getResources().getString(R.string.error_occured_camera), Toast.LENGTH_SHORT).show();
+            Toast.makeText(mActivity, getResources().getString(R.string.error_occured_camera), Toast.LENGTH_SHORT).show();
         }
     }
 

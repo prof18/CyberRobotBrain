@@ -43,7 +43,8 @@ public class Navigation {
 
         //List<Moments> mu = new ArrayList<>(contours.size());
 
-
+            if (index == -1)
+                return null;
             Moments m = Imgproc.moments(contours.get(index), false);
             int x = (int) (m.get_m10() / m.get_m00());
             int y = (int) (m.get_m01() / m.get_m00());
@@ -52,6 +53,24 @@ public class Navigation {
             return centroid;
         }
         return null;
+    }
+
+    public static boolean turnDirection(Point target, Point left, Point right, boolean isFacing) {
+
+        //false left, true right
+        boolean direction = false;
+
+        double distanceTL = Math.abs(left.x - target.x);
+        double distanceTR = Math.abs(right.x - target.x);
+
+        double distanceLR = Math.abs(left.x - left.y);
+        if (distanceLR <= 75)
+            isFacing = true;
+
+        if (distanceTL > distanceTR)
+            direction = true;
+
+        return direction;
     }
 
 }
