@@ -26,22 +26,22 @@ public class Navigation {
     public static Point findCentroid(List<MatOfPoint> contours) {
 
         //this value is taken from the experience
-        double maxArea = 5000;
+        double maxArea = 1000;
         int index = -1;
 
         if (!contours.isEmpty()) {
 
-        for (MatOfPoint mop : contours) {
+            for (MatOfPoint mop : contours) {
 
-            double area = Imgproc.contourArea(mop);
-            if (area > maxArea) {
-                maxArea = area;
-                index = contours.indexOf(mop);
+                double area = Imgproc.contourArea(mop);
+                if (area > maxArea) {
+                    maxArea = area;
+                    index = contours.indexOf(mop);
+                }
             }
-        }
 
 
-        //List<Moments> mu = new ArrayList<>(contours.size());
+            //List<Moments> mu = new ArrayList<>(contours.size());
 
             if (index == -1)
                 return null;
@@ -55,22 +55,95 @@ public class Navigation {
         return null;
     }
 
-    public static boolean turnDirection(Point target, Point left, Point right, boolean isFacing) {
+    /**
+     * @param target
+     * @param left
+     * @param right
+     * @param type   false for x, true for y
+     * @return
+     */
+    public static int turnDirection(Point target, Point left, Point right, boolean type) {
 
-        //false left, true right
-        boolean direction = false;
+        //0 left, 1 right, 2 facing
+        int action = -1;
 
-        double distanceTL = Math.abs(left.x - target.x);
-        double distanceTR = Math.abs(right.x - target.x);
+        if (type) {
+            double distanceTL = Math.abs(left.x - target.x);
+            double distanceTR = Math.abs(right.x - target.x);
+            double distanceLR = Math.abs(right.x - left.x);
 
-        double distanceLR = Math.abs(left.x - left.y);
-        if (distanceLR <= 75)
-            isFacing = true;
+            if (distanceLR <= 65)
+                action = 2;
+            else if (distanceTL > distanceTR)
+                action = 1;
+            else if (distanceTL < distanceTR)
+                action = 0;
+        } else {
+            double distanceTL = Math.abs(left.y - target.y);
+            double distanceTR = Math.abs(right.y - target.y);
+            double distanceLR = Math.abs(right.y - left.y);
 
-        if (distanceTL > distanceTR)
-            direction = true;
+            if (distanceLR <= 50)
+                action = 2;
+            else if (distanceTL > distanceTR)
+                action = 1;
+            else if (distanceTL < distanceTR)
+                action = 0;
+        }
 
-        return direction;
+        return action;
     }
 
+    /**
+     * @param type  true for y, false for x
+     * @param start
+     * @param end
+     * @return
+     */
+    public static boolean isInBound(boolean type, Point start, Point end, int offset) {
+
+        boolean isInBound = false;
+
+        if (type) {
+            if (start.y >= end.y - offset && start.y <= end.y + offset)
+                isInBound = true;
+
+        } else {
+            if (start.x >= end.x - offset && start.x <= end.x + offset)
+                isInBound = true;
+        }
+        return isInBound;
+    }
+
+    /**
+     * @param target
+     * @param right
+     * @param mean
+     * @param type   false for x, true for y
+     * @return
+     */
+    public static boolean isWrongSide(Point target, Point right, Point mean, boolean type) {
+
+        boolean isWrongSide = false;
+
+        if (type) {
+            //case 3
+            if (target.x <= mean.x && right.y >= mean.y)
+                isWrongSide = true;
+            //case 4
+            else if (target.x >= mean.x && right.y <= mean.y)
+                isWrongSide = true;
+
+        } else {
+            //case 1
+            if (target.y <= mean.y && right.x <= mean.x)
+                isWrongSide = true;
+            //case 2
+            else if (target.y >= mean.y && right.y >= mean.y)
+                isWrongSide = true;
+        }
+
+        return isWrongSide;
+
+    }
 }

@@ -115,7 +115,8 @@ public class AutoNavigationActivity extends AppCompatActivity {
     private BluetoothGattService mMovementGattService;
     private BluetoothGattCharacteristic mMovementCharacteristic;
     private NavigationThread navigationThread;
-    private boolean stop = false, isAligned = false, isFacing = false;
+    private boolean stop = false, isYAligned = false, isFacing = false, isXAligned = false;
+    private int movementType;
 
 
     @Override
@@ -176,14 +177,35 @@ public class AutoNavigationActivity extends AppCompatActivity {
                     colorCounter = 0;
 
                 } else {
-                    mButtonRecalibrate.setVisibility(View.GONE);
-                    mFabStartNavigation.setVisibility(View.GONE);
-                    mFabStop.setVisibility(View.VISIBLE);
-                    stop = false;
-                    takePicture();
-                    mFabStartNavigation.setEnabled(true);
-                    isAligned = false;
-                    isFacing = false;
+
+
+                    AlertDialog.Builder builder = new AlertDialog.Builder(AutoNavigationActivity.this);
+                    builder.setTitle(getResources().getString(R.string.movement_type_title));
+                    builder.setItems(getResources().getStringArray(R.array.movement_type), new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            // the user clicked on colors[which]
+                            if (which == 0)
+                                movementType = ConstantApp.L_MOVEMENT;
+                            else
+                                movementType = ConstantApp.DIRECT_MOVEMENT;
+
+                            mButtonRecalibrate.setVisibility(View.GONE);
+                            mFabStartNavigation.setVisibility(View.GONE);
+                            mFabStop.setVisibility(View.VISIBLE);
+                            stop = false;
+                            takePicture();
+                            mFabStartNavigation.setEnabled(true);
+                            isYAligned = false;
+                            isXAligned = false;
+                            isFacing = false;
+                        }
+
+                    });
+                    builder.setCancelable(false);
+                    builder.show();
+
+
                 }
             }
         });
@@ -779,6 +801,8 @@ public class AutoNavigationActivity extends AppCompatActivity {
 
                 mImage.close();
 
+
+                //begin the movement stuff
                 if (centerTarget != null && centerLeft != null && centerRight != null) {
 
                     double meanX = (centerLeft.x + centerRight.x) / 2;
@@ -790,60 +814,127 @@ public class AutoNavigationActivity extends AppCompatActivity {
 
                     Log.v(TAG, "centerTarget: " + centerTarget.x + "," + centerTarget.y);
 
-                    //se la y è maggiore o minore dellla y del target
-                    //  si cambiano i movimenti in base a questo
+                    //L Movement
+                    if (movementType == ConstantApp.L_MOVEMENT) {
 
-                    if (!(meanY >= lowerTarget.y && meanY <= upperTarget.y) && !isAligned) {
 
-                        mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.forward);
-                        Log.v(TAG, "Moving in the bound");
+                        if (Navigation.isInBound(true, centerMean, centerTarget, 200)) {
 
+                            int action = Navigation.turnDirection(centerTarget, centerLeft, centerRight, true);
+                            switch (action) {
+
+                                case 0:
+                                    mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.left);
+                                    Log.v(TAG, "Moving left on y");
+                                    break;
+
+                                case 1:
+                                    mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.right);
+                                    Log.v(TAG, "Moving right on y");
+                                    break;
+
+                                case 2:
+                                    if (Navigation.isWrongSide(centerTarget, centerRight, centerMean, true)) {
+                                        mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.right);
+                                        Log.v(TAG, "Turn right on y");
+
+                                    } else {
+                                        mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.forward);
+                                        Log.v(TAG, "Moving forward on y");
+                                    }
+                                    break;
+
+                                default:
+                                    break;
+                            }
+
+                        } else {
+                            org.opencv.core.Point tempTarget = new org.opencv.core.Point(meanX, centerTarget.y);
+
+                            int action = Navigation.turnDirection(tempTarget, centerLeft, centerRight, false);
+                            switch (action) {
+
+                                case 0:
+                                    mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.left);
+                                    Log.v(TAG, "Moving left on x");
+                                    break;
+
+                                case 1:
+                                    mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.right);
+                                    Log.v(TAG, "Moving right on x");
+                                    break;
+
+                                case 2:
+                                    if (Navigation.isWrongSide(tempTarget, centerRight, centerMean, false)) {
+                                        mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.right);
+                                        Log.v(TAG, "Turn right on x");
+
+                                    } else {
+                                        mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.forward);
+                                        Log.v(TAG, "Moving forward on x");
+                                    }
+
+                                    break;
+
+                                default:
+                                    break;
+                            }
+                        }
+
+                        //direct movement
                     } else {
-                        isAligned = true;
-                        Log.v(TAG, "Arrived in the bound");
+
+                        double m1;
+                        if (centerRight.x > centerLeft.x) {
+                            m1 = (centerRight.y - centerLeft.y) / (centerRight.x - centerLeft.x);
+                        } else if (centerRight.x < centerLeft.x) {
+                            m1 = (centerLeft.y - centerRight.y) / (centerLeft.x - centerRight.x);
+                        } else {
+                            m1 = Double.MAX_VALUE;
+                        }
+
+                        double m2;
+                        if (centerMean.x > centerTarget.x) {
+                            m2 = (centerMean.y - centerTarget.y) / (centerMean.x - centerTarget.x);
+                        } else if (centerMean.x < centerTarget.x) {
+                            m2 = (centerTarget.y - centerMean.y) / (centerTarget.x - centerMean.x);
+                        } else {
+                            m2 = Double.MAX_VALUE;
+                        }
+
+                        Log.v(TAG, "m1*m2: " + m1*m2);
+
+                        if (m1 != Double.MAX_VALUE && m2 != Double.MAX_VALUE && m1*m2 <= -0.5 && m1*m2 >= -1.5) {
+                            mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.forward);
+                            Log.v(TAG, "Go Ahead");
+                        } else {
+                            double distanceTR = Math.sqrt(Math.pow(centerTarget.x - centerRight.x, 2)
+                                    + Math.pow(centerTarget.y - centerRight.y, 2));
+                            double distanceTL = Math.sqrt(Math.pow(centerTarget.x - centerLeft.x, 2)
+                                    + Math.pow(centerTarget.y - centerLeft.y, 2));
+
+                            if (distanceTL >= distanceTR) {
+                                mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.right);
+                                Log.v(TAG, "Turn righ");
+                            } else if (distanceTL < distanceTR) {
+                                mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.left);
+                                Log.v(TAG, "Turn left");
+                            }
+                        }
+
+
                     }
 
-                   /* if (isAligned && meanX <= centerTarget.x) {
-                        //move to the right
-                        mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.right);
-                    } else if (isAligned && meanX >= centerTarget.x) {
-                        //move to the left
-                        mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.left);
-
-                    }*/
-
-                   if (isAligned && !isFacing) {
-
-                       Log.v(TAG, "isFacing: " + isFacing );
-
-                       //turn right
-                       if (Navigation.turnDirection(centerTarget,centerLeft,centerRight, isFacing)) {
-                           mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.right);
-
-                           //turn right
-                       } else {
-                           mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.left);
-
-                       }
-                   } else if (isAligned && isFacing) {
-                       mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.forward);
-
-                   }
-
-
-
-                   /* if (meanX != centerTarget.x) {
-                        mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.forward);
-                    }*/
-
                     try {
-                        Thread.sleep(1000);
+                        Thread.sleep(400);
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
 
                     takePicture();
-                } else if (centerTarget == null) {
+
+
+                } /*else if ()  {
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
@@ -858,11 +949,37 @@ public class AutoNavigationActivity extends AppCompatActivity {
                             mTextureView.getTop();
                             mFabStartNavigation.setEnabled(true);
                             myBitmap = null;
+                        }
+                    });
+
+                    Toast.makeText(mActivity, getResources().getString(R.string.arrived_target_bound), Toast.LENGTH_LONG).show();
+                }  */ else if (centerTarget == null) {
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            mButtonRecalibrate.setVisibility(View.VISIBLE);
+                            mFabStop.setVisibility(View.GONE);
+                            mFabStartNavigation.setVisibility(View.VISIBLE);
+                            mCalibrationInfo.setVisibility(View.GONE);
+
+                            //return to the "classic" camera view
+                            mTestImage.setVisibility(View.GONE);
+                            mTextureView.setVisibility(View.VISIBLE);
+                            mTextureView.getTop();
+                            mFabStartNavigation.setEnabled(true);
+                            //myBitmap = null;
                         }
                     });
 
                     Toast.makeText(mActivity, getResources().getString(R.string.target_null_arrived), Toast.LENGTH_LONG).show();
                 } else {
+                    String message = null;
+                    if (contoursLeft == null)
+                        message = "LEFT is Null";
+                    else if (centerRight == null)
+                        message = "RIGHT is null";
+
+                    //centerTarget != null && centerLeft != null && centerRight != null
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
@@ -872,13 +989,14 @@ public class AutoNavigationActivity extends AppCompatActivity {
                             mCalibrationInfo.setVisibility(View.GONE);
 
                             //return to the "classic" camera view
-                            mTestImage.setVisibility(View.INVISIBLE);
+                            mTestImage.setVisibility(View.GONE);
                             mTextureView.setVisibility(View.VISIBLE);
                             mTextureView.getTop();
                             mFabStartNavigation.setEnabled(true);
-                            myBitmap = null;
+                            //myBitmap = null;
                         }
                     });
+                    Toast.makeText(mActivity, message, Toast.LENGTH_LONG).show();
                     Toast.makeText(mActivity, getResources().getString(R.string.null_center), Toast.LENGTH_LONG).show();
                 }
             }

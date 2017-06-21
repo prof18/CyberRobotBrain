@@ -39,4 +39,7 @@ public class ConstantApp {
     public static final String SHARED_TARGET_UPPER = "target_upper";
     public static final String SHARED_TARGET_LOWER = "target_lower";
 
+    public static final int L_MOVEMENT = 0;
+    public static final int DIRECT_MOVEMENT = 1;
+
 }
