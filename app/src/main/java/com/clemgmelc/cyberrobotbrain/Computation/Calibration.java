@@ -10,7 +10,7 @@ public class Calibration {
     private Scalar mLowerBound = new Scalar(0);
     private Scalar mUpperBound = new Scalar(0);
     // Color radius for range checking in HSV color space
-    private Scalar mColorRadius = new Scalar(25, 50, 50, 0);
+    private Scalar mColorRadius = new Scalar(15, 50, 50, 0);
 
   /*  // Minimum contour area in percent for contours filtering
     private static double mMinContourArea = 0.1;
@@ -31,8 +31,27 @@ public class Calibration {
     }*/
 
     public void setHsvRange(Scalar hsvColor) {
-        double minH = (hsvColor.val[0] >= mColorRadius.val[0]) ? hsvColor.val[0] - mColorRadius.val[0] : 0;
-        double maxH = (hsvColor.val[0] + mColorRadius.val[0] <= 255) ? hsvColor.val[0] + mColorRadius.val[0] : 255;
+
+
+
+
+        //double minH = (hsvColor.val[0] >= mColorRadius.val[0]) ? hsvColor.val[0] - mColorRadius.val[0] : 0;
+        //double maxH = (hsvColor.val[0] + mColorRadius.val[0] <= 255) ? hsvColor.val[0] + mColorRadius.val[0] : 255;
+        double minH2 = -1;
+        double maxH2 = -1;
+
+        //TODO: due range
+        double minH =  hsvColor.val[0] - mColorRadius.val[0];
+        if (minH < 0) {
+            minH2 = 255 + hsvColor.val[0] - mColorRadius.val[0];
+            minH = 0;
+        }
+
+        double maxH = hsvColor.val[0] + mColorRadius.val[0];
+        if (maxH > 255) {
+            maxH2 = hsvColor.val[0] + mColorRadius.val[0] - 255;
+            maxH = 0;
+        }
 
         mLowerBound.val[0] = minH;
         mUpperBound.val[0] = maxH;
@@ -43,8 +62,8 @@ public class Calibration {
         mLowerBound.val[2] = hsvColor.val[2] - mColorRadius.val[2];
         mUpperBound.val[2] = hsvColor.val[2] + mColorRadius.val[2];
 
-        mLowerBound.val[3] = 0;
-        mUpperBound.val[3] = 255;
+        mLowerBound.val[3] = minH2;
+        mUpperBound.val[3] = maxH2;
 
         /*Mat spectrumHsv = new Mat(1, (int)(maxH-minH), CvType.CV_8UC3);
 
@@ -67,7 +86,7 @@ public class Calibration {
     public static Scalar hsvToRGBA(Scalar hsvColor) {
         Mat pointMatRgba = new Mat();
         Mat pointMatHsv = new Mat(1, 1, CvType.CV_8UC3, hsvColor);
-        Imgproc.cvtColor(pointMatHsv, pointMatRgba, Imgproc.COLOR_HSV2RGB_FULL, 4);
+        Imgproc.cvtColor(pointMatHsv, pointMatRgba, Imgproc.COLOR_HSV2RGB, 4);
 
         return new Scalar(pointMatRgba.get(0, 0));
     }

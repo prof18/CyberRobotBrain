@@ -14,6 +14,7 @@ import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.graphics.ImageFormat;
 import android.graphics.Matrix;
 import android.graphics.Point;
@@ -51,6 +52,7 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -104,7 +106,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
     private ImageView mTestImage;
     private Activity mActivity;
     private int k = 1, colorCounter;
-    private Mat mOriginal, caseHsv, caseLeft, caseRight, caseTarget, touchedRegionHsv, touchedRegionRgba;
+    private Mat mOriginal, caseHsv, caseLeft, caseRight, caseTarget, caseTarget2, touchedRegionHsv, touchedRegionRgba;
     private TextView mCalibrationInfo;
     private Bitmap myBitmap;
     private Calibration mDetector;
@@ -117,6 +119,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
     private NavigationThread navigationThread;
     private boolean stop = false, isYAligned = false, isFacing = false, isXAligned = false;
     private int movementType;
+    private Double distanceTM;
 
 
     @Override
@@ -203,6 +206,12 @@ public class AutoNavigationActivity extends AppCompatActivity {
 
                     });
                     builder.setCancelable(false);
+                    builder.setNegativeButton(getResources().getString(R.string.connect_dialog_cancel), new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            dialog.dismiss();
+                        }
+                    });
                     builder.show();
 
 
@@ -635,8 +644,14 @@ public class AutoNavigationActivity extends AppCompatActivity {
             if (mIsCalibrating)
                 mBackgroundHandler.post(new CalibrationThread(reader.acquireLatestImage()));
             else {
-                navigationThread = new NavigationThread(reader.acquireLatestImage());
-                mBackgroundHandler.post(navigationThread);
+                try {
+                    navigationThread = new NavigationThread(reader.acquireLatestImage());
+                    mBackgroundHandler.post(navigationThread);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    finish();
+                    Toast.makeText(mActivity, getResources().getString(R.string.error_occured_camera), Toast.LENGTH_SHORT).show();
+                }
             }
 
         }
@@ -715,7 +730,18 @@ public class AutoNavigationActivity extends AppCompatActivity {
 
                 Log.v(TAG, "targetUpper: " + targetUpper[0] + " " + targetUpper[1] + " " + targetUpper[2]);
                 Log.v(TAG, "targetLower: " + targetLower[0] + " " + targetLower[1] + " " + targetLower[2]);
+
+
 */
+               Scalar lowTarget2 = null, upTarget2 = null;
+
+               if (Double.valueOf(targetLower[3]) != -1) {
+
+                   lowTarget2 = new Scalar(Double.valueOf(targetLower[3]), Double.valueOf(targetLower[1]), Double.valueOf(targetLower[2]));
+                   upTarget2 = new Scalar(Double.valueOf(targetUpper[3]), Double.valueOf(targetUpper[1]), Double.valueOf(targetUpper[2]));
+
+                }
+
                 Scalar lowLeft = new Scalar(Double.valueOf(leftLower[0]), Double.valueOf(leftLower[1]), Double.valueOf(leftLower[2]));
                 Scalar upLeft = new Scalar(Double.valueOf(leftUpper[0]), Double.valueOf(leftUpper[1]), Double.valueOf(leftUpper[2]));
 
@@ -725,13 +751,16 @@ public class AutoNavigationActivity extends AppCompatActivity {
                 Scalar lowTarget = new Scalar(Double.valueOf(targetLower[0]), Double.valueOf(targetLower[1]), Double.valueOf(targetLower[2]));
                 Scalar upTarget = new Scalar(Double.valueOf(targetUpper[0]), Double.valueOf(targetUpper[1]), Double.valueOf(targetUpper[2]));
 
+
                 //pass image in HSV
                 caseHsv = new Mat();
-                Imgproc.cvtColor(mOriginal, caseHsv, Imgproc.COLOR_RGB2HSV_FULL);
+                Imgproc.cvtColor(mOriginal, caseHsv, Imgproc.COLOR_RGB2HSV);
 
                 //filter color left
                 caseLeft = new Mat();
                 Core.inRange(caseHsv, lowLeft, upLeft, caseLeft);
+
+
                 //try {
                 List<MatOfPoint> contoursLeft = Navigation.findContours(caseLeft);
                 centerLeft = Navigation.findCentroid(contoursLeft);
@@ -772,6 +801,14 @@ public class AutoNavigationActivity extends AppCompatActivity {
                 //filter color target
                 caseTarget = new Mat();
                 Core.inRange(caseHsv, lowTarget, upTarget, caseTarget);
+
+                if (Double.valueOf(targetLower[3]) != -1) {
+                    caseTarget2 = new Mat();
+                    Core.inRange(caseHsv, lowTarget2, upTarget2, caseTarget2);
+                    Core.add(caseTarget, caseTarget2, caseTarget);
+                }
+
+
                 // try {
 
                 List<MatOfPoint> contoursTarget = Navigation.findContours(caseTarget);
@@ -883,6 +920,9 @@ public class AutoNavigationActivity extends AppCompatActivity {
 
                         //direct movement
                     } else {
+                        if (distanceTM == null)
+                            distanceTM = Math.sqrt(Math.pow(centerTarget.x - centerMean.x, 2)
+                                    + Math.pow(centerTarget.y - centerMean.y, 2));
 
                         double m1;
                         if (centerRight.x > centerLeft.x) {
@@ -902,11 +942,19 @@ public class AutoNavigationActivity extends AppCompatActivity {
                             m2 = Double.MAX_VALUE;
                         }
 
-                        Log.v(TAG, "m1*m2: " + m1*m2);
+                        Log.v(TAG, "m1*m2: " + m1 * m2);
 
-                        if (m1 != Double.MAX_VALUE && m2 != Double.MAX_VALUE && m1*m2 <= -0.5 && m1*m2 >= -1.5) {
+                        if (m1 != Double.MAX_VALUE && m2 != Double.MAX_VALUE && m1 * m2 <= 0 && m1 * m2 >= -2) {
                             mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.forward);
                             Log.v(TAG, "Go Ahead");
+                            double newDistanceTM = Math.sqrt(Math.pow(centerTarget.x - centerMean.x, 2)
+                                    + Math.pow(centerTarget.y - centerMean.y, 2));
+                            if (newDistanceTM > distanceTM) {
+                                mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.right);
+                                Log.v(TAG, "Turn right on distance");
+                            }
+
+
                         } else {
                             double distanceTR = Math.sqrt(Math.pow(centerTarget.x - centerRight.x, 2)
                                     + Math.pow(centerTarget.y - centerRight.y, 2));
@@ -1067,28 +1115,43 @@ public class AutoNavigationActivity extends AppCompatActivity {
                     int cols = mOriginal.cols();
                     int rows = mOriginal.rows();
 
-                    int xOffset = (mTextureView.getWidth() - cols) / 2;
-                    int yOffset = (mTextureView.getHeight() - rows) / 2;
+                    //differenze tra immagine scattata e quella visualizzata sullo schermo
+                    int xOffset = (cols - mTestImage.getWidth()) / 2;
+                    int yOffset = (rows - mTestImage.getHeight()) / 2;
 
-                    int x = (int) event.getX() - xOffset;
-                    int y = (int) event.getY() - yOffset;
+                    //traslazione del tocco sulle coordinate relative all'immagine originale
+                    int x = (int) event.getX() + xOffset;
+                    int y = (int) event.getY() + yOffset;
 
+                    Log.i(TAG, "offset: X" + xOffset + ", Y:" + yOffset + ")");
+                    Log.i(TAG, "testimage: W" + mTestImage.getWidth() + ",H: " + mTestImage.getHeight() + ")");
+                    Log.i(TAG, "textureview: W" + mTextureView.getWidth() + ",H: " + mTextureView.getHeight() + ")");
+                    Log.i(TAG, "originalImage: W" + mOriginal.width() + ",H: " + mOriginal.height() + ")");
+                    Log.i(TAG, "cols: " + cols + ",row: " + rows + ")");
                     Log.i(TAG, "Touch image coordinates: (" + x + ", " + y + ")");
 
-                    if ((x < 0) || (y < 0) || (x > cols) || (y > rows)) return false;
+                    if (x <= 4)
+                        x += 4;
+                    else if (y <= 4)
+                        y += 4;
+                    else if (x + 4 >= cols)
+                        x -= 4;
+                    else if (y + 4 >= rows)
+                        y -= 4;
+
 
                     Rect touchedRect = new Rect();
 
-                    touchedRect.x = (x > 4) ? x - 4 : 0;
-                    touchedRect.y = (y > 4) ? y - 4 : 0;
+                    touchedRect.x = x - 4;
+                    touchedRect.y = y - 4;
 
-                    touchedRect.width = (x + 4 < cols) ? x + 4 - touchedRect.x : cols - touchedRect.x;
-                    touchedRect.height = (y + 4 < rows) ? y + 4 - touchedRect.y : rows - touchedRect.y;
+                    touchedRect.width = x + 4 - touchedRect.x;
+                    touchedRect.height = y + 4 - touchedRect.y;
 
                     touchedRegionRgba = mOriginal.submat(touchedRect);
 
                     touchedRegionHsv = new Mat();
-                    Imgproc.cvtColor(touchedRegionRgba, touchedRegionHsv, Imgproc.COLOR_RGB2HSV_FULL);
+                    Imgproc.cvtColor(touchedRegionRgba, touchedRegionHsv, Imgproc.COLOR_RGB2HSV);
 
                     mDetector = new Calibration();
                     Mat mSpectrum = new Mat();
@@ -1110,6 +1173,8 @@ public class AutoNavigationActivity extends AppCompatActivity {
                     int alpha = (int) (int) mBlobColorRgba.val[3];
 
                     String hex = String.format("#%02x%02x%02x%02x", red, green, blue, alpha);
+                    String hex2 = String.format("#%02x%02x%02x", red, green, blue);
+
 
                     Log.v(TAG, "COLOR CLICKED: " + hex);
 
@@ -1124,6 +1189,15 @@ public class AutoNavigationActivity extends AppCompatActivity {
                     dialogBuilder.setTitle("Selected Color");
                     dialogBuilder.setMessage("The selected color is " + hex);
                     dialogBuilder.setCancelable(false);
+                    int cl = Color.parseColor(hex2);
+                    LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(2, 2);
+
+                    final Button color = new Button(AutoNavigationActivity.this);
+                    color.setVisibility(View.VISIBLE);
+                    color.setBackgroundColor(cl);
+
+                    color.setLayoutParams(lp);
+                    dialogBuilder.setView(color);
                     dialogBuilder.setNegativeButton(android.R.string.ok,
                             new DialogInterface.OnClickListener() {
                                 public void onClick(DialogInterface dialog, int which) {

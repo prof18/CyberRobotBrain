@@ -26,7 +26,7 @@ public class Navigation {
     public static Point findCentroid(List<MatOfPoint> contours) {
 
         //this value is taken from the experience
-        double maxArea = 1000;
+        double maxArea = 100;
         int index = -1;
 
         if (!contours.isEmpty()) {
@@ -146,4 +146,5 @@ public class Navigation {
         return isWrongSide;
 
     }
+
 }
