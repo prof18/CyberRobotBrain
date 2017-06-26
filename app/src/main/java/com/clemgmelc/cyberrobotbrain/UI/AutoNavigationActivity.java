@@ -20,6 +20,7 @@ import android.graphics.Matrix;
 import android.graphics.Point;
 import android.graphics.RectF;
 import android.graphics.SurfaceTexture;
+import android.graphics.drawable.GradientDrawable;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
@@ -44,6 +45,7 @@ import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.util.Size;
+import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.Surface;
 import android.view.TextureView;
@@ -1186,18 +1188,26 @@ public class AutoNavigationActivity extends AppCompatActivity {
                     //Imgproc.resize(mDetector.getSpectrum(), mSpectrum, SPECTRUM_SIZE);
 
                     final AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(AutoNavigationActivity.this);
-                    dialogBuilder.setTitle("Selected Color");
-                    dialogBuilder.setMessage("The selected color is " + hex);
                     dialogBuilder.setCancelable(false);
                     int cl = Color.parseColor(hex2);
-                    LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(2, 2);
+                    /*LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(2, 2);
 
                     final Button color = new Button(AutoNavigationActivity.this);
                     color.setVisibility(View.VISIBLE);
                     color.setBackgroundColor(cl);
 
-                    color.setLayoutParams(lp);
-                    dialogBuilder.setView(color);
+                    color.setLayoutParams(lp);*/
+
+                    final GradientDrawable gd = new GradientDrawable();
+                    gd.setColor(cl);
+                    gd.setShape(GradientDrawable.OVAL);
+
+                    //title.setText("Selected Color ");
+                    dialogBuilder.setTitle(getResources().getString(R.string.selected_color));
+
+                    dialogBuilder.setIcon(gd);
+
+                   // dialogBuilder.setView(dialogView);
                     dialogBuilder.setNegativeButton(android.R.string.ok,
                             new DialogInterface.OnClickListener() {
                                 public void onClick(DialogInterface dialog, int which) {
