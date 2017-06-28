@@ -59,4 +59,6 @@
 
     <string name="movement_type_title">Select the type of movement</string>
     <string name="selected_color">Selected Color</string>
+    <string name="movement_l">L Movement</string>
+    <string name="movement_direct">Direct Movement</string>
 </resources>

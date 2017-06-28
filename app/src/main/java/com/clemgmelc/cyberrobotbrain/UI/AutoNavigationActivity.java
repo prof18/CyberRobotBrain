@@ -45,16 +45,16 @@ import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.util.Size;
-import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.Button;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -103,7 +103,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
     private CameraDevice mCameraDevice;
     private CameraCaptureSession mPreviewCaptureSession;
     private CaptureRequest.Builder mCaptureRequestBuilder;
-    private FloatingActionButton mFabStartNavigation, mFabCalibration, mFabStop;
+    private FloatingActionButton mFabStartNavigation, mFabCalibration, mFabStop, mFabDirect, mFabL;
     private Button mButtonNext, mButtonRecalibrate;
     private ImageView mTestImage;
     private Activity mActivity;
@@ -122,6 +122,9 @@ public class AutoNavigationActivity extends AppCompatActivity {
     private boolean stop = false, isYAligned = false, isFacing = false, isXAligned = false;
     private int movementType;
     private Double distanceTM;
+    private Animation mFabOpen, mFabClose, rotForward, rotBackward;
+    private boolean isOpen = false;
+    private TextView mLMovLabel, mDirectMovLabel;
 
 
     @Override
@@ -135,6 +138,15 @@ public class AutoNavigationActivity extends AppCompatActivity {
         mFabCalibration = (FloatingActionButton) findViewById(R.id.fabCalibration);
         mButtonRecalibrate = (Button) findViewById(R.id.recalibrate);
         mFabStop = (FloatingActionButton) findViewById(R.id.fabStop);
+        mFabDirect = (FloatingActionButton) findViewById(R.id.fabDirect);
+        mFabL = (FloatingActionButton) findViewById(R.id.fabL);
+        mLMovLabel = (TextView) findViewById(R.id.l_mov_label);
+        mDirectMovLabel = (TextView) findViewById(R.id.direct_mov_label);
+
+        mFabOpen = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.fab_open);
+        mFabClose = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.fab_close);
+        rotForward = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.rotate_forward);
+        rotBackward = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.rotate_backward);
 
         mDeviceAddress = getIntent().getStringExtra(ConstantApp.DEVICE_ADDRESS);
 
@@ -163,10 +175,10 @@ public class AutoNavigationActivity extends AppCompatActivity {
         if (!Utility.isCalibrationDone(getApplicationContext()))
             mFabStartNavigation.setBackgroundTintList(ColorStateList.valueOf(ContextCompat.getColor(getApplicationContext(), R.color.googleRed)));
 
-        mFabStartNavigation.setOnClickListener(new View.OnClickListener() {
+        mFabDirect.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Log.d(TAG, "FAB CLICKED");
+                Log.d(TAG, "DIRECT FAB CLICKED");
                 mFabStartNavigation.setEnabled(false);
 
                 //check if the calibration is done
@@ -174,6 +186,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
                 if (!isCalibrationDone) {
 
                     //TODO: popup
+                    animateFab();
                     mIsCalibrating = true;
                     mCalibrationInfo.setVisibility(View.VISIBLE);
                     mFabStartNavigation.setVisibility(View.GONE);
@@ -183,41 +196,64 @@ public class AutoNavigationActivity extends AppCompatActivity {
 
                 } else {
 
-
-                    AlertDialog.Builder builder = new AlertDialog.Builder(AutoNavigationActivity.this);
-                    builder.setTitle(getResources().getString(R.string.movement_type_title));
-                    builder.setItems(getResources().getStringArray(R.array.movement_type), new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            // the user clicked on colors[which]
-                            if (which == 0)
-                                movementType = ConstantApp.L_MOVEMENT;
-                            else
-                                movementType = ConstantApp.DIRECT_MOVEMENT;
-
-                            mButtonRecalibrate.setVisibility(View.GONE);
-                            mFabStartNavigation.setVisibility(View.GONE);
-                            mFabStop.setVisibility(View.VISIBLE);
-                            stop = false;
-                            takePicture();
-                            mFabStartNavigation.setEnabled(true);
-                            isYAligned = false;
-                            isXAligned = false;
-                            isFacing = false;
-                        }
-
-                    });
-                    builder.setCancelable(false);
-                    builder.setNegativeButton(getResources().getString(R.string.connect_dialog_cancel), new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            dialog.dismiss();
-                        }
-                    });
-                    builder.show();
-
+                    animateFab();
+                    movementType = ConstantApp.DIRECT_MOVEMENT;
+                    mButtonRecalibrate.setVisibility(View.GONE);
+                    mFabStartNavigation.setVisibility(View.GONE);
+                    mFabStop.setVisibility(View.VISIBLE);
+                    stop = false;
+                    mFabStartNavigation.setEnabled(true);
+                    isYAligned = false;
+                    isXAligned = false;
+                    isFacing = false;
+                    takePicture();
 
                 }
+            }
+        });
+
+        mFabL.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Log.d(TAG, "L FAB CLICKED");
+                mFabStartNavigation.setEnabled(false);
+
+                //check if the calibration is done
+                boolean isCalibrationDone = Utility.isCalibrationDone(getApplicationContext());
+                if (!isCalibrationDone) {
+
+                    //TODO: popup
+                    animateFab();
+                    mIsCalibrating = true;
+                    mCalibrationInfo.setVisibility(View.VISIBLE);
+                    mFabStartNavigation.setVisibility(View.GONE);
+                    mFabCalibration.setVisibility(View.VISIBLE);
+                    mButtonRecalibrate.setVisibility(View.GONE);
+                    colorCounter = 0;
+
+                } else {
+
+                    animateFab();
+                    movementType = ConstantApp.L_MOVEMENT;
+                    mButtonRecalibrate.setVisibility(View.GONE);
+                    mFabStartNavigation.setVisibility(View.GONE);
+                    mFabStop.setVisibility(View.VISIBLE);
+                    stop = false;
+                    mFabStartNavigation.setEnabled(true);
+                    isYAligned = false;
+                    isXAligned = false;
+                    isFacing = false;
+                    takePicture();
+
+                }
+            }
+        });
+
+        mFabStartNavigation.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Log.d(TAG, "BIG FAB CLICKED");
+                animateFab();
             }
         });
 
@@ -353,6 +389,35 @@ public class AutoNavigationActivity extends AppCompatActivity {
             }
         });
     }
+
+    public void animateFab() {
+
+        if (isOpen) {
+            mFabDirect.startAnimation(mFabClose);
+            mFabL.startAnimation(mFabClose);
+            mLMovLabel.startAnimation(mFabClose);
+            mDirectMovLabel.startAnimation(mFabClose);
+            mFabStartNavigation.startAnimation(rotBackward);
+            mFabDirect.setVisibility(View.GONE);
+            mFabL.setVisibility(View.GONE);
+            mLMovLabel.setVisibility(View.GONE);
+            mDirectMovLabel.setVisibility(View.GONE);
+            isOpen = false;
+        } else {
+            mFabStartNavigation.startAnimation(rotForward);
+            mFabDirect.setVisibility(View.VISIBLE);
+            mFabL.setVisibility(View.VISIBLE);
+            mLMovLabel.setVisibility(View.VISIBLE);
+            mDirectMovLabel.setVisibility(View.VISIBLE);
+            mLMovLabel.startAnimation(mFabOpen);
+            mDirectMovLabel.startAnimation(mFabOpen);
+            mFabDirect.startAnimation(mFabOpen);
+            mFabL.startAnimation(mFabOpen);
+            isOpen = true;
+        }
+
+    }
+
 
     @Override
     protected void onResume() {
@@ -735,12 +800,12 @@ public class AutoNavigationActivity extends AppCompatActivity {
 
 
 */
-               Scalar lowTarget2 = null, upTarget2 = null;
+                Scalar lowTarget2 = null, upTarget2 = null;
 
-               if (Double.valueOf(targetLower[3]) != -1) {
+                if (Double.valueOf(targetLower[3]) != -1) {
 
-                   lowTarget2 = new Scalar(Double.valueOf(targetLower[3]), Double.valueOf(targetLower[1]), Double.valueOf(targetLower[2]));
-                   upTarget2 = new Scalar(Double.valueOf(targetUpper[3]), Double.valueOf(targetUpper[1]), Double.valueOf(targetUpper[2]));
+                    lowTarget2 = new Scalar(Double.valueOf(targetLower[3]), Double.valueOf(targetLower[1]), Double.valueOf(targetLower[2]));
+                    upTarget2 = new Scalar(Double.valueOf(targetUpper[3]), Double.valueOf(targetUpper[1]), Double.valueOf(targetUpper[2]));
 
                 }
 
@@ -1207,7 +1272,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
 
                     dialogBuilder.setIcon(gd);
 
-                   // dialogBuilder.setView(dialogView);
+                    // dialogBuilder.setView(dialogView);
                     dialogBuilder.setNegativeButton(android.R.string.ok,
                             new DialogInterface.OnClickListener() {
                                 public void onClick(DialogInterface dialog, int which) {
