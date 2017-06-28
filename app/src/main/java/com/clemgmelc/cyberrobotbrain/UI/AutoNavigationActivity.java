@@ -40,6 +40,7 @@ import android.os.IBinder;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -401,6 +402,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
         if (isOpen) {
 
             mFabMenu.startAnimation(rotBackward);
+            mFabMenu.setImageDrawable(ContextCompat.getDrawable(getApplicationContext(),R.drawable.ic_menu));
             if (mIsCalibrated) {
 
                 mFabCalib.startAnimation(mFabClose);
@@ -427,6 +429,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
         } else {
 
             mFabMenu.startAnimation(rotForward);
+            mFabMenu.setImageDrawable(ContextCompat.getDrawable(getApplicationContext(),R.drawable.ic_add));
             if (mIsCalibrated) {
 
                 mFabCalib.startAnimation(mFabOpen);
