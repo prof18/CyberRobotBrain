@@ -89,12 +89,10 @@ public class AutoNavigationActivity extends AppCompatActivity {
     private Handler mBackgroundHandler;
     private String mCameraId;
     private Size mPreviewSize, mMaxSize;
-    private Size mImageSize;
     private ImageReader mImageReader;
     private Semaphore mCameraOpenCloseLock = new Semaphore(1);
     private static String[] PERMISSIONS_CAMERA = {
-            Manifest.permission.CAMERA,
-            Manifest.permission.WRITE_EXTERNAL_STORAGE
+            Manifest.permission.CAMERA
     };
     private static final int REQUEST_CAMERA_PERMISSION = 1;
     private static final int STATE_PREVIEW = 0;
@@ -105,7 +103,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
     private CameraCaptureSession mPreviewCaptureSession;
     private CaptureRequest.Builder mCaptureRequestBuilder;
     private FloatingActionButton mFabMenu, mFabPictureCalib, mFabStop, mFabDirect, mFabL, mFabCalib;
-    private Button mButtonNext;//, mButtonRecalibrate;
+    private Button mButtonNext;
     private ImageView mTestImage;
     private Activity mActivity;
     private int k = 1, colorCounter;
@@ -127,8 +125,6 @@ public class AutoNavigationActivity extends AppCompatActivity {
     private boolean isOpen = false;
     private TextView mLMovLabel, mDirectMovLabel, mCalibrationLabel, mCalibrationNeedTitle;
     private boolean mIsCalibrated = false;
-    //private FrameLayout fabLayout;
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -139,7 +135,6 @@ public class AutoNavigationActivity extends AppCompatActivity {
         mTestImage = (ImageView) findViewById(R.id.imageViewTest);
         mCalibrationInfo = (TextView) findViewById(R.id.calibrationInfo);
         mFabPictureCalib = (FloatingActionButton) findViewById(R.id.fabCalibration);
-        //mButtonRecalibrate = (Button) findViewById(R.id.recalibrate);
         mFabStop = (FloatingActionButton) findViewById(R.id.fabStop);
         mFabDirect = (FloatingActionButton) findViewById(R.id.fabDirect);
         mFabL = (FloatingActionButton) findViewById(R.id.fabL);
@@ -149,32 +144,26 @@ public class AutoNavigationActivity extends AppCompatActivity {
         mCalibrationNeedTitle = (TextView) findViewById(R.id.calibrationNeed);
         mFabCalib = (FloatingActionButton) findViewById(R.id.fabRecalibration);
 
+        //animations
         mFabOpen = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.fab_open);
         mFabClose = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.fab_close);
         rotForward = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.rotate_forward);
         rotBackward = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.rotate_backward);
 
-        //fabLayout = (FrameLayout) findViewById(R.id.fabLayout);
-
         mDeviceAddress = getIntent().getStringExtra(ConstantApp.DEVICE_ADDRESS);
-
-
 
         mActivity = this;
 
         if (!OpenCVLoader.initDebug()) {
-            // Handle initialization error
+            onBackPressed();
             Log.d(TAG, "opencv not init");
         }
-        //mButtonHide = (Button) findViewById(R.id.hide);
-        //mButtonHide.setEnabled(false);
+
         mButtonNext = (Button) findViewById(R.id.next);
-        //createImageFolder();
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
 
-            if (ActivityCompat.checkSelfPermission(this, PERMISSIONS_CAMERA[0]) != PackageManager.PERMISSION_GRANTED
-                    || ActivityCompat.checkSelfPermission(this, PERMISSIONS_CAMERA[1]) != PackageManager.PERMISSION_GRANTED) {
+            if (ActivityCompat.checkSelfPermission(this, PERMISSIONS_CAMERA[0]) != PackageManager.PERMISSION_GRANTED) {
 
                 ActivityCompat.requestPermissions(this, PERMISSIONS_CAMERA, REQUEST_CAMERA_PERMISSION);
             }
@@ -253,6 +242,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
                 animateFab();
 
                 mFabMenu.hide();
+                mFabPictureCalib.show();
                 mIsCalibrating = true;
                 mCalibrationInfo.setVisibility(View.VISIBLE);
                 //mFabMenu.setVisibility(View.GONE);
@@ -299,6 +289,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
         mFabPictureCalib.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                mFabPictureCalib.hide();
                 takePicture();
             }
         });
@@ -674,8 +665,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
         CameraManager cameraManager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
         try {
 
-            if (ActivityCompat.checkSelfPermission(this, PERMISSIONS_CAMERA[0]) == PackageManager.PERMISSION_GRANTED
-                    && ActivityCompat.checkSelfPermission(this, PERMISSIONS_CAMERA[1]) == PackageManager.PERMISSION_GRANTED) {
+            if (ActivityCompat.checkSelfPermission(this, PERMISSIONS_CAMERA[0]) == PackageManager.PERMISSION_GRANTED) {
 
                 try {
 
@@ -1250,6 +1240,8 @@ public class AutoNavigationActivity extends AppCompatActivity {
                     else if (y + 4 >= rows)
                         y -= 4;
 
+                    if ((x < 0) || (y < 0) || (x > cols) || (y > rows)) return false;
+
 
                     Rect touchedRect = new Rect();
 
@@ -1500,8 +1492,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
         switch (requestCode) {
 
             case (REQUEST_CAMERA_PERMISSION):
-                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED
-                        && grantResults[1] == PackageManager.PERMISSION_GRANTED) {
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
 
                     Log.v(TAG, "Permission Granted");
                     mTextureView.setSurfaceTextureListener(mSurfaceTextureListener);
