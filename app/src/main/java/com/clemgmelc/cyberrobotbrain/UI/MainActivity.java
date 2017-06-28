@@ -126,7 +126,7 @@ public class MainActivity extends AppCompatActivity {
                 mDeviceAddress = data.getStringExtra(ConstantApp.DEVICE_ADDRESS);
                 mFab.setEnabled(false);
 
-                registerReceiver(mGattUpdateReceiver, makeGattUpdateIntentFilter());
+                registerReceiver(mGattUpdateReceiver, ConstantApp.makeGattUpdateIntentFilter());
 
                 Intent gattServiceIntent = new Intent(this, BluetoothLeService.class);
                 bindService(gattServiceIntent, mServiceConnection, BIND_AUTO_CREATE);
@@ -190,14 +190,7 @@ public class MainActivity extends AppCompatActivity {
     };
 
 
-    private static IntentFilter makeGattUpdateIntentFilter() {
-        final IntentFilter intentFilter = new IntentFilter();
-        intentFilter.addAction(ConstantApp.ACTION_GATT_CONNECTED);
-        intentFilter.addAction(ConstantApp.ACTION_GATT_DISCONNECTED);
-        intentFilter.addAction(ConstantApp.ACTION_GATT_SERVICES_DISCOVERED);
-        intentFilter.addAction(ConstantApp.ACTION_DATA_AVAILABLE);
-        return intentFilter;
-    }
+
 
     // Manage Service lifecycle.
     private final ServiceConnection mServiceConnection = new ServiceConnection() {

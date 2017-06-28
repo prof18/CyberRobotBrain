@@ -1,5 +1,7 @@
 package com.clemgmelc.cyberrobotbrain.Util;
 
+import android.content.IntentFilter;
+
 import java.util.UUID;
 
 /**
@@ -41,5 +43,14 @@ public class ConstantApp {
 
     public static final int L_MOVEMENT = 0;
     public static final int DIRECT_MOVEMENT = 1;
+
+    public static IntentFilter makeGattUpdateIntentFilter() {
+        final IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(ConstantApp.ACTION_GATT_CONNECTED);
+        intentFilter.addAction(ConstantApp.ACTION_GATT_DISCONNECTED);
+        intentFilter.addAction(ConstantApp.ACTION_GATT_SERVICES_DISCOVERED);
+        intentFilter.addAction(ConstantApp.ACTION_DATA_AVAILABLE);
+        return intentFilter;
+    }
 
 }

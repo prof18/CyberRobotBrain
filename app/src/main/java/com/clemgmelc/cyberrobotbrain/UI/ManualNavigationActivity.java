@@ -2,12 +2,16 @@ package com.clemgmelc.cyberrobotbrain.UI;
 
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattService;
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.res.ColorStateList;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
@@ -50,6 +54,8 @@ public class ManualNavigationActivity extends AppCompatActivity {
         mBackward.setOnTouchListener(movementListener(ConstantApp.CODE_BACKWARD));
         mLeft.setOnTouchListener(movementListener(ConstantApp.CODE_LEFT));
         mRight.setOnTouchListener(movementListener(ConstantApp.CODE_RIGHT));
+
+        registerReceiver(mGattUpdateReceiver, ConstantApp.makeGattUpdateIntentFilter());
     }
 
 
@@ -60,6 +66,12 @@ public class ManualNavigationActivity extends AppCompatActivity {
         Intent gattServiceIntent = new Intent(this, BluetoothLeService.class);
         bindService(gattServiceIntent, mServiceConnection, BIND_AUTO_CREATE);
 
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        unregisterReceiver(mGattUpdateReceiver);
     }
 
 
@@ -365,4 +377,27 @@ public class ManualNavigationActivity extends AppCompatActivity {
 
         return listener;
     }
+
+    //manage connected, disconnected and discovered action
+    private final BroadcastReceiver mGattUpdateReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            final String action = intent.getAction();
+
+            if (ConstantApp.ACTION_GATT_DISCONNECTED.equals(action)) {
+
+                Log.v(TAG, "sono scollegato ");
+                Toast.makeText(mBluetoothLeService, getResources().getString(R.string.message_disconnecting), Toast.LENGTH_SHORT).show();
+
+                mBluetoothLeService.disconnect();
+                mBluetoothLeService = null;
+
+                onBackPressed();
+
+                Log.v(TAG, "unregistred");
+
+            }
+        }
+    };
+
 }

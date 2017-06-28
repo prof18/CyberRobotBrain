@@ -44,7 +44,8 @@
     <string name="info_target">Tap the target indicator</string>
     <string name="info_left">Tap the left indicator of the robot</string>
     <string name="info_right">Tap the right indicator of the robot</string>
-    <string name="button_recalibration">Recalibrate Indicators</string>
+    <string name="button_recalibration">Recalibrate Colors</string>
+    <string name="button_calibration">Calibrate Colors</string>
     <string name="info_recalibration">Frame the Robot and tap the button to start the calibration of the indicators</string>
     <string name="error_occured">An unexpected error has occurred. Please retry and if the problem persist, reconnect to the Cyber Robot</string>
     <string name="error_occured_camera">An unexpected error has occurred. Please retry.</string>
@@ -61,4 +62,6 @@
     <string name="selected_color">Selected Color</string>
     <string name="movement_l">L Movement</string>
     <string name="movement_direct">Direct Movement</string>
+    <string name="info_calibration">You need to calibrate the colors!</string>
+    <string name="stopping">Stopping the Robot..</string>
 </resources>

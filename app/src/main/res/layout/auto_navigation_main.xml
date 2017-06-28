@@ -21,105 +21,14 @@
         android:layout_centerVertical="true" />
 
     <Button
-        android:id="@+id/recalibrate"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_centerHorizontal="true"
-        android:text="@string/button_recalibration" />
-
-    <android.support.design.widget.FloatingActionButton
-        android:id="@+id/fabDirect"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="160dp"
-        android:layout_gravity="bottom|end"
-        android:layout_marginRight="@dimen/fab_margin"
-        android:visibility="gone"
-        app:elevation="6dp"
-        app:pressedTranslationZ="12dp"
-        app:backgroundTint="@color/googleBlue"
-        app:srcCompat="@drawable/ic_direct" />
-
-    <android.support.design.widget.FloatingActionButton
-        android:id="@+id/fabL"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="90dp"
-        android:layout_gravity="bottom|end"
-        android:layout_marginRight="@dimen/fab_margin"
-        android:visibility="gone"
-        app:elevation="6dp"
-        app:pressedTranslationZ="12dp"
-        app:backgroundTint="@color/googleYellow"
-        app:srcCompat="@drawable/ic_l_direction" />
-
-    <TextView
-        android:id="@+id/l_mov_label"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/movement_l"
-        app:layout_anchor="@id/fabL"
-        android:visibility="gone"
-        android:textSize="24sp"
-        android:textStyle="bold"
-        app:layout_anchorGravity="center|left"
-        android:layout_marginRight="80dp"
-        />
-
-    <TextView
-        android:id="@+id/direct_mov_label"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/movement_direct"
-        app:layout_anchor="@id/fabDirect"
-        android:visibility="gone"
-        android:textSize="24sp"
-        android:textStyle="bold"
-        app:layout_anchorGravity="center|left"
-        android:layout_marginRight="70dp"
-        />
-
-
-    <android.support.design.widget.FloatingActionButton
-        android:id="@+id/fabAutoNav"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom|end"
-        android:layout_margin="@dimen/fab_margin"
-        app:backgroundTint="@color/googleGreen"
-        app:srcCompat="@drawable/ic_start_auto" />
-
-
-    <android.support.design.widget.FloatingActionButton
-        android:id="@+id/fabCalibration"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom|end"
-        android:layout_margin="@dimen/fab_margin"
-        app:backgroundTint="@color/colorPrimary"
-        android:visibility="gone"
-        app:srcCompat="@drawable/ic_filter_tilt_shift_black_24dp" />
-
-    <android.support.design.widget.FloatingActionButton
-        android:id="@+id/fabStop"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom|end"
-        android:layout_margin="@dimen/fab_margin"
-        app:backgroundTint="@color/googleRed"
-        android:visibility="gone"
-        app:srcCompat="@drawable/ic_stop" />
-
-    <Button
         android:id="@+id/next"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:layout_centerHorizontal="true"
         android:layout_gravity="top|end"
-        android:visibility="gone"
         android:text="NEXT STEP"
+        android:visibility="gone"
         app:layout_anchor="@+id/imageViewTest"
         app:layout_anchorGravity="bottom|left" />
 
@@ -129,8 +38,135 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="16dp"
         android:gravity="center"
-        android:visibility="gone"
         android:text="@string/info_recalibration"
-        android:textAppearance="@style/TextAppearance.AppCompat.Title" />
+        android:textAppearance="@style/TextAppearance.AppCompat.Title"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/calibrationNeed"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_marginStart="16dp"
+        android:text="@string/info_calibration"
+        android:textAppearance="@style/TextAppearance.AppCompat.Title"
+        android:textSize="36sp"
+        android:textStyle="bold"
+        android:visibility="gone" />
+
+
+
+    <android.support.design.widget.FloatingActionButton
+        android:id="@+id/fabDirect"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_marginBottom="230dp"
+        android:layout_marginRight="@dimen/fab_margin"
+        android:visibility="gone"
+        app:backgroundTint="@color/googleGreen"
+        app:elevation="6dp"
+        app:pressedTranslationZ="12dp"
+        app:srcCompat="@drawable/ic_direct" />
+
+    <android.support.design.widget.FloatingActionButton
+        android:id="@+id/fabL"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_marginBottom="160dp"
+        android:layout_marginRight="@dimen/fab_margin"
+        android:visibility="gone"
+        app:backgroundTint="@color/googleYellow"
+        app:elevation="6dp"
+        app:pressedTranslationZ="12dp"
+        app:srcCompat="@drawable/ic_l_direction" />
+
+    <android.support.design.widget.FloatingActionButton
+        android:id="@+id/fabRecalibration"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_marginBottom="90dp"
+        android:layout_marginRight="@dimen/fab_margin"
+        android:visibility="gone"
+        app:backgroundTint="@color/googleRed"
+        app:elevation="6dp"
+        app:pressedTranslationZ="12dp"
+        app:srcCompat="@drawable/ic_wrench" />
+
+    <TextView
+        android:id="@+id/l_mov_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginRight="80dp"
+        android:text="@string/movement_l"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:visibility="gone"
+        app:layout_anchor="@id/fabL"
+        app:layout_anchorGravity="center|left" />
+
+    <TextView
+        android:id="@+id/direct_mov_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginRight="70dp"
+        android:text="@string/movement_direct"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:visibility="gone"
+        app:layout_anchor="@id/fabDirect"
+        app:layout_anchorGravity="center|left" />
+
+    <TextView
+        android:id="@+id/calibration_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginRight="70dp"
+        android:text="@string/button_recalibration"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:visibility="gone"
+        app:layout_anchor="@id/fabRecalibration"
+        app:layout_anchorGravity="center|left" />
+
+
+    <android.support.design.widget.FloatingActionButton
+        android:id="@+id/fabAutoNav"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="@dimen/fab_margin"
+        android:visibility="visible"
+        app:backgroundTint="@color/googleBlue"
+        app:srcCompat="@drawable/ic_menu" />
+
+
+
+
+    <android.support.design.widget.FloatingActionButton
+        android:id="@+id/fabCalibration"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="@dimen/fab_margin"
+        android:visibility="gone"
+        app:backgroundTint="@color/colorPrimary"
+        app:srcCompat="@drawable/ic_filter_tilt_shift_black_24dp" />
+
+    <android.support.design.widget.FloatingActionButton
+        android:id="@+id/fabStop"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="@dimen/fab_margin"
+        android:visibility="gone"
+        app:backgroundTint="@color/googleRed"
+        app:srcCompat="@drawable/ic_stop" />
+
+
+
+
 
 </android.support.design.widget.CoordinatorLayout>

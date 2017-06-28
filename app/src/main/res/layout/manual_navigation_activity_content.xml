@@ -45,6 +45,7 @@
                 android:layout_height="wrap_content"
                 android:title="@string/sound"
                 android:src="@drawable/ic_bell"
+                android:visibility="invisible"
                 android:background="@android:color/transparent"
                 android:clickable="true"
                 android:layout_marginEnd="40dp"

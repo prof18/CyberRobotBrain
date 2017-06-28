@@ -4,6 +4,7 @@ import android.Manifest;
 import android.app.Activity;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattService;
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -11,7 +12,6 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
@@ -40,7 +40,6 @@ import android.os.IBinder;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -54,6 +53,7 @@ import android.view.WindowManager;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.Button;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -103,8 +103,8 @@ public class AutoNavigationActivity extends AppCompatActivity {
     private CameraDevice mCameraDevice;
     private CameraCaptureSession mPreviewCaptureSession;
     private CaptureRequest.Builder mCaptureRequestBuilder;
-    private FloatingActionButton mFabStartNavigation, mFabCalibration, mFabStop, mFabDirect, mFabL;
-    private Button mButtonNext, mButtonRecalibrate;
+    private FloatingActionButton mFabMenu, mFabPictureCalib, mFabStop, mFabDirect, mFabL, mFabCalib;
+    private Button mButtonNext;//, mButtonRecalibrate;
     private ImageView mTestImage;
     private Activity mActivity;
     private int k = 1, colorCounter;
@@ -124,7 +124,9 @@ public class AutoNavigationActivity extends AppCompatActivity {
     private Double distanceTM;
     private Animation mFabOpen, mFabClose, rotForward, rotBackward;
     private boolean isOpen = false;
-    private TextView mLMovLabel, mDirectMovLabel;
+    private TextView mLMovLabel, mDirectMovLabel, mCalibrationLabel, mCalibrationNeedTitle;
+    private boolean mIsCalibrated = false;
+    //private FrameLayout fabLayout;
 
 
     @Override
@@ -135,20 +137,27 @@ public class AutoNavigationActivity extends AppCompatActivity {
         setContentView(R.layout.auto_navigation_main);
         mTestImage = (ImageView) findViewById(R.id.imageViewTest);
         mCalibrationInfo = (TextView) findViewById(R.id.calibrationInfo);
-        mFabCalibration = (FloatingActionButton) findViewById(R.id.fabCalibration);
-        mButtonRecalibrate = (Button) findViewById(R.id.recalibrate);
+        mFabPictureCalib = (FloatingActionButton) findViewById(R.id.fabCalibration);
+        //mButtonRecalibrate = (Button) findViewById(R.id.recalibrate);
         mFabStop = (FloatingActionButton) findViewById(R.id.fabStop);
         mFabDirect = (FloatingActionButton) findViewById(R.id.fabDirect);
         mFabL = (FloatingActionButton) findViewById(R.id.fabL);
         mLMovLabel = (TextView) findViewById(R.id.l_mov_label);
         mDirectMovLabel = (TextView) findViewById(R.id.direct_mov_label);
+        mCalibrationLabel = (TextView) findViewById(R.id.calibration_label);
+        mCalibrationNeedTitle = (TextView) findViewById(R.id.calibrationNeed);
+        mFabCalib = (FloatingActionButton) findViewById(R.id.fabRecalibration);
 
         mFabOpen = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.fab_open);
         mFabClose = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.fab_close);
         rotForward = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.rotate_forward);
         rotBackward = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.rotate_backward);
 
+        //fabLayout = (FrameLayout) findViewById(R.id.fabLayout);
+
         mDeviceAddress = getIntent().getStringExtra(ConstantApp.DEVICE_ADDRESS);
+
+
 
         mActivity = this;
 
@@ -171,44 +180,37 @@ public class AutoNavigationActivity extends AppCompatActivity {
         }
 
         mTextureView = (TextureView) findViewById(R.id.textureView);
-        mFabStartNavigation = (FloatingActionButton) findViewById(R.id.fabAutoNav);
-        if (!Utility.isCalibrationDone(getApplicationContext()))
-            mFabStartNavigation.setBackgroundTintList(ColorStateList.valueOf(ContextCompat.getColor(getApplicationContext(), R.color.googleRed)));
+        mFabMenu = (FloatingActionButton) findViewById(R.id.fabAutoNav);
+        mIsCalibrated = Utility.isCalibrationDone(getApplicationContext());
+
+        if (!mIsCalibrated) {
+            mCalibrationNeedTitle.setVisibility(View.VISIBLE);
+            mCalibrationLabel.setText(getResources().getString(R.string.button_calibration));
+            mFabDirect.setVisibility(View.GONE);
+            mFabL.setVisibility(View.GONE);
+        }
 
         mFabDirect.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Log.d(TAG, "DIRECT FAB CLICKED");
-                mFabStartNavigation.setEnabled(false);
+                //mFabMenu.setEnabled(false);
 
-                //check if the calibration is done
-                boolean isCalibrationDone = Utility.isCalibrationDone(getApplicationContext());
-                if (!isCalibrationDone) {
 
-                    //TODO: popup
-                    animateFab();
-                    mIsCalibrating = true;
-                    mCalibrationInfo.setVisibility(View.VISIBLE);
-                    mFabStartNavigation.setVisibility(View.GONE);
-                    mFabCalibration.setVisibility(View.VISIBLE);
-                    mButtonRecalibrate.setVisibility(View.GONE);
-                    colorCounter = 0;
+                animateFab();
+                movementType = ConstantApp.DIRECT_MOVEMENT;
+                //mButtonRecalibrate.setVisibility(View.GONE);
+                mFabMenu.hide();
+                mFabStop.setVisibility(View.VISIBLE);
+                stop = false;
+                //
+                //mFabMenu.setEnabled(true);
+                isYAligned = false;
+                isXAligned = false;
+                isFacing = false;
+                takePicture();
 
-                } else {
 
-                    animateFab();
-                    movementType = ConstantApp.DIRECT_MOVEMENT;
-                    mButtonRecalibrate.setVisibility(View.GONE);
-                    mFabStartNavigation.setVisibility(View.GONE);
-                    mFabStop.setVisibility(View.VISIBLE);
-                    stop = false;
-                    mFabStartNavigation.setEnabled(true);
-                    isYAligned = false;
-                    isXAligned = false;
-                    isFacing = false;
-                    takePicture();
-
-                }
             }
         });
 
@@ -216,82 +218,86 @@ public class AutoNavigationActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 Log.d(TAG, "L FAB CLICKED");
-                mFabStartNavigation.setEnabled(false);
+                //mFabMenu.setEnabled(false);
 
-                //check if the calibration is done
-                boolean isCalibrationDone = Utility.isCalibrationDone(getApplicationContext());
-                if (!isCalibrationDone) {
 
-                    //TODO: popup
-                    animateFab();
-                    mIsCalibrating = true;
-                    mCalibrationInfo.setVisibility(View.VISIBLE);
-                    mFabStartNavigation.setVisibility(View.GONE);
-                    mFabCalibration.setVisibility(View.VISIBLE);
-                    mButtonRecalibrate.setVisibility(View.GONE);
-                    colorCounter = 0;
+                animateFab();
+                movementType = ConstantApp.L_MOVEMENT;
+                //mButtonRecalibrate.setVisibility(View.GONE);
+                mFabMenu.hide();
+                mFabStop.setVisibility(View.VISIBLE);
+                stop = false;
+                //mFabMenu.setEnabled(true);
+                isYAligned = false;
+                isXAligned = false;
+                isFacing = false;
+                takePicture();
 
-                } else {
 
-                    animateFab();
-                    movementType = ConstantApp.L_MOVEMENT;
-                    mButtonRecalibrate.setVisibility(View.GONE);
-                    mFabStartNavigation.setVisibility(View.GONE);
-                    mFabStop.setVisibility(View.VISIBLE);
-                    stop = false;
-                    mFabStartNavigation.setEnabled(true);
-                    isYAligned = false;
-                    isXAligned = false;
-                    isFacing = false;
-                    takePicture();
-
-                }
             }
         });
 
-        mFabStartNavigation.setOnClickListener(new View.OnClickListener() {
+        mFabMenu.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Log.d(TAG, "BIG FAB CLICKED");
+
                 animateFab();
+            }
+        });
+
+        mFabCalib.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                animateFab();
+
+                mFabMenu.hide();
+                mIsCalibrating = true;
+                mCalibrationInfo.setVisibility(View.VISIBLE);
+                //mFabMenu.setVisibility(View.GONE);
+                mFabPictureCalib.setVisibility(View.VISIBLE);
+                mCalibrationNeedTitle.setVisibility(View.GONE);
+                //mButtonRecalibrate.setVisibility(View.GONE);
+                colorCounter = 0;
             }
         });
 
         mFabStop.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                mButtonRecalibrate.setVisibility(View.VISIBLE);
-                mFabStop.setVisibility(View.GONE);
-                mFabStartNavigation.setVisibility(View.VISIBLE);
+                //mButtonRecalibrate.setVisibility(View.VISIBLE);
+                Toast.makeText(mActivity, getResources().getString(R.string.stopping), Toast.LENGTH_SHORT).show();
+                mFabStop.hide();
+
+                mFabMenu.show();
                 mCalibrationInfo.setVisibility(View.GONE);
 
                 //return to the "classic" camera view
                 mTestImage.setVisibility(View.INVISIBLE);
                 mTextureView.setVisibility(View.VISIBLE);
                 mTextureView.getTop();
-                mFabStartNavigation.setEnabled(true);
+                //mFabMenu.setEnabled(true);
 
                 stop = true;
 
             }
         });
 
-        mButtonRecalibrate.setOnClickListener(new View.OnClickListener() {
+/*        mButtonRecalibrate.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 mIsCalibrating = true;
                 mCalibrationInfo.setVisibility(View.VISIBLE);
-                mFabStartNavigation.setVisibility(View.GONE);
-                mFabCalibration.setVisibility(View.VISIBLE);
+                mFabMenu.setVisibility(View.GONE);
+                mFabPictureCalib.setVisibility(View.VISIBLE);
                 colorCounter = 0;
                 mButtonRecalibrate.setVisibility(View.GONE);
             }
-        });
+        });*/
 
-        mFabCalibration.setOnClickListener(new View.OnClickListener() {
+        mFabPictureCalib.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                mFabCalibration.setEnabled(false);
                 takePicture();
             }
         });
@@ -393,26 +399,56 @@ public class AutoNavigationActivity extends AppCompatActivity {
     public void animateFab() {
 
         if (isOpen) {
-            mFabDirect.startAnimation(mFabClose);
-            mFabL.startAnimation(mFabClose);
-            mLMovLabel.startAnimation(mFabClose);
-            mDirectMovLabel.startAnimation(mFabClose);
-            mFabStartNavigation.startAnimation(rotBackward);
-            mFabDirect.setVisibility(View.GONE);
-            mFabL.setVisibility(View.GONE);
-            mLMovLabel.setVisibility(View.GONE);
-            mDirectMovLabel.setVisibility(View.GONE);
+
+            mFabMenu.startAnimation(rotBackward);
+            if (mIsCalibrated) {
+
+                mFabCalib.startAnimation(mFabClose);
+                mFabL.startAnimation(mFabClose);
+                mFabDirect.startAnimation(mFabClose);
+                mCalibrationLabel.startAnimation(mFabClose);
+                mLMovLabel.startAnimation(mFabClose);
+                mDirectMovLabel.startAnimation(mFabClose);
+                mFabCalib.hide();
+                mCalibrationLabel.setVisibility(View.GONE);
+                mFabL.hide();
+                mLMovLabel.setVisibility(View.GONE);
+                mFabDirect.hide();
+                mDirectMovLabel.setVisibility(View.GONE);
+
+            } else {
+                mFabCalib.startAnimation(mFabClose);
+                mCalibrationLabel.startAnimation(mFabClose);
+                mFabCalib.hide();
+                mCalibrationLabel.setVisibility(View.GONE);
+            }
+
             isOpen = false;
         } else {
-            mFabStartNavigation.startAnimation(rotForward);
-            mFabDirect.setVisibility(View.VISIBLE);
-            mFabL.setVisibility(View.VISIBLE);
-            mLMovLabel.setVisibility(View.VISIBLE);
-            mDirectMovLabel.setVisibility(View.VISIBLE);
-            mLMovLabel.startAnimation(mFabOpen);
-            mDirectMovLabel.startAnimation(mFabOpen);
-            mFabDirect.startAnimation(mFabOpen);
-            mFabL.startAnimation(mFabOpen);
+
+            mFabMenu.startAnimation(rotForward);
+            if (mIsCalibrated) {
+
+                mFabCalib.startAnimation(mFabOpen);
+                mFabL.startAnimation(mFabOpen);
+                mFabDirect.startAnimation(mFabOpen);
+                mCalibrationLabel.startAnimation(mFabOpen);
+                mLMovLabel.startAnimation(mFabOpen);
+                mDirectMovLabel.startAnimation(mFabOpen);
+                mFabCalib.show();
+                mCalibrationLabel.setVisibility(View.VISIBLE);
+                mFabL.show();
+                mLMovLabel.setVisibility(View.VISIBLE);
+                mFabDirect.show();
+                mDirectMovLabel.setVisibility(View.VISIBLE);
+
+            } else {
+                mFabCalib.startAnimation(mFabOpen);
+                mCalibrationLabel.startAnimation(mFabOpen);
+                mFabCalib.show();
+                mCalibrationLabel.setVisibility(View.VISIBLE);
+            }
+
             isOpen = true;
         }
 
@@ -435,6 +471,8 @@ public class AutoNavigationActivity extends AppCompatActivity {
 
         Intent gattServiceIntent = new Intent(this, BluetoothLeService.class);
         bindService(gattServiceIntent, mServiceConnection, BIND_AUTO_CREATE);
+
+        registerReceiver(mGattUpdateReceiver, ConstantApp.makeGattUpdateIntentFilter());
     }
 
     @Override
@@ -445,6 +483,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
         unbindService(mServiceConnection);
         mBluetoothLeService = null;
     }
+
 
     // Manage Service lifecycle.
     private final ServiceConnection mServiceConnection = new ServiceConnection() {
@@ -490,6 +529,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
         stopBackgroundThread();
         mTextureView.setSurfaceTextureListener(null);
         super.onPause();
+        unregisterReceiver(mGattUpdateReceiver);
     }
 
     @Override
@@ -796,10 +836,9 @@ public class AutoNavigationActivity extends AppCompatActivity {
                 Log.v(TAG, "rightLower: " + rightLower[0] + " " + rightLower[1] + " " + rightLower[2]);
 
                 Log.v(TAG, "targetUpper: " + targetUpper[0] + " " + targetUpper[1] + " " + targetUpper[2]);
-                Log.v(TAG, "targetLower: " + targetLower[0] + " " + targetLower[1] + " " + targetLower[2]);
+                Log.v(TAG, "targetLower: " + targetLower[0] + " " + targetLower[1] + " " + targetLower[2]);*/
 
 
-*/
                 Scalar lowTarget2 = null, upTarget2 = null;
 
                 if (Double.valueOf(targetLower[3]) != -1) {
@@ -1055,14 +1094,14 @@ public class AutoNavigationActivity extends AppCompatActivity {
                         public void run() {
                             mButtonRecalibrate.setVisibility(View.VISIBLE);
                             mFabStop.setVisibility(View.GONE);
-                            mFabStartNavigation.setVisibility(View.VISIBLE);
+                            mFabMenu.setVisibility(View.VISIBLE);
                             mCalibrationInfo.setVisibility(View.GONE);
 
                             //return to the "classic" camera view
                             mTestImage.setVisibility(View.INVISIBLE);
                             mTextureView.setVisibility(View.VISIBLE);
                             mTextureView.getTop();
-                            mFabStartNavigation.setEnabled(true);
+                            mFabMenu.setEnabled(true);
                             myBitmap = null;
                         }
                     });
@@ -1072,16 +1111,16 @@ public class AutoNavigationActivity extends AppCompatActivity {
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            mButtonRecalibrate.setVisibility(View.VISIBLE);
+                            //mButtonRecalibrate.setVisibility(View.VISIBLE);
                             mFabStop.setVisibility(View.GONE);
-                            mFabStartNavigation.setVisibility(View.VISIBLE);
+                            mFabMenu.show();
                             mCalibrationInfo.setVisibility(View.GONE);
 
                             //return to the "classic" camera view
                             mTestImage.setVisibility(View.GONE);
                             mTextureView.setVisibility(View.VISIBLE);
                             mTextureView.getTop();
-                            mFabStartNavigation.setEnabled(true);
+                            //mFabMenu.setEnabled(true);
                             //myBitmap = null;
                         }
                     });
@@ -1098,16 +1137,16 @@ public class AutoNavigationActivity extends AppCompatActivity {
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            mButtonRecalibrate.setVisibility(View.VISIBLE);
+                            //mButtonRecalibrate.setVisibility(View.VISIBLE);
                             mFabStop.setVisibility(View.GONE);
-                            mFabStartNavigation.setVisibility(View.VISIBLE);
+                            mFabMenu.show();
                             mCalibrationInfo.setVisibility(View.GONE);
 
                             //return to the "classic" camera view
                             mTestImage.setVisibility(View.GONE);
                             mTextureView.setVisibility(View.VISIBLE);
                             mTextureView.getTop();
-                            mFabStartNavigation.setEnabled(true);
+                            //mFabMenu.setEnabled(true);
                             //myBitmap = null;
                         }
                     });
@@ -1131,6 +1170,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
 
         @Override
         public void run() {
+
 
 
             Log.v(TAG, "Calibration Thread RUNNING##############");
@@ -1172,10 +1212,11 @@ public class AutoNavigationActivity extends AppCompatActivity {
                         mTestImage.setVisibility(View.INVISIBLE);
                         mTextureView.setVisibility(View.VISIBLE);
                         mTextureView.getTop();
-                        mFabCalibration.setVisibility(View.GONE);
-                        mFabStartNavigation.setVisibility(View.VISIBLE);
-                        mButtonRecalibrate.setVisibility(View.VISIBLE);
-                        mFabStartNavigation.setEnabled(true);
+                        mFabPictureCalib.setVisibility(View.GONE);
+                        mFabMenu.show();
+                        //mFabMenu.setVisibility(View.VISIBLE);
+                        //mButtonRecalibrate.setVisibility(View.VISIBLE);
+                        //mFabMenu.setEnabled(true);
                         return false;
                     }
 
@@ -1324,13 +1365,18 @@ public class AutoNavigationActivity extends AppCompatActivity {
                                             mTestImage.setVisibility(View.INVISIBLE);
                                             mTextureView.setVisibility(View.VISIBLE);
                                             mTextureView.getTop();
-                                            mFabCalibration.setVisibility(View.GONE);
-                                            mFabStartNavigation.setVisibility(View.VISIBLE);
-                                            mButtonRecalibrate.setVisibility(View.VISIBLE);
-                                            mFabStartNavigation.setEnabled(true);
-                                            mFabStartNavigation.setBackgroundTintList(ColorStateList.valueOf(ContextCompat.getColor(getApplicationContext(), R.color.googleGreen)));
+                                            mFabPictureCalib.setVisibility(View.GONE);
+                                            //mFabMenu.setVisibility(View.VISIBLE);
+                                            //mButtonRecalibrate.setVisibility(View.VISIBLE);
+                                           // mFabMenu.setEnabled(true);
+                                            //mFabMenu.setVisibility(View.VISIBLE);
+
                                             mIsCalibrating = false;
-                                            mFabCalibration.setEnabled(true);
+                                            mFabPictureCalib.setEnabled(true);
+                                            mCalibrationNeedTitle.setVisibility(View.VISIBLE);
+                                            mIsCalibrated = true;
+                                            mCalibrationNeedTitle.setVisibility(View.GONE);
+                                            mFabMenu.show();
                                             break;
 
                                         default:
@@ -1355,7 +1401,6 @@ public class AutoNavigationActivity extends AppCompatActivity {
 
     private void takePicture() {
 
-        mFabCalibration.setVisibility(View.GONE);
 
 
         mCaptureState = STATE_WAIT_LOCK;
@@ -1486,4 +1531,25 @@ public class AutoNavigationActivity extends AppCompatActivity {
                 });
         dialogBuilder.show();
     }
+
+    //manage connected, disconnected and discovered action
+    private final BroadcastReceiver mGattUpdateReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            final String action = intent.getAction();
+
+            if (ConstantApp.ACTION_GATT_DISCONNECTED.equals(action)) {
+
+                Log.v(TAG, "sono scollegato ");
+                Toast.makeText(mBluetoothLeService, getResources().getString(R.string.message_disconnecting), Toast.LENGTH_SHORT).show();
+
+                mBluetoothLeService.disconnect();
+                mBluetoothLeService = null;
+                onBackPressed();
+
+                Log.v(TAG, "unregistred");
+
+            }
+        }
+    };
 }
