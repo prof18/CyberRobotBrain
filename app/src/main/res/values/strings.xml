@@ -40,6 +40,9 @@
     <string name="wait_during_scan">You must wait until scanning is complete</string>
     <string name="take_picture">Take picture</string>
 
+    <string name="skip">SKIP THIS ONE</string>
+    <string name="repeat">REPEAT</string>
+
     <string name="camera_perm_error">You must accept the permission to use the camera</string>
     <string name="info_target">Tap the target indicator</string>
     <string name="info_left">Tap the left indicator of the robot</string>

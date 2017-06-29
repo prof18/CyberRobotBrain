@@ -1309,7 +1309,14 @@ public class AutoNavigationActivity extends AppCompatActivity {
                     dialogBuilder.setIcon(gd);
 
                     // dialogBuilder.setView(dialogView);
-                    dialogBuilder.setNegativeButton(android.R.string.ok,
+                    dialogBuilder.setNegativeButton(getString(R.string.repeat), new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+
+                        }
+                    });
+
+                    dialogBuilder.setPositiveButton(android.R.string.ok,
                             new DialogInterface.OnClickListener() {
                                 public void onClick(DialogInterface dialog, int which) {
 
@@ -1381,6 +1388,104 @@ public class AutoNavigationActivity extends AppCompatActivity {
                                     }
                                 }
                             });
+
+                    dialogBuilder.setNeutralButton(getString(R.string.skip), new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+
+
+                            switch (colorCounter){
+                                case 0:
+                                    mCalibrationInfo.setText(getResources().getString(R.string.info_right));
+                                    colorCounter++;
+                                    break;
+                                case 1:
+                                    mCalibrationInfo.setText(getResources().getString(R.string.info_left));
+                                    colorCounter++;
+                                    break;
+                                case 2:
+                                    mCalibrationInfo.setVisibility(View.GONE);
+                                    colorCounter = 0;
+                                    touchedRegionRgba.release();
+                                    touchedRegionHsv.release();
+
+                                    mTestImage.setVisibility(View.INVISIBLE);
+                                    mTextureView.setVisibility(View.VISIBLE);
+                                    mTextureView.getTop();
+                                    mFabPictureCalib.setVisibility(View.GONE);
+                                    //mFabMenu.setVisibility(View.VISIBLE);
+                                    //mButtonRecalibrate.setVisibility(View.VISIBLE);
+                                    // mFabMenu.setEnabled(true);
+                                    //mFabMenu.setVisibility(View.VISIBLE);
+
+                                    mIsCalibrating = false;
+                                    mFabPictureCalib.setEnabled(true);
+                                    mCalibrationNeedTitle.setVisibility(View.VISIBLE);
+                                    mIsCalibrated = true;
+                                    mCalibrationNeedTitle.setVisibility(View.GONE);
+                                    mFabMenu.show();
+
+
+                                    /*final AlertDialog.Builder dialogBuilderDistance = new AlertDialog.Builder(AutoNavigationActivity.this);
+                                    dialogBuilderDistance.setTitle("Distance Balancing");
+                                    dialogBuilderDistance.setMessage("Do you want to balance the distance?");
+                                    dialogBuilderDistance.setCancelable(false);
+                                    mIsCalibrating = false;
+
+                                    //ok balance the distance
+                                    dialogBuilderDistance.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                                        @Override
+                                        public void onClick(DialogInterface dialog, int which) {
+                                            mCalibrationInfo.setText(getResources().getString(R.string.info_distance));
+                                            mFabCalibration.setVisibility(View.VISIBLE);
+
+                                            mTestImage.setVisibility(View.INVISIBLE);
+                                            mTextureView.setVisibility(View.VISIBLE);
+                                            mTextureView.getTop();
+
+                                            mIsCalibratingDistance = true;
+                                            mFabCalibration.setEnabled(true);
+                                            mFabStartNavigation.setVisibility(View.INVISIBLE);
+                                        }
+                                    });
+                                    //skip, do not balance distance
+                                    dialogBuilderDistance.setNeutralButton(getString(R.string.skip), new DialogInterface.OnClickListener() {
+                                        @Override
+                                        public void onClick(DialogInterface dialog, int which) {
+                                            mTestImage.setVisibility(View.INVISIBLE);
+                                            mTextureView.setVisibility(View.VISIBLE);
+                                            mTextureView.getTop();
+                                            mFabCalibration.setVisibility(View.GONE);
+                                            mFabStartNavigation.setVisibility(View.VISIBLE);
+                                            mButtonRecalibrate.setVisibility(View.VISIBLE);
+                                            mFabStartNavigation.setEnabled(true);
+                                            if (Utility.isCalibrationDone(getApplicationContext()))
+                                                mFabStartNavigation.setBackgroundTintList(ColorStateList.valueOf(ContextCompat.getColor(getApplicationContext(), R.color.googleGreen)));
+                                            mFabCalibration.setEnabled(true);
+                                        }
+                                    });
+                                    dialogBuilderDistance.show();
+
+                                    //return to the "classic" camera view
+*/
+                                    /*
+                                    mTestImage.setVisibility(View.INVISIBLE);
+                                    mTextureView.setVisibility(View.VISIBLE);
+                                    mTextureView.getTop();
+                                    mFabCalibration.setVisibility(View.GONE);
+                                    mFabStartNavigation.setVisibility(View.VISIBLE);
+                                    mButtonRecalibrate.setVisibility(View.VISIBLE);
+                                    mFabStartNavigation.setEnabled(true);
+                                    if (Utility.isCalibrationDone(getApplicationContext()))
+                                        mFabStartNavigation.setBackgroundTintList(ColorStateList.valueOf(ContextCompat.getColor(getApplicationContext(), R.color.googleGreen)));
+                                    mIsCalibrating = false;
+                                    mFabCalibration.setEnabled(true);*/
+                                    break;
+                                default:
+                                    break;
+                            }
+                        }
+                    });
                     dialogBuilder.show();
                     //false because we need only a single touch event
                     return false;

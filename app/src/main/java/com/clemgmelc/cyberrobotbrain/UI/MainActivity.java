@@ -39,6 +39,9 @@ public class MainActivity extends AppCompatActivity {
     private FloatingActionButton mFab;
     private boolean mConnected = false;
     private Button mManualNav, mAutoNavigation;
+    private boolean isDebug = true;
+
+
 
 
     @Override
@@ -99,20 +102,29 @@ public class MainActivity extends AppCompatActivity {
         mAutoNavigation.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                if (!isDebug) {
+                    List<BluetoothGattService> list = mBluetoothLeService.getSupportedGattServices();
 
-                List<BluetoothGattService> list = mBluetoothLeService.getSupportedGattServices();
-
-                if (mConnected && list.size() == 9){
+                    if (mConnected && list.size() == 9) {
+                        Intent startMan = new Intent(MainActivity.this, AutoNavigationActivity.class);
+                        startMan.putExtra(ConstantApp.DEVICE_ADDRESS, mDeviceAddress);
+                        startActivity(startMan);
+                    } else if (!mConnected) {
+                        Toast.makeText(mainActivity, getResources().getString(R.string.action_disconnected), Toast.LENGTH_SHORT).show();
+                    } else if (list.size() != 9) {
+                        Toast.makeText(mainActivity, getResources().getString(R.string.error_occured), Toast.LENGTH_SHORT).show();
+                    }
+                } else {
                     Intent startMan = new Intent(MainActivity.this, AutoNavigationActivity.class);
-                    startMan.putExtra(ConstantApp.DEVICE_ADDRESS, mDeviceAddress);
                     startActivity(startMan);
-                } else if (!mConnected) {
-                    Toast.makeText(mainActivity, getResources().getString(R.string.action_disconnected), Toast.LENGTH_SHORT).show();
-                } else if (list.size() != 9) {
-                    Toast.makeText(mainActivity, getResources().getString(R.string.error_occured), Toast.LENGTH_SHORT).show();
                 }
             }
         });
+
+        if (isDebug) {
+
+            mAutoNavigation.setEnabled(true);
+        }
     }
 
     @Override
