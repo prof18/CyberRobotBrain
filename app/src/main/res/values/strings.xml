@@ -49,11 +49,11 @@
     <string name="info_right">Tap the right indicator of the robot</string>
     <string name="button_recalibration">Recalibrate Colors</string>
     <string name="button_calibration">Calibrate Colors</string>
-    <string name="info_recalibration">Frame together the three markers at 10 cm and press the button below.</string>
+    <string name="info_recalibration">Frame together the three markers at 15 cm and press the button below.</string>
     <string name="error_occured">An unexpected error has occurred. Please retry and if the problem persist, reconnect to the Cyber Robot</string>
     <string name="error_occured_camera">An unexpected error has occurred. Please retry.</string>
     <string name="null_center">The markers are not framed! Try again</string>
-    <string name="target_null_arrived">Target not found, you may be arrived</string>
+    <string name="target_null_arrived">Target not found, you are arrived</string>
     <string name="arrived_target_bound">The robot is arrived at the destination</string>
 
     <string-array name="movement_type">
@@ -67,5 +67,4 @@
     <string name="movement_direct">Direct Movement</string>
     <string name="info_calibration">You need to calibrate the colors!</string>
     <string name="stopping">Stopping the Robot..</string>
-    <string name="info_distance">Take a new picture of target at a distance  of 20 cm</string>
 </resources>

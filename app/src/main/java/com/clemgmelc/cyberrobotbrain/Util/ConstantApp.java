@@ -48,7 +48,7 @@ public class ConstantApp {
     //for this reason the recatangle is a square with side l = 3 cm
     //FOCAL = (pixelWidth * KNOWN_DISTANCE) / KNOWN_WIDTH;
     public static final double KNOWN_WIDTH = 3.0;
-    public static final double KNOWN_DISTANCE = 10.0;
+    public static final double KNOWN_DISTANCE = 15.0;
 
     public static final int L_MOVEMENT = 0;
     public static final int DIRECT_MOVEMENT = 1;

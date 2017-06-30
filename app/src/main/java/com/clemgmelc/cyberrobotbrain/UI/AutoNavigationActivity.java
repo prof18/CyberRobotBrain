@@ -54,7 +54,6 @@ import android.view.WindowManager;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.Button;
-import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -77,9 +76,7 @@ import org.opencv.core.Scalar;
 import org.opencv.imgproc.Imgproc;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -193,7 +190,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
                 movementType = ConstantApp.DIRECT_MOVEMENT;
                 //mButtonRecalibrate.setVisibility(View.GONE);
                 mFabMenu.hide();
-                mFabStop.setVisibility(View.VISIBLE);
+                mFabStop.show();
                 stop = false;
                 //
                 //mFabMenu.setEnabled(true);
@@ -246,6 +243,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
                 mFabMenu.hide();
                 mFabPictureCalib.show();
                 mIsCalibrating = true;
+
                 mCalibrationInfo.setVisibility(View.VISIBLE);
                 //mFabMenu.setVisibility(View.GONE);
                 mFabPictureCalib.setVisibility(View.VISIBLE);
@@ -395,7 +393,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
         if (isOpen) {
 
             mFabMenu.startAnimation(rotBackward);
-            mFabMenu.setImageDrawable(ContextCompat.getDrawable(getApplicationContext(),R.drawable.ic_menu));
+            mFabMenu.setImageDrawable(ContextCompat.getDrawable(getApplicationContext(), R.drawable.ic_menu));
             if (mIsCalibrated) {
 
                 mFabCalib.startAnimation(mFabClose);
@@ -422,7 +420,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
         } else {
 
             mFabMenu.startAnimation(rotForward);
-            mFabMenu.setImageDrawable(ContextCompat.getDrawable(getApplicationContext(),R.drawable.ic_add));
+            mFabMenu.setImageDrawable(ContextCompat.getDrawable(getApplicationContext(), R.drawable.ic_add));
             if (mIsCalibrated) {
 
                 mFabCalib.startAnimation(mFabOpen);
@@ -864,8 +862,6 @@ public class AutoNavigationActivity extends AppCompatActivity {
                 Scalar upTarget = new Scalar(Double.valueOf(targetUpper[0]), Double.valueOf(targetUpper[1]), Double.valueOf(targetUpper[2]));
 
 
-
-
                 //pass image in HSV
                 caseHsv = new Mat();
                 Imgproc.cvtColor(mOriginal, caseHsv, Imgproc.COLOR_RGB2HSV);
@@ -950,13 +946,13 @@ public class AutoNavigationActivity extends AppCompatActivity {
                     });
                 }*/
 
-                double distance = Navigation.computeDistance(mOriginal, getApplicationContext());
-                Log.v(TAG, "Distance: " + distance);
+                double height = Navigation.computeDistance(mOriginal, getApplicationContext());
+                Log.v(TAG, "Height: " + height);
 
-                if (distance == -1) {
+                if (height == -1) {
                     onBackPressed();
                     Toast.makeText(mActivity, getResources().getString(R.string.error_occured_camera), Toast.LENGTH_SHORT).show();
-                    Log.v(TAG, "Distance is -1");
+                    Log.v(TAG, "Height is -1");
                 }
 
 
@@ -979,9 +975,10 @@ public class AutoNavigationActivity extends AppCompatActivity {
                     if (movementType == ConstantApp.L_MOVEMENT) {
 
 
-                        if (Navigation.isInBound(true, centerMean, centerTarget, 3, -1, focal)) {
+                        if (Navigation.isInBound(true, centerMean, centerTarget, 5, height, focal)) {
 
-                            int action = Navigation.turnDirection(centerTarget, centerLeft, centerRight, true);
+
+                            int action = Navigation.turnDirection(centerTarget, centerLeft, centerRight, true,focal,height);
                             switch (action) {
 
                                 case 0:
@@ -1012,7 +1009,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
                         } else {
                             org.opencv.core.Point tempTarget = new org.opencv.core.Point(meanX, centerTarget.y);
 
-                            int action = Navigation.turnDirection(tempTarget, centerLeft, centerRight, false);
+                            int action = Navigation.turnDirection(tempTarget, centerLeft, centerRight, false,focal,height);
                             switch (action) {
 
                                 case 0:
@@ -1044,9 +1041,17 @@ public class AutoNavigationActivity extends AppCompatActivity {
 
                         //direct movement
                     } else {
-                        if (distanceTM == null)
+
+                        double offset = (ConstantApp.KNOWN_WIDTH * focal) / height;
+
+                        double pixelToCm = offset / 3;
+
+                        if (distanceTM == null) {
                             distanceTM = Math.sqrt(Math.pow(centerTarget.x - centerMean.x, 2)
                                     + Math.pow(centerTarget.y - centerMean.y, 2));
+
+                            distanceTM = distanceTM / pixelToCm;
+                        }
 
                         double m1;
                         if (centerRight.x > centerLeft.x) {
@@ -1068,14 +1073,19 @@ public class AutoNavigationActivity extends AppCompatActivity {
 
                         Log.v(TAG, "m1*m2: " + m1 * m2);
 
-                        if (m1 != Double.MAX_VALUE && m2 != Double.MAX_VALUE && m1 * m2 <= 0 && m1 * m2 >= -2) {
-                            mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.forward);
-                            Log.v(TAG, "Go Ahead");
+                        if (m1 != Double.MAX_VALUE && m2 != Double.MAX_VALUE && Navigation.isPerpendicular(m1, m2, focal, height, centerMean, centerTarget)) {
+
                             double newDistanceTM = Math.sqrt(Math.pow(centerTarget.x - centerMean.x, 2)
                                     + Math.pow(centerTarget.y - centerMean.y, 2));
+                            newDistanceTM = newDistanceTM / pixelToCm;
+                            Log.v(TAG, "newDistanceTM: " + newDistanceTM);
+                            Log.v(TAG, "distanceTM: " + distanceTM);
                             if (newDistanceTM > distanceTM) {
                                 mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.right);
                                 Log.v(TAG, "Turn right on distance");
+                            } else {
+                                mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.forward);
+                                Log.v(TAG, "Go Ahead");
                             }
 
 
@@ -1173,6 +1183,8 @@ public class AutoNavigationActivity extends AppCompatActivity {
                 }
             }
 
+            Log.v(TAG, "########################################################");
+
         }
     }
 
@@ -1188,7 +1200,6 @@ public class AutoNavigationActivity extends AppCompatActivity {
 
         @Override
         public void run() {
-
 
 
             Log.v(TAG, "Calibration Thread RUNNING##############");
@@ -1385,10 +1396,11 @@ public class AutoNavigationActivity extends AppCompatActivity {
                                             editor.commit();
 
                                             if (Utility.isTargetCalibrationDone(getApplicationContext()))
-                                                Calibration.computeFocal(mOriginal,getApplicationContext());
+                                                Calibration.computeFocal(mOriginal, getApplicationContext());
 
                                             //calibration is done
                                             mCalibrationInfo.setVisibility(View.GONE);
+                                            mCalibrationInfo.setText(R.string.info_recalibration);
                                             colorCounter = 0;
                                             touchedRegionRgba.release();
                                             touchedRegionHsv.release();
@@ -1399,7 +1411,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
                                             mFabPictureCalib.setVisibility(View.GONE);
                                             //mFabMenu.setVisibility(View.VISIBLE);
                                             //mButtonRecalibrate.setVisibility(View.VISIBLE);
-                                           // mFabMenu.setEnabled(true);
+                                            // mFabMenu.setEnabled(true);
                                             //mFabMenu.setVisibility(View.VISIBLE);
 
                                             mIsCalibrating = false;
@@ -1417,107 +1429,6 @@ public class AutoNavigationActivity extends AppCompatActivity {
                                     }
                                 }
                             });
-
-                    dialogBuilder.setNeutralButton(getString(R.string.skip), new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-
-
-                            switch (colorCounter){
-                                case 0:
-                                    mCalibrationInfo.setText(getResources().getString(R.string.info_right));
-                                    colorCounter++;
-                                    break;
-                                case 1:
-                                    mCalibrationInfo.setText(getResources().getString(R.string.info_left));
-                                    colorCounter++;
-                                    break;
-                                case 2:
-                                    mCalibrationInfo.setVisibility(View.GONE);
-                                    colorCounter = 0;
-                                    touchedRegionRgba.release();
-                                    touchedRegionHsv.release();
-
-                                    if (Utility.isTargetCalibrationDone(getApplicationContext()))
-                                        Calibration.computeFocal(mOriginal,getApplicationContext());
-
-                                    mTestImage.setVisibility(View.INVISIBLE);
-                                    mTextureView.setVisibility(View.VISIBLE);
-                                    mTextureView.getTop();
-                                    mFabPictureCalib.setVisibility(View.GONE);
-                                    //mFabMenu.setVisibility(View.VISIBLE);
-                                    //mButtonRecalibrate.setVisibility(View.VISIBLE);
-                                    // mFabMenu.setEnabled(true);
-                                    //mFabMenu.setVisibility(View.VISIBLE);
-
-                                    mIsCalibrating = false;
-                                    mFabPictureCalib.setEnabled(true);
-                                    mCalibrationNeedTitle.setVisibility(View.VISIBLE);
-                                    mIsCalibrated = true;
-                                    mCalibrationNeedTitle.setVisibility(View.GONE);
-                                    mFabMenu.show();
-
-
-                                    /*final AlertDialog.Builder dialogBuilderDistance = new AlertDialog.Builder(AutoNavigationActivity.this);
-                                    dialogBuilderDistance.setTitle("Distance Balancing");
-                                    dialogBuilderDistance.setMessage("Do you want to balance the distance?");
-                                    dialogBuilderDistance.setCancelable(false);
-                                    mIsCalibrating = false;
-
-                                    //ok balance the distance
-                                    dialogBuilderDistance.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
-                                        @Override
-                                        public void onClick(DialogInterface dialog, int which) {
-                                            mCalibrationInfo.setText(getResources().getString(R.string.info_distance));
-                                            mFabCalibration.setVisibility(View.VISIBLE);
-
-                                            mTestImage.setVisibility(View.INVISIBLE);
-                                            mTextureView.setVisibility(View.VISIBLE);
-                                            mTextureView.getTop();
-
-                                            mIsCalibratingDistance = true;
-                                            mFabCalibration.setEnabled(true);
-                                            mFabStartNavigation.setVisibility(View.INVISIBLE);
-                                        }
-                                    });
-                                    //skip, do not balance distance
-                                    dialogBuilderDistance.setNeutralButton(getString(R.string.skip), new DialogInterface.OnClickListener() {
-                                        @Override
-                                        public void onClick(DialogInterface dialog, int which) {
-                                            mTestImage.setVisibility(View.INVISIBLE);
-                                            mTextureView.setVisibility(View.VISIBLE);
-                                            mTextureView.getTop();
-                                            mFabCalibration.setVisibility(View.GONE);
-                                            mFabStartNavigation.setVisibility(View.VISIBLE);
-                                            mButtonRecalibrate.setVisibility(View.VISIBLE);
-                                            mFabStartNavigation.setEnabled(true);
-                                            if (Utility.isCalibrationDone(getApplicationContext()))
-                                                mFabStartNavigation.setBackgroundTintList(ColorStateList.valueOf(ContextCompat.getColor(getApplicationContext(), R.color.googleGreen)));
-                                            mFabCalibration.setEnabled(true);
-                                        }
-                                    });
-                                    dialogBuilderDistance.show();
-
-                                    //return to the "classic" camera view
-*/
-                                    /*
-                                    mTestImage.setVisibility(View.INVISIBLE);
-                                    mTextureView.setVisibility(View.VISIBLE);
-                                    mTextureView.getTop();
-                                    mFabCalibration.setVisibility(View.GONE);
-                                    mFabStartNavigation.setVisibility(View.VISIBLE);
-                                    mButtonRecalibrate.setVisibility(View.VISIBLE);
-                                    mFabStartNavigation.setEnabled(true);
-                                    if (Utility.isCalibrationDone(getApplicationContext()))
-                                        mFabStartNavigation.setBackgroundTintList(ColorStateList.valueOf(ContextCompat.getColor(getApplicationContext(), R.color.googleGreen)));
-                                    mIsCalibrating = false;
-                                    mFabCalibration.setEnabled(true);*/
-                                    break;
-                                default:
-                                    break;
-                            }
-                        }
-                    });
                     dialogBuilder.show();
                     //false because we need only a single touch event
                     return false;
@@ -1525,11 +1436,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
             });
 
 
-
-
-
             mImage.close();
-
 
 
         }
@@ -1539,7 +1446,6 @@ public class AutoNavigationActivity extends AppCompatActivity {
 
 
     private void takePicture() {
-
 
 
         mCaptureState = STATE_WAIT_LOCK;

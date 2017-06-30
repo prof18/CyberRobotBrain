@@ -76,28 +76,35 @@ public class Navigation {
      * @param type   false for x, true for y
      * @return
      */
-    public static int turnDirection(Point target, Point left, Point right, boolean type) {
+    public static int turnDirection(Point target, Point left, Point right, boolean type, double focal, double height) {
+
+
+        double tmp = (ConstantApp.KNOWN_WIDTH * focal) / height;
+
+        double pixelToCm = tmp / 3;
+
+
 
         //0 left, 1 right, 2 facing
         int action = -1;
 
         if (type) {
-            double distanceTL = Math.abs(left.x - target.x);
-            double distanceTR = Math.abs(right.x - target.x);
-            double distanceLR = Math.abs(right.x - left.x);
+            double distanceTL = (Math.abs(left.x - target.x))/pixelToCm;
+            double distanceTR = (Math.abs(right.x - target.x))/pixelToCm;
+            double distanceLR = (Math.abs(right.x - left.x))/pixelToCm;
 
-            if (distanceLR <= 65)
+            if (distanceLR <= 2.5)
                 action = 2;
             else if (distanceTL > distanceTR)
                 action = 1;
             else if (distanceTL < distanceTR)
                 action = 0;
         } else {
-            double distanceTL = Math.abs(left.y - target.y);
-            double distanceTR = Math.abs(right.y - target.y);
-            double distanceLR = Math.abs(right.y - left.y);
+            double distanceTL = (Math.abs(left.y - target.y))/pixelToCm;
+            double distanceTR = (Math.abs(right.y - target.y))/pixelToCm;
+            double distanceLR = (Math.abs(right.y - left.y))/pixelToCm;
 
-            if (distanceLR <= 50)
+            if (distanceLR <= 2.5)
                 action = 2;
             else if (distanceTL > distanceTR)
                 action = 1;
@@ -114,18 +121,19 @@ public class Navigation {
      * @param end
      * @return
      */
-    public static boolean isInBound(boolean type, Point start, Point end, double boundCm, double distance, double focal) {
+    public static boolean isInBound(boolean type, Point start, Point end, double boundCm, double height, double focal) {
 
         boolean isInBound = false;
 
-        double offset = (ConstantApp.KNOWN_WIDTH*focal)/distance;
+        double offset = (ConstantApp.KNOWN_WIDTH * focal) / height;
+        Log.v(TAG, "offset: " + offset);
 
         if (ConstantApp.KNOWN_WIDTH != boundCm) {
 
             double pixelToCm = offset / 3;
 
             offset = boundCm * pixelToCm;
-            Log.v(TAG, "offset: " + offset );
+            Log.v(TAG, "offset: " + offset);
         }
 
         if (type) {
@@ -154,7 +162,7 @@ public class Navigation {
             //case 3
             if (target.x <= mean.x && right.y >= mean.y)
                 isWrongSide = true;
-            //case 4
+                //case 4
             else if (target.x >= mean.x && right.y <= mean.y)
                 isWrongSide = true;
 
@@ -162,7 +170,7 @@ public class Navigation {
             //case 1
             if (target.y <= mean.y && right.x <= mean.x)
                 isWrongSide = true;
-            //case 2
+                //case 2
             else if (target.y >= mean.y && right.y >= mean.y)
                 isWrongSide = true;
         }
@@ -171,7 +179,7 @@ public class Navigation {
 
     }
 
-    public static double computeDistance(Mat original,Context context) {
+    public static double computeDistance(Mat original, Context context) {
 
         double distance = -1;
 
@@ -210,7 +218,7 @@ public class Navigation {
         Imgproc.dilate(gray, gray, new Mat());
 
         //use gray image
-        List<MatOfPoint> contoursTarget = new ArrayList<>( );
+        List<MatOfPoint> contoursTarget = new ArrayList<>();
         Mat hierarchy = new Mat();
         Imgproc.findContours(gray, contoursTarget, hierarchy, Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE);
 
@@ -219,7 +227,7 @@ public class Navigation {
 
         double maxArea = 0;
         MatOfPoint finalcontour = new MatOfPoint();
-        List<MatOfPoint> finacontourlist = new ArrayList<>( );
+        List<MatOfPoint> finacontourlist = new ArrayList<>();
         Iterator<MatOfPoint> each = contoursTarget.iterator();
         while (each.hasNext()) {
             MatOfPoint wrapper = each.next();
@@ -238,7 +246,7 @@ public class Navigation {
             Imgproc.rectangle(original, rect.tl(), rect.br(), CONTOUR_COLOR, 5);
             Imgproc.drawContours(original, finacontourlist, -1, CONTOUR_COLOR, 5);
 
-            String distanceS = shared.getString(ConstantApp.SHARED_FOCAL,null);
+            String distanceS = shared.getString(ConstantApp.SHARED_FOCAL, null);
 
             double pixelWidth = rectsize.width;
             double focal;
@@ -254,7 +262,48 @@ public class Navigation {
 
         }
 
-        return  distance;
+        return distance;
+
+    }
+
+    public static boolean isPerpendicular(double m1, double m2, double focal, double height, Point start, Point target) {
+
+        boolean isPerpendicular = false;
+
+        //  m1 * m2 <= -0.5 && m1 * m2 >= -1.5
+
+        double lowerBound;
+        double upperBound;
+
+        double tmp = (ConstantApp.KNOWN_WIDTH * focal) / height;
+
+        double pixelToCm = tmp / 3;
+
+        double distance = Math.sqrt(Math.pow(target.x - start.x, 2) + Math.pow(target.y - start.y, 2));
+        double distanceCm = distance/pixelToCm;
+
+        if (distanceCm <= 21) {
+
+            lowerBound = -1.9;
+            upperBound = -0.1;
+
+        } else {
+
+            lowerBound = -1.5;
+            upperBound = -0.5;
+        }
+
+        Log.v(TAG, "Lower Bound: " + lowerBound + " - Upper Bound: "+ upperBound);
+
+        //tmp = boundCm * pixelToCm;
+
+        //  m1 * m2 <= -0.5 && m1 * m2 >= -1.5
+
+        if ( m1 * m2 >= lowerBound && m1 * m2 <= upperBound)
+            isPerpendicular = true;
+
+        return isPerpendicular;
+
 
     }
 
