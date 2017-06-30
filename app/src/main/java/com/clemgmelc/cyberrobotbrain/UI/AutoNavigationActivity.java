@@ -77,7 +77,9 @@ import org.opencv.core.Scalar;
 import org.opencv.imgproc.Imgproc;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -812,6 +814,17 @@ public class AutoNavigationActivity extends AppCompatActivity {
                 String[] targetUpper = sharedpreferences.getString(ConstantApp.SHARED_TARGET_UPPER, null).split(":");
                 String[] targetLower = sharedpreferences.getString(ConstantApp.SHARED_TARGET_LOWER, null).split(":");
 
+                String focalS = sharedpreferences.getString(ConstantApp.SHARED_FOCAL, null);
+                double focal = -1;
+                if (focalS != null)
+                    focal = Double.valueOf(focalS);
+
+                if (focal == -1) {
+                    onBackPressed();
+                    Toast.makeText(mActivity, getResources().getString(R.string.error_occured_camera), Toast.LENGTH_SHORT).show();
+                    Log.v(TAG, "Distance is -1");
+                }
+
 
                 for (int i = 0; i < 3; i++) {
                     if (Double.valueOf(leftUpper[i]) >= 255)
@@ -849,6 +862,8 @@ public class AutoNavigationActivity extends AppCompatActivity {
 
                 Scalar lowTarget = new Scalar(Double.valueOf(targetLower[0]), Double.valueOf(targetLower[1]), Double.valueOf(targetLower[2]));
                 Scalar upTarget = new Scalar(Double.valueOf(targetUpper[0]), Double.valueOf(targetUpper[1]), Double.valueOf(targetUpper[2]));
+
+
 
 
                 //pass image in HSV
@@ -935,6 +950,16 @@ public class AutoNavigationActivity extends AppCompatActivity {
                     });
                 }*/
 
+                double distance = Navigation.computeDistance(mOriginal, getApplicationContext());
+                Log.v(TAG, "Distance: " + distance);
+
+                if (distance == -1) {
+                    onBackPressed();
+                    Toast.makeText(mActivity, getResources().getString(R.string.error_occured_camera), Toast.LENGTH_SHORT).show();
+                    Log.v(TAG, "Distance is -1");
+                }
+
+
                 mImage.close();
 
 
@@ -954,7 +979,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
                     if (movementType == ConstantApp.L_MOVEMENT) {
 
 
-                        if (Navigation.isInBound(true, centerMean, centerTarget, 200)) {
+                        if (Navigation.isInBound(true, centerMean, centerTarget, 3, -1, focal)) {
 
                             int action = Navigation.turnDirection(centerTarget, centerLeft, centerRight, true);
                             switch (action) {
@@ -1358,6 +1383,10 @@ public class AutoNavigationActivity extends AppCompatActivity {
                                             editor.putString(ConstantApp.SHARED_ROBOT_LEFT_UPPER, mDetector.getUpperBound());
                                             Log.v(TAG, "LEFT_UPPER: " + mDetector.getUpperBound());
                                             editor.commit();
+
+                                            if (Utility.isTargetCalibrationDone(getApplicationContext()))
+                                                Calibration.computeFocal(mOriginal,getApplicationContext());
+
                                             //calibration is done
                                             mCalibrationInfo.setVisibility(View.GONE);
                                             colorCounter = 0;
@@ -1408,6 +1437,9 @@ public class AutoNavigationActivity extends AppCompatActivity {
                                     colorCounter = 0;
                                     touchedRegionRgba.release();
                                     touchedRegionHsv.release();
+
+                                    if (Utility.isTargetCalibrationDone(getApplicationContext()))
+                                        Calibration.computeFocal(mOriginal,getApplicationContext());
 
                                     mTestImage.setVisibility(View.INVISIBLE);
                                     mTextureView.setVisibility(View.VISIBLE);
@@ -1492,10 +1524,17 @@ public class AutoNavigationActivity extends AppCompatActivity {
                 }
             });
 
+
+
+
+
             mImage.close();
 
 
+
         }
+
+
     }
 
 

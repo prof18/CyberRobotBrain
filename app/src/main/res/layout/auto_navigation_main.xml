@@ -40,6 +40,8 @@
         android:gravity="center"
         android:text="@string/info_recalibration"
         android:textAppearance="@style/TextAppearance.AppCompat.Title"
+        android:textSize="36sp"
+        android:textStyle="bold"
         android:visibility="gone" />
 
     <TextView

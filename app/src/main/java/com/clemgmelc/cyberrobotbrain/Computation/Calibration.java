@@ -1,9 +1,23 @@
 package com.clemgmelc.cyberrobotbrain.Computation;
 
+import android.content.Context;
+import android.content.SharedPreferences;
+import android.util.Log;
+
+import com.clemgmelc.cyberrobotbrain.UI.AutoNavigationActivity;
+import com.clemgmelc.cyberrobotbrain.Util.ConstantApp;
+
+import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
+import org.opencv.core.MatOfPoint;
+import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.imgproc.Imgproc;
+
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 public class Calibration {
     // Lower and Upper bounds for range checking in HSV color space
@@ -11,6 +25,8 @@ public class Calibration {
     private Scalar mUpperBound = new Scalar(0);
     // Color radius for range checking in HSV color space
     private Scalar mColorRadius = new Scalar(15, 50, 50, 0);
+    private static final String TAG = ConstantApp.TAG + " - " + AutoNavigationActivity.class.getSimpleName();
+
 
   /*  // Minimum contour area in percent for contours filtering
     private static double mMinContourArea = 0.1;
@@ -138,6 +154,88 @@ public class Calibration {
         return mContours;
     }*/
 
+    public static void computeFocal(Mat original, Context context) {
 
+        SharedPreferences shared = context.getSharedPreferences(ConstantApp.SHARED_NAME, Context.MODE_PRIVATE);
+
+        String[] targetUpper = shared.getString(ConstantApp.SHARED_TARGET_UPPER, null).split(":");
+        String[] targetLower = shared.getString(ConstantApp.SHARED_TARGET_LOWER, null).split(":");
+        Scalar lowTarget = new Scalar(Double.valueOf(targetLower[0]), Double.valueOf(targetLower[1]), Double.valueOf(targetLower[2]));
+        Scalar upTarget = new Scalar(Double.valueOf(targetUpper[0]), Double.valueOf(targetUpper[1]), Double.valueOf(targetUpper[2]));
+
+        Mat caseHsv = new Mat();
+        Imgproc.cvtColor(original, caseHsv, Imgproc.COLOR_RGB2HSV);
+        Mat target = new Mat();
+        Core.inRange(caseHsv, lowTarget, upTarget, target);
+
+        Mat dest = new Mat();
+        Mat gray = new Mat();
+
+        //apply the mask of target on the original image in order to apply imagproc only in the desired area of image (reduce computation)
+        original.copyTo(dest, target);
+
+        //pass image into a grey scale
+        Imgproc.cvtColor(dest, gray, Imgproc.COLOR_RGB2GRAY);
+
+        //blur image to reduce noise and details in order to reduce number of detected edges
+        //incrementing the  size of the kernel takes computational time not feasable for the application
+        //and also not useful in our simplified scenario
+        org.opencv.core.Size s = new org.opencv.core.Size(3, 3);
+        //Imgproc.blur(gray,gray,s);
+        Imgproc.GaussianBlur(gray, gray, s, 0, 0);
+
+        //use the Canny edge detector to find edges on the blured image
+        Imgproc.Canny(gray, gray, 50, 200);
+
+        //dilatate the borders in order to better find them
+        Imgproc.dilate(gray, gray, new Mat());
+
+        //use gray image
+        List<MatOfPoint> contoursTarget = new ArrayList<>( );
+        Mat hierarchy = new Mat();
+        Imgproc.findContours(gray, contoursTarget, hierarchy, Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE);
+
+        Scalar CONTOUR_COLOR = new Scalar(255, 0, 0, 255);
+
+
+        double maxArea = 0;
+        MatOfPoint finalcontour = new MatOfPoint();
+        List<MatOfPoint> finacontourlist = new ArrayList<>( );
+        Iterator<MatOfPoint> each = contoursTarget.iterator();
+        while (each.hasNext()) {
+            MatOfPoint wrapper = each.next();
+            double area = Imgproc.contourArea(wrapper);
+            if (area > maxArea) {
+                finalcontour = wrapper;
+                finacontourlist.add(0, wrapper);
+                maxArea = area;
+            }
+        }
+
+        SharedPreferences sharedpreferences = context.getSharedPreferences(ConstantApp.SHARED_NAME, Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedpreferences.edit();
+
+        //TODO: look what arrives
+        if (finalcontour != null) {
+
+            Rect rect = Imgproc.boundingRect(finalcontour);
+            org.opencv.core.Size rectsize = rect.size();
+            Imgproc.rectangle(original, rect.tl(), rect.br(), CONTOUR_COLOR, 5);
+            Imgproc.drawContours(original, finacontourlist, -1, CONTOUR_COLOR, 5);
+
+            double pixelWidth = rectsize.width;
+            double focal = (pixelWidth * ConstantApp.KNOWN_DISTANCE) / ConstantApp.KNOWN_WIDTH;
+            editor.putString(ConstantApp.SHARED_FOCAL, String.valueOf(focal));
+            editor.apply();
+
+            Log.v(TAG, "Focal: " +  focal);
+            Log.v(TAG, "Standard Width, " + pixelWidth);
+
+        }
+
+
+
+
+    }
 }
 

@@ -39,7 +39,7 @@ public class MainActivity extends AppCompatActivity {
     private FloatingActionButton mFab;
     private boolean mConnected = false;
     private Button mManualNav, mAutoNavigation;
-    private boolean isDebug = true;
+    private boolean isDebug = false;
 
 
 

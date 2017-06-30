@@ -33,9 +33,28 @@ public class Utility {
         String rightLower = sharedpreferences.getString(ConstantApp.SHARED_ROBOT_RIGHT_LOWER, null);
         String targetUpper = sharedpreferences.getString(ConstantApp.SHARED_TARGET_UPPER, null);
         String targetLower = sharedpreferences.getString(ConstantApp.SHARED_TARGET_LOWER, null);
+        String focal = sharedpreferences.getString(ConstantApp.SHARED_FOCAL, null);
 
         if (leftUpper != null && leftLower != null && rightUpper != null && rightLower != null
-                && targetUpper != null && targetLower != null)
+                && targetUpper != null && targetLower != null && focal != null)
+            isCalibrationDone = true;
+
+        return isCalibrationDone;
+    }
+
+    public static boolean isTargetCalibrationDone(Context context) {
+
+        boolean isCalibrationDone = false;
+
+        //get a reference to the shared preferences
+        SharedPreferences sharedpreferences = context.getSharedPreferences(ConstantApp.SHARED_NAME, Context.MODE_PRIVATE);
+
+
+        String targetUpper = sharedpreferences.getString(ConstantApp.SHARED_TARGET_UPPER, null);
+        String targetLower = sharedpreferences.getString(ConstantApp.SHARED_TARGET_LOWER, null);
+
+
+        if ( targetUpper != null && targetLower != null)
             isCalibrationDone = true;
 
         return isCalibrationDone;
