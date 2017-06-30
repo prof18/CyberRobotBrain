@@ -2,6 +2,7 @@ package com.clemgmelc.cyberrobotbrain.Computation;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.icu.lang.UProperty;
 import android.util.Log;
 
 import com.clemgmelc.cyberrobotbrain.Util.ConstantApp;
@@ -275,6 +276,9 @@ public class Navigation {
         double lowerBound;
         double upperBound;
 
+        Log.v(TAG, "m1: " + m1);
+        Log.v(TAG, "m2: " + m2);
+
         double tmp = (ConstantApp.KNOWN_WIDTH * focal) / height;
 
         double pixelToCm = tmp / 3;
@@ -282,15 +286,27 @@ public class Navigation {
         double distance = Math.sqrt(Math.pow(target.x - start.x, 2) + Math.pow(target.y - start.y, 2));
         double distanceCm = distance/pixelToCm;
 
-        if (distanceCm <= 21) {
+        Log.v(TAG, "Distance in cm: " + distanceCm);
 
-            lowerBound = -1.9;
-            upperBound = -0.1;
+    /*    if (distanceCm >= 21) {
+
+            lowerBound = -1.8;
+            upperBound = -0.2;
+
+        }  else  {
+            lowerBound = -3.0;
+            upperBound = 0.0;
+        }*/
+
+        if (distanceCm <= 8) {
+
+            upperBound = -0.000000001;
+            lowerBound = -1.999999999;
 
         } else {
 
-            lowerBound = -1.5;
-            upperBound = -0.5;
+            upperBound = -0.1;
+            lowerBound = -1.9;
         }
 
         Log.v(TAG, "Lower Bound: " + lowerBound + " - Upper Bound: "+ upperBound);

@@ -1050,42 +1050,44 @@ public class AutoNavigationActivity extends AppCompatActivity {
                             distanceTM = Math.sqrt(Math.pow(centerTarget.x - centerMean.x, 2)
                                     + Math.pow(centerTarget.y - centerMean.y, 2));
 
+                            Log.v(TAG, "distanceTM in pixel: " + distanceTM);
+
                             distanceTM = distanceTM / pixelToCm;
+                            Log.v(TAG, "distanceTM in cm    : " + distanceTM);
+
                         }
 
-                        double m1;
-                        if (centerRight.x > centerLeft.x) {
-                            m1 = (centerRight.y - centerLeft.y) / (centerRight.x - centerLeft.x);
-                        } else if (centerRight.x < centerLeft.x) {
-                            m1 = (centerLeft.y - centerRight.y) / (centerLeft.x - centerRight.x);
-                        } else {
-                            m1 = Double.MAX_VALUE;
-                        }
+                        //pendenza retta passante per il robot
+                        double m1 = (centerRight.y - centerLeft.y) / (centerRight.x - centerLeft.x);
 
-                        double m2;
-                        if (centerMean.x > centerTarget.x) {
-                            m2 = (centerMean.y - centerTarget.y) / (centerMean.x - centerTarget.x);
-                        } else if (centerMean.x < centerTarget.x) {
-                            m2 = (centerTarget.y - centerMean.y) / (centerTarget.x - centerMean.x);
-                        } else {
-                            m2 = Double.MAX_VALUE;
-                        }
+                        //pendenza target, centro medio
+                        double m2 = (centerMean.y - centerTarget.y) / (centerMean.x - centerTarget.x);
+
 
                         Log.v(TAG, "m1*m2: " + m1 * m2);
 
-                        if (m1 != Double.MAX_VALUE && m2 != Double.MAX_VALUE && Navigation.isPerpendicular(m1, m2, focal, height, centerMean, centerTarget)) {
+                        if (Navigation.isPerpendicular(m1, m2, focal, height, centerMean, centerTarget)) {
+
+                            mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.forward);
+                            Log.v(TAG, "Go Ahead");
+
+                            Log.v(TAG, "CenterTarget: " + centerTarget.x + " - " + centerTarget.y);
+                            Log.v(TAG, "centerMean: " + centerMean.x + " - " + centerMean.y);
+
 
                             double newDistanceTM = Math.sqrt(Math.pow(centerTarget.x - centerMean.x, 2)
                                     + Math.pow(centerTarget.y - centerMean.y, 2));
+
+                            Log.v(TAG, "newDistanceTM in pixel: " + newDistanceTM);
+
                             newDistanceTM = newDistanceTM / pixelToCm;
-                            Log.v(TAG, "newDistanceTM: " + newDistanceTM);
-                            Log.v(TAG, "distanceTM: " + distanceTM);
+
+                            Log.v(TAG, "newDistanceTM in cm: " + newDistanceTM);
+
+
                             if (newDistanceTM > distanceTM) {
                                 mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.right);
                                 Log.v(TAG, "Turn right on distance");
-                            } else {
-                                mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.forward);
-                                Log.v(TAG, "Go Ahead");
                             }
 
 
@@ -1107,13 +1109,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
 
                     }
 
-                    try {
-                        Thread.sleep(400);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
 
-                    takePicture();
 
 
                 } /*else if ()  {
@@ -1183,7 +1179,16 @@ public class AutoNavigationActivity extends AppCompatActivity {
                 }
             }
 
+
             Log.v(TAG, "########################################################");
+
+            try {
+                Thread.sleep(1000);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            takePicture();
 
         }
     }
