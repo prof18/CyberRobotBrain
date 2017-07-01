@@ -1,6 +1,5 @@
 <resources>
     <string name="app_name">Cyber Robot Brain</string>
-    <string name="action_settings">Settings</string>
     <string name="hello_robot">Hello Cyber Robot</string>
     <string name="btn_navigation">Manual Navigation</string>
     <string name="perm_error_title">Attention: Mandatory Permission</string>
@@ -12,11 +11,8 @@
     <string name="no_name_device">Unknown Device</string>
     <string name="title_connect_dialog">Connect to Cyber Robot</string>
     <string name="connect_dialog_cancel">Cancel</string>
-
-
     <string name="no_device">No device found</string>
     <string name="title_activity_scan">ScanActivity</string>
-
     <string name="nav_forward">Move forward</string>
     <string name="nav_backward">Move backward</string>
     <string name="nav_left">Move left</string>
@@ -24,25 +20,18 @@
     <string name="title_scan">Select a device</string>
     <string name="title_navigation">Manual Navigation</string>
     <string name="sound">Play Sound</string>
-
     <string name="btn_auto_navigation">Auto Navigation</string>
     <string name="title_activity_camera">CameraActivity</string>
-
     <string name="gps_required">Gps Required for device discovery</string>
     <string name="gps_enabling">Enable Gps</string>
     <string name="gps_cancel">Cancel</string>
-
     <string name="message_connected">Connected to Cyber Robot</string>
     <string name="message_connecting">Connecting to Cyber Robot</string>
     <string name="message_disconnecting">Disconnecting from Cyber Robot</string>
-
     <string name="action_disconnected">You cannot move the Cyber Robot if you are not connected</string>
     <string name="wait_during_scan">You must wait until scanning is complete</string>
     <string name="take_picture">Take picture</string>
-
-    <string name="skip">SKIP THIS ONE</string>
     <string name="repeat">REPEAT</string>
-
     <string name="camera_perm_error">You must accept the permission to use the camera</string>
     <string name="info_target">Tap the target indicator</string>
     <string name="info_left">Tap the left indicator of the robot</string>
@@ -56,13 +45,6 @@
     <string name="null_center">The markers are not framed! Try again</string>
     <string name="target_null_arrived">Target not found, you are arrived</string>
     <string name="arrived_target_bound">The robot is arrived at the destination</string>
-
-    <string-array name="movement_type">
-        <item>L Movement</item>
-        <item>Direct Movement</item>
-    </string-array>
-
-    <string name="movement_type_title">Select the type of movement</string>
     <string name="selected_color">Selected Color</string>
     <string name="movement_l">L Movement</string>
     <string name="movement_direct">Direct Movement</string>

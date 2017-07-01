@@ -895,17 +895,14 @@ public class AutoNavigationActivity extends AppCompatActivity {
         @Override
         public void run() {
 
-
             Log.v(TAG, "Calibration Thread RUNNING##############");
             ByteBuffer byteBuffer = mImage.getPlanes()[0].getBuffer();
             byte[] bytes = new byte[byteBuffer.remaining()];
             byteBuffer.get(bytes);
-            //pass datas into a bitmap
+            //pass data into a bitmap
             BitmapFactory.Options opt = new BitmapFactory.Options();
             opt.inSampleSize = 2;
             myBitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length, opt);
-
-            //TODO: if not working, puts 3.
             mOriginal = new Mat(myBitmap.getWidth(), myBitmap.getHeight(), CvType.CV_8UC4);
             Utils.bitmapToMat(myBitmap, mOriginal);
 
@@ -916,10 +913,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
                     mTextureView.setVisibility(View.INVISIBLE);
                     mTestImage.setVisibility(View.VISIBLE);
                     mTestImage.getTop();
-
                     mCalibrationInfo.setText(getResources().getString(R.string.info_target));
-
-
                 }
             });
 
@@ -937,9 +931,6 @@ public class AutoNavigationActivity extends AppCompatActivity {
                         mTextureView.getTop();
                         mFabPictureCalib.setVisibility(View.GONE);
                         mFabMenu.show();
-                        //mFabMenu.setVisibility(View.VISIBLE);
-                        //mButtonRecalibrate.setVisibility(View.VISIBLE);
-                        //mFabMenu.setEnabled(true);
                         return false;
                     }
 
@@ -972,12 +963,9 @@ public class AutoNavigationActivity extends AppCompatActivity {
 
                     if ((x < 0) || (y < 0) || (x > cols) || (y > rows)) return false;
 
-
                     Rect touchedRect = new Rect();
-
                     touchedRect.x = x - 4;
                     touchedRect.y = y - 4;
-
                     touchedRect.width = x + 4 - touchedRect.x;
                     touchedRect.height = y + 4 - touchedRect.y;
 
@@ -987,21 +975,14 @@ public class AutoNavigationActivity extends AppCompatActivity {
                     Imgproc.cvtColor(touchedRegionRgba, touchedRegionHsv, Imgproc.COLOR_RGB2HSV);
 
                     mDetector = new Calibration();
-                    Mat mSpectrum = new Mat();
-                    Scalar mBlobColorRgba = new Scalar(255);
-                    Scalar mBlobColorHsv = new Scalar(255);
-                    org.opencv.core.Size SPECTRUM_SIZE = new org.opencv.core.Size(200, 64);
-                    final Scalar CONTOUR_COLOR = new Scalar(255, 0, 0, 255);
 
                     // Calculate average color of touched region
-                    mBlobColorHsv = Core.sumElems(touchedRegionHsv);
+                    Scalar mBlobColorHsv = Core.sumElems(touchedRegionHsv);
                     int pointCount = touchedRect.width * touchedRect.height;
                     for (int i = 0; i < mBlobColorHsv.val.length; i++)
                         mBlobColorHsv.val[i] /= pointCount;
 
-
-                    //TODO rimuovere la parte sugli esaedcimali per RGB che non serve e togliere relativo metodo in CALIBRATION
-                    mBlobColorRgba = Calibration.hsvToRGBA(mBlobColorHsv);
+                    Scalar mBlobColorRgba = Calibration.hsvToRGBA(mBlobColorHsv);
                     int red = (int) mBlobColorRgba.val[0];
                     int green = (int) mBlobColorRgba.val[1];
                     int blue = (int) mBlobColorRgba.val[2];
@@ -1010,37 +991,22 @@ public class AutoNavigationActivity extends AppCompatActivity {
                     String hex = String.format("#%02x%02x%02x%02x", red, green, blue, alpha);
                     String hex2 = String.format("#%02x%02x%02x", red, green, blue);
 
-
                     Log.v(TAG, "COLOR CLICKED: " + hex);
-
                     Log.i(TAG, "Touched rgba color: (" + mBlobColorRgba.val[0] + ", " + mBlobColorRgba.val[1] +
                             ", " + mBlobColorRgba.val[2] + ", " + mBlobColorRgba.val[3] + ")");
 
                     mDetector.setHsvRange(mBlobColorHsv);
 
-                    //Imgproc.resize(mDetector.getSpectrum(), mSpectrum, SPECTRUM_SIZE);
-
-                    final AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(AutoNavigationActivity.this);
-                    dialogBuilder.setCancelable(false);
                     int cl = Color.parseColor(hex2);
-                    /*LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(2, 2);
-
-                    final Button color = new Button(AutoNavigationActivity.this);
-                    color.setVisibility(View.VISIBLE);
-                    color.setBackgroundColor(cl);
-
-                    color.setLayoutParams(lp);*/
-
                     final GradientDrawable gd = new GradientDrawable();
                     gd.setColor(cl);
                     gd.setShape(GradientDrawable.OVAL);
 
-                    //title.setText("Selected Color ");
+                    final AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(AutoNavigationActivity.this);
                     dialogBuilder.setTitle(getResources().getString(R.string.selected_color));
-
                     dialogBuilder.setIcon(gd);
+                    dialogBuilder.setCancelable(false);
 
-                    // dialogBuilder.setView(dialogView);
                     dialogBuilder.setNegativeButton(getString(R.string.repeat), new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
@@ -1063,7 +1029,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
                                             Log.v(TAG, "TARGET_LOWER: " + mDetector.getLowerBound());
                                             editor.putString(ConstantApp.SHARED_TARGET_UPPER, mDetector.getUpperBound());
                                             Log.v(TAG, "TARGET_UPPER: " + mDetector.getUpperBound());
-                                            editor.commit();
+                                            editor.apply();
                                             colorCounter++;
                                             mCalibrationInfo.setText(getResources().getString(R.string.info_right));
                                             touchedRegionRgba.release();
@@ -1076,7 +1042,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
                                             Log.v(TAG, "RIGHT_LOWER: " + mDetector.getLowerBound());
                                             editor.putString(ConstantApp.SHARED_ROBOT_RIGHT_UPPER, mDetector.getUpperBound());
                                             Log.v(TAG, "RIGHT_UPPER: " + mDetector.getUpperBound());
-                                            editor.commit();
+                                            editor.apply();
                                             colorCounter++;
                                             mCalibrationInfo.setText(getResources().getString(R.string.info_left));
                                             touchedRegionRgba.release();
@@ -1089,7 +1055,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
                                             Log.v(TAG, "LEFT_LOWER: " + mDetector.getLowerBound());
                                             editor.putString(ConstantApp.SHARED_ROBOT_LEFT_UPPER, mDetector.getUpperBound());
                                             Log.v(TAG, "LEFT_UPPER: " + mDetector.getUpperBound());
-                                            editor.commit();
+                                            editor.apply();
 
                                             if (Utility.isTargetCalibrationDone(getApplicationContext()))
                                                 Calibration.computeFocal(mOriginal, getApplicationContext());
@@ -1100,48 +1066,36 @@ public class AutoNavigationActivity extends AppCompatActivity {
                                             colorCounter = 0;
                                             touchedRegionRgba.release();
                                             touchedRegionHsv.release();
+
                                             //return to the "classic" camera view
                                             mTestImage.setVisibility(View.INVISIBLE);
                                             mTextureView.setVisibility(View.VISIBLE);
                                             mTextureView.getTop();
                                             mFabPictureCalib.setVisibility(View.GONE);
-                                            //mFabMenu.setVisibility(View.VISIBLE);
-                                            //mButtonRecalibrate.setVisibility(View.VISIBLE);
-                                            // mFabMenu.setEnabled(true);
-                                            //mFabMenu.setVisibility(View.VISIBLE);
-
-                                            mIsCalibrating = false;
                                             mFabPictureCalib.setEnabled(true);
                                             mCalibrationNeedTitle.setVisibility(View.VISIBLE);
-                                            mIsCalibrated = true;
                                             mCalibrationNeedTitle.setVisibility(View.GONE);
                                             mFabMenu.show();
+                                            mIsCalibrating = false;
+                                            mIsCalibrated = true;
                                             break;
 
                                         default:
                                             break;
-
-
                                     }
                                 }
                             });
+
                     dialogBuilder.show();
-                    //false because we need only a single touch event
+                    //we need only a single touch event
                     return false;
                 }
             });
-
-
             mImage.close();
-
-
         }
-
-
     }
 
     private class NavigationThread implements Runnable {
-        //scope of this class is to elaborate the image in background with openCv
 
         private final Image mImage;
 
@@ -1155,32 +1109,26 @@ public class AutoNavigationActivity extends AppCompatActivity {
             if (!stop) {
 
                 mTestImage.setOnTouchListener(null);
-
                 Log.v(TAG, "Navigation Thread RUNNING##############");
                 ByteBuffer byteBuffer = mImage.getPlanes()[0].getBuffer();
                 byte[] bytes = new byte[byteBuffer.remaining()];
                 byteBuffer.get(bytes);
-                //pass datas into a bitmap
+                //pass data into a bitmap
                 BitmapFactory.Options opt = new BitmapFactory.Options();
                 opt.inSampleSize = 2;
                 myBitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length, opt);
 
-
-                //TODO: if not working, puts 3.
                 mOriginal = new Mat(myBitmap.getWidth(), myBitmap.getHeight(), CvType.CV_8UC4);
                 Utils.bitmapToMat(myBitmap, mOriginal);
 
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        //mTestImage.setImageBitmap(myBitmap);
-                        //mTextureView.setVisibility(View.INVISIBLE);
-                        //mTestImage.setVisibility(View.VISIBLE);
-                        //mTestImage.getTop();
-                        mButtonNext.setVisibility(View.VISIBLE);
-
-                    }
-                });
+                if (debug) {
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            mButtonNext.setVisibility(View.VISIBLE);
+                        }
+                    });
+                }
 
                 //get a reference to the shared preferences
                 SharedPreferences sharedpreferences = getApplicationContext().getSharedPreferences(ConstantApp.SHARED_NAME, Context.MODE_PRIVATE);
@@ -1205,7 +1153,6 @@ public class AutoNavigationActivity extends AppCompatActivity {
                     Log.v(TAG, "Distance is -1");
                 }
 
-
                 for (int i = 0; i < 3; i++) {
                     if (Double.valueOf(leftUpper[i]) >= 255)
                         leftUpper[i] = "255";
@@ -1215,23 +1162,12 @@ public class AutoNavigationActivity extends AppCompatActivity {
                         leftUpper[i] = "255";
                 }
 
-               /* Log.v(TAG, "leftUpper: " + leftUpper[0] + " " + leftUpper[1] + " " + leftUpper[2]);
-                Log.v(TAG, "leftLower: " + leftLower[0] + " " + leftLower[1] + " " + leftLower[2]);
-
-                Log.v(TAG, "rightUpper: " + rightUpper[0] + " " + rightUpper[1] + " " + rightUpper[2]);
-                Log.v(TAG, "rightLower: " + rightLower[0] + " " + rightLower[1] + " " + rightLower[2]);
-
-                Log.v(TAG, "targetUpper: " + targetUpper[0] + " " + targetUpper[1] + " " + targetUpper[2]);
-                Log.v(TAG, "targetLower: " + targetLower[0] + " " + targetLower[1] + " " + targetLower[2]);*/
-
-
                 Scalar lowTarget2 = null, upTarget2 = null;
 
                 if (Double.valueOf(targetLower[3]) != -1) {
 
                     lowTarget2 = new Scalar(Double.valueOf(targetLower[3]), Double.valueOf(targetLower[1]), Double.valueOf(targetLower[2]));
                     upTarget2 = new Scalar(Double.valueOf(targetUpper[3]), Double.valueOf(targetUpper[1]), Double.valueOf(targetUpper[2]));
-
                 }
 
                 Scalar lowLeft = new Scalar(Double.valueOf(leftLower[0]), Double.valueOf(leftLower[1]), Double.valueOf(leftLower[2]));
@@ -1243,7 +1179,6 @@ public class AutoNavigationActivity extends AppCompatActivity {
                 Scalar lowTarget = new Scalar(Double.valueOf(targetLower[0]), Double.valueOf(targetLower[1]), Double.valueOf(targetLower[2]));
                 Scalar upTarget = new Scalar(Double.valueOf(targetUpper[0]), Double.valueOf(targetUpper[1]), Double.valueOf(targetUpper[2]));
 
-
                 //pass image in HSV
                 caseHsv = new Mat();
                 Imgproc.cvtColor(mOriginal, caseHsv, Imgproc.COLOR_RGB2HSV);
@@ -1251,82 +1186,30 @@ public class AutoNavigationActivity extends AppCompatActivity {
                 //filter color left
                 caseLeft = new Mat();
                 Core.inRange(caseHsv, lowLeft, upLeft, caseLeft);
-
-
-                //try {
                 List<MatOfPoint> contoursLeft = Navigation.findContours(caseLeft);
                 centerLeft = Navigation.findCentroid(contoursLeft);
-                //Imgproc.circle(caseLeft, centerLeft, 3, new Scalar(0, 255, 0), 3);
-
-/*                } catch (ArrayIndexOutOfBoundsException e) {
-                    e.printStackTrace();
-                    mImage.close();
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            finish();
-                            Toast.makeText(mActivity, getResources().getString(R.string.error_occured_camera), Toast.LENGTH_LONG).show();
-                        }
-                    });
-                }*/
 
                 //filter color right
                 caseRight = new Mat();
                 Core.inRange(caseHsv, lowRight, upRight, caseRight);
-                // try {
                 List<MatOfPoint> contoursRight = Navigation.findContours(caseRight);
                 centerRight = Navigation.findCentroid(contoursRight);
-                //Imgproc.circle(caseRight, centerRight, 3, new Scalar(0, 255, 0), 3);
-
-                /*} catch (Exception e) {
-                    e.printStackTrace();
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            onBackPressed();
-                            Toast.makeText(mActivity, getResources().getString(R.string.error_occured_camera), Toast.LENGTH_LONG).show();
-                        }
-                    });
-                }*/
-
 
                 //filter color target
                 caseTarget = new Mat();
                 Core.inRange(caseHsv, lowTarget, upTarget, caseTarget);
-
                 if (Double.valueOf(targetLower[3]) != -1) {
                     caseTarget2 = new Mat();
                     Core.inRange(caseHsv, lowTarget2, upTarget2, caseTarget2);
                     Core.add(caseTarget, caseTarget2, caseTarget);
                 }
-
-
-                // try {
-
                 List<MatOfPoint> contoursTarget = Navigation.findContours(caseTarget);
                 centerTarget = Navigation.findCentroid(contoursTarget);
 
-                //one movement is about 100 pixel, so we take a bound of 200 pixels
-                //TODO: controllare se con i negativi va bene
                 if (centerTarget != null) {
                     upperTarget = new org.opencv.core.Point(centerTarget.x, centerTarget.y + 75);
                     lowerTarget = new org.opencv.core.Point(centerTarget.x, centerTarget.y - 75);
                 }
-
-
-                //Imgproc.circle(caseTarget, centerTarget, 3, new Scalar(0, 255, 0), 3);
-
-                /*} catch (Exception e) {
-                    e.printStackTrace();
-                    mImage.close();
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            finish();
-                            Toast.makeText(mActivity, getResources().getString(R.string.error_occured_camera), Toast.LENGTH_LONG).show();
-                        }
-                    });
-                }*/
 
                 double height = Navigation.computeHeight(mOriginal, getApplicationContext());
                 Log.v(TAG, "Height: " + height);
@@ -1337,9 +1220,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
                     Log.v(TAG, "Height is -1");
                 }
 
-
                 mImage.close();
-
 
                 //begin the movement stuff
                 if (centerTarget != null && centerLeft != null && centerRight != null) {
@@ -1349,16 +1230,13 @@ public class AutoNavigationActivity extends AppCompatActivity {
                     centerMean = new org.opencv.core.Point(meanX, meanY);
                     Log.v(TAG, "CenterLeft: " + centerLeft.x + "," + centerLeft.y);
                     Log.v(TAG, "CenterRight: " + centerRight.x + "," + centerRight.y);
-                    Log.v(TAG, "The mean point is: " + meanX + "," + meanY);
-
+                    Log.v(TAG, "The mean point is: " + centerMean.x + "," + centerMean.y);
                     Log.v(TAG, "centerTarget: " + centerTarget.x + "," + centerTarget.y);
 
                     //L Movement
                     if (movementType == ConstantApp.L_MOVEMENT) {
 
-
                         if (Navigation.isInBound(true, centerMean, centerTarget, 5, height, focal)) {
-
 
                             int action = Navigation.turnDirection(centerTarget, centerLeft, centerRight, true, focal, height);
                             switch (action) {
@@ -1425,7 +1303,6 @@ public class AutoNavigationActivity extends AppCompatActivity {
                     } else {
 
                         double offset = (ConstantApp.KNOWN_WIDTH * focal) / height;
-
                         double pixelToCm = offset / 3;
 
                         if (distanceTM == null) {
@@ -1435,8 +1312,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
                             Log.v(TAG, "distanceTM in pixel: " + distanceTM);
 
                             distanceTM = distanceTM / pixelToCm;
-                            Log.v(TAG, "distanceTM in cm    : " + distanceTM);
-
+                            Log.v(TAG, "distanceTM in cm: " + distanceTM);
                         }
 
                         //pendenza retta passante per il robot
@@ -1445,7 +1321,6 @@ public class AutoNavigationActivity extends AppCompatActivity {
                         //pendenza target, centro medio
                         double m2 = (centerMean.y - centerTarget.y) / (centerMean.x - centerTarget.x);
 
-
                         Log.v(TAG, "m1*m2: " + m1 * m2);
 
                         if (Navigation.isPerpendicular(m1, m2, focal, height, centerMean, centerTarget)) {
@@ -1453,27 +1328,21 @@ public class AutoNavigationActivity extends AppCompatActivity {
                             mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.forward);
                             Log.v(TAG, "Go Ahead");
 
-                            Log.v(TAG, "CenterTarget: " + centerTarget.x + " - " + centerTarget.y);
-                            Log.v(TAG, "centerMean: " + centerMean.x + " - " + centerMean.y);
-
-
                             double newDistanceTM = Math.sqrt(Math.pow(centerTarget.x - centerMean.x, 2)
                                     + Math.pow(centerTarget.y - centerMean.y, 2));
 
                             Log.v(TAG, "newDistanceTM in pixel: " + newDistanceTM);
 
                             newDistanceTM = newDistanceTM / pixelToCm;
-
                             Log.v(TAG, "newDistanceTM in cm: " + newDistanceTM);
-
 
                             if (newDistanceTM > distanceTM) {
                                 mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.right);
                                 Log.v(TAG, "Turn right on distance");
                             }
 
-
                         } else {
+
                             double distanceTR = Math.sqrt(Math.pow(centerTarget.x - centerRight.x, 2)
                                     + Math.pow(centerTarget.y - centerRight.y, 2));
                             double distanceTL = Math.sqrt(Math.pow(centerTarget.x - centerLeft.x, 2)
@@ -1487,35 +1356,12 @@ public class AutoNavigationActivity extends AppCompatActivity {
                                 Log.v(TAG, "Turn left");
                             }
                         }
-
-
                     }
 
-
-                } /*else if ()  {
+                } else if (centerTarget == null) {
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            mButtonRecalibrate.setVisibility(View.VISIBLE);
-                            mFabStop.setVisibility(View.GONE);
-                            mFabMenu.setVisibility(View.VISIBLE);
-                            mCalibrationInfo.setVisibility(View.GONE);
-
-                            //return to the "classic" camera view
-                            mTestImage.setVisibility(View.INVISIBLE);
-                            mTextureView.setVisibility(View.VISIBLE);
-                            mTextureView.getTop();
-                            mFabMenu.setEnabled(true);
-                            myBitmap = null;
-                        }
-                    });
-
-                    Toast.makeText(mActivity, getResources().getString(R.string.arrived_target_bound), Toast.LENGTH_LONG).show();
-                }  */ else if (centerTarget == null) {
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            //mButtonRecalibrate.setVisibility(View.VISIBLE);
                             mFabStop.setVisibility(View.GONE);
                             mFabMenu.show();
                             mCalibrationInfo.setVisibility(View.GONE);
@@ -1524,24 +1370,22 @@ public class AutoNavigationActivity extends AppCompatActivity {
                             mTestImage.setVisibility(View.GONE);
                             mTextureView.setVisibility(View.VISIBLE);
                             mTextureView.getTop();
-                            //mFabMenu.setEnabled(true);
-                            //myBitmap = null;
                         }
                     });
 
-                    Toast.makeText(mActivity, getResources().getString(R.string.target_null_arrived), Toast.LENGTH_LONG).show();
+                    Toast.makeText(mActivity, getResources().getString(R.string.arrived_target_bound), Toast.LENGTH_LONG).show();
+
                 } else {
+
                     String message = null;
                     if (contoursLeft == null)
                         message = "LEFT is Null";
                     else if (centerRight == null)
                         message = "RIGHT is null";
 
-                    //centerTarget != null && centerLeft != null && centerRight != null
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            //mButtonRecalibrate.setVisibility(View.VISIBLE);
                             mFabStop.setVisibility(View.GONE);
                             mFabMenu.show();
                             mCalibrationInfo.setVisibility(View.GONE);
@@ -1550,15 +1394,14 @@ public class AutoNavigationActivity extends AppCompatActivity {
                             mTestImage.setVisibility(View.GONE);
                             mTextureView.setVisibility(View.VISIBLE);
                             mTextureView.getTop();
-                            //mFabMenu.setEnabled(true);
-                            //myBitmap = null;
                         }
                     });
-                    Toast.makeText(mActivity, message, Toast.LENGTH_LONG).show();
+
+                    if (message != null)
+                        Toast.makeText(mActivity, message, Toast.LENGTH_LONG).show();
                     Toast.makeText(mActivity, getResources().getString(R.string.null_center), Toast.LENGTH_LONG).show();
                 }
             }
-
 
             Log.v(TAG, "########################################################");
 
@@ -1569,9 +1412,6 @@ public class AutoNavigationActivity extends AppCompatActivity {
             }
 
             takePicture();
-
         }
     }
-
-
 }

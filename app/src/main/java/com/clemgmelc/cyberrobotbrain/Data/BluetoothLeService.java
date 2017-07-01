@@ -37,7 +37,6 @@ public class BluetoothLeService extends Service {
     private String mBluetoothDeviceAddress;
     private BluetoothGatt mBluetoothGatt;
     //never used
-    private int mConnectionState;
 
     private static final int STATE_DISCONNECTED = 0;
     private static final int STATE_CONNECTING = 1;
@@ -109,7 +108,6 @@ public class BluetoothLeService extends Service {
                 && mBluetoothGatt != null) {
             Log.v(TAG, "Trying to use an existing mBluetoothGatt for connection.");
             if (mBluetoothGatt.connect()) {
-                mConnectionState = STATE_CONNECTING;
                 return true;
             } else {
                 return false;
@@ -126,7 +124,6 @@ public class BluetoothLeService extends Service {
         mBluetoothGatt = device.connectGatt(this, false, mGattCallback);
         Log.v(TAG, "Trying to create a new connection.");
         mBluetoothDeviceAddress = address;
-        mConnectionState = STATE_CONNECTING;
         return true;
     }
 
@@ -164,7 +161,6 @@ public class BluetoothLeService extends Service {
 
             if (newState == BluetoothProfile.STATE_CONNECTED) {
                 intentAction = ConstantApp.ACTION_GATT_CONNECTED;
-                mConnectionState = STATE_CONNECTED;
                 broadcastUpdate(intentAction);
                 Log.v(TAG, "Connected to GATT server.");
                 //get the service offered by the GATT Service
@@ -173,7 +169,6 @@ public class BluetoothLeService extends Service {
 
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                 intentAction = ConstantApp.ACTION_GATT_DISCONNECTED;
-                mConnectionState = STATE_DISCONNECTED;
                 Log.v(TAG, "Disconnected from GATT server.");
                 broadcastUpdate(intentAction);
             }
@@ -188,56 +183,12 @@ public class BluetoothLeService extends Service {
                 Log.v(TAG, "onServicesDiscovered not success. Status: " + status);
             }
         }
-
-        /*@Override
-        public void onCharacteristicRead(BluetoothGatt gatt,
-                                         BluetoothGattCharacteristic characteristic,
-                                         int status) {
-            if (status == BluetoothGatt.GATT_SUCCESS) {
-                broadcastUpdate(ConstantApp.ACTION_DATA_AVAILABLE, characteristic);
-            }
-        }
-
-        @Override
-        public void onCharacteristicChanged(BluetoothGatt gatt,
-                                            BluetoothGattCharacteristic characteristic) {
-            broadcastUpdate(ConstantApp.ACTION_DATA_AVAILABLE, characteristic);
-        }*/
     };
 
     private void broadcastUpdate(final String action) {
         final Intent intent = new Intent(action);
         sendBroadcast(intent);
     }
-
-/*    private void broadcastUpdate(final String action, final BluetoothGattCharacteristic characteristic) {
-        final Intent intent = new Intent(action);
-
-        //?? For all other profiles, writes the data formatted in HEX. ??
-        final byte[] data = characteristic.getValue();
-        if (data != null && data.length > 0) {
-            final StringBuilder stringBuilder = new StringBuilder(data.length);
-            for(byte byteChar : data)
-                stringBuilder.append(String.format("%02X ", byteChar));
-            intent.putExtra(ConstantApp.EXTRA_DATA, new String(data) + "\n" + stringBuilder.toString());
-        }
-
-        sendBroadcast(intent);
-    }*/
-
-
-    /**
-     * Read a value from a specific GATT Characteristic
-     *
-     * @param characteristic The characteristic from which we want to read
-     */
-   /* public void readCharacteristic(BluetoothGattCharacteristic characteristic) {
-        if (mBluetoothAdapter == null || mBluetoothGatt == null) {
-            Log.v(TAG, "BluetoothAdapter not initialized");
-            return;
-        }
-        mBluetoothGatt.readCharacteristic(characteristic);
-    }*/
 
     /**
      * Write a value to a specific GATT Characteristic
