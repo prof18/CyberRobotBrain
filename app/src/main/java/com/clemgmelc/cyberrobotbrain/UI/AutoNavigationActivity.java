@@ -946,7 +946,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
                     });
                 }*/
 
-                double height = Navigation.computeDistance(mOriginal, getApplicationContext());
+                double height = Navigation.computeHeight(mOriginal, getApplicationContext());
                 Log.v(TAG, "Height: " + height);
 
                 if (height == -1) {
@@ -1310,6 +1310,8 @@ public class AutoNavigationActivity extends AppCompatActivity {
                     for (int i = 0; i < mBlobColorHsv.val.length; i++)
                         mBlobColorHsv.val[i] /= pointCount;
 
+
+                    //TODO rimuovere la parte sugli esaedcimali per RGB che non serve e togliere relativo metodo in CALIBRATION
                     mBlobColorRgba = Calibration.hsvToRGBA(mBlobColorHsv);
                     int red = (int) mBlobColorRgba.val[0];
                     int green = (int) mBlobColorRgba.val[1];
