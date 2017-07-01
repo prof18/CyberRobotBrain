@@ -321,13 +321,14 @@ public class Navigation {
     }
 
     /**
-     * @param m1
-     * @param m2
-     * @param focal
-     * @param height
-     * @param start
-     * @param target
-     * @return
+     * @param m1 slope of the first line
+     * @param m2 slope of the second line
+     * @param focal is the factor of scalability from real dimension to pixel dimension
+     *              (x pixel = 3 cm. Value 3 is the diameter of the TARGET_MARKER)
+     * @param height is the current height from the device to the target marker
+     * @param start is the mean point among LEFT_CENTROID and RIGHT_CENTROID
+     * @param target is the TARGET_CENTROID
+     * @return TRUE if m1 and m2 are perpendicular, FALSE otherwise
      */
     public static boolean isPerpendicular(double m1, double m2, double focal, double height, Point start, Point target) {
 

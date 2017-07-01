@@ -203,6 +203,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
         mFabMenu.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                Log.v(TAG,"MENU pressed");
                 animateFab();
             }
         });
@@ -228,7 +229,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
                 animateFab();
                 movementType = ConstantApp.L_MOVEMENT;
                 mFabMenu.hide();
-                mFabStop.setVisibility(View.VISIBLE);
+                mFabStop.show();
                 stop = false;
                 isYAligned = false;
                 isXAligned = false;
@@ -254,6 +255,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
         mFabStop.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                Log.v(TAG,"STOP pressed");
                 Toast.makeText(mActivity, getResources().getString(R.string.stopping), Toast.LENGTH_SHORT).show();
                 mFabStop.hide();
                 mFabMenu.show();
@@ -269,6 +271,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
         mFabPictureCalib.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                Log.v(TAG,"PICTURE pressed");
                 mFabPictureCalib.hide();
                 takePicture();
             }
@@ -766,7 +769,10 @@ public class AutoNavigationActivity extends AppCompatActivity {
                 } catch (Exception e) {
                     e.printStackTrace();
                     finish();
+
                     Toast.makeText(mActivity, getResources().getString(R.string.error_occured_camera), Toast.LENGTH_SHORT).show();
+                    Log.v(TAG,"ERROR  in image available");
+                    Log.e("PUTTANA", "exception", e);
                 }
             }
         }
@@ -786,6 +792,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
             e.printStackTrace();
             finish();
             Toast.makeText(mActivity, getResources().getString(R.string.error_occured_camera), Toast.LENGTH_SHORT).show();
+            Log.v(TAG,"ERROR in take picture");
         }
     }
 
@@ -1150,7 +1157,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
                 if (focal == -1) {
                     onBackPressed();
                     Toast.makeText(mActivity, getResources().getString(R.string.error_occured_camera), Toast.LENGTH_SHORT).show();
-                    Log.v(TAG, "Distance is -1");
+                    Log.v(TAG, "ERROR Distance is -1");
                 }
 
                 for (int i = 0; i < 3; i++) {
@@ -1206,18 +1213,13 @@ public class AutoNavigationActivity extends AppCompatActivity {
                 List<MatOfPoint> contoursTarget = Navigation.findContours(caseTarget);
                 centerTarget = Navigation.findCentroid(contoursTarget);
 
-                if (centerTarget != null) {
-                    upperTarget = new org.opencv.core.Point(centerTarget.x, centerTarget.y + 75);
-                    lowerTarget = new org.opencv.core.Point(centerTarget.x, centerTarget.y - 75);
-                }
-
                 double height = Navigation.computeHeight(mOriginal, getApplicationContext());
                 Log.v(TAG, "Height: " + height);
 
                 if (height == -1) {
                     onBackPressed();
                     Toast.makeText(mActivity, getResources().getString(R.string.error_occured_camera), Toast.LENGTH_SHORT).show();
-                    Log.v(TAG, "Height is -1");
+                    Log.v(TAG, "ERROR Height is -1");
                 }
 
                 mImage.close();
@@ -1401,17 +1403,18 @@ public class AutoNavigationActivity extends AppCompatActivity {
                         Toast.makeText(mActivity, message, Toast.LENGTH_LONG).show();
                     Toast.makeText(mActivity, getResources().getString(R.string.null_center), Toast.LENGTH_LONG).show();
                 }
+
+                Log.v(TAG, "########################################################");
+
+                try {
+                    Thread.sleep(700);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+                takePicture();
             }
 
-            Log.v(TAG, "########################################################");
-
-            try {
-                Thread.sleep(1000);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-
-            takePicture();
         }
     }
 }
