@@ -52,6 +52,7 @@
     <string name="info_recalibration">Frame together the three markers at 15 cm and press the button below.</string>
     <string name="error_occured">An unexpected error has occurred. Please retry and if the problem persist, reconnect to the Cyber Robot</string>
     <string name="error_occured_camera">An unexpected error has occurred. Please retry.</string>
+    <string name="error_camera">An unexpected error has occurred during the connection to the camera. Please retry.</string>
     <string name="null_center">The markers are not framed! Try again</string>
     <string name="target_null_arrived">Target not found, you are arrived</string>
     <string name="arrived_target_bound">The robot is arrived at the destination</string>

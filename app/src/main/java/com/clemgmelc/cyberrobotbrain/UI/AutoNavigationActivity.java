@@ -84,6 +84,18 @@ import java.util.concurrent.TimeUnit;
 public class AutoNavigationActivity extends AppCompatActivity {
 
     private static final String TAG = ConstantApp.TAG + " - " + AutoNavigationActivity.class.getSimpleName();
+
+    //UI
+    private TextureView mTextureView;
+    private FloatingActionButton mFabMenu, mFabPictureCalib, mFabStop, mFabDirect, mFabL, mFabCalib;
+    private Animation mFabOpen, mFabClose, rotForward, rotBackward;
+    private Button mButtonNext;
+    private ImageView mTestImage;
+    private Activity mActivity;
+    private TextView mCalibrationInfo;
+    private TextView mLMovLabel, mDirectMovLabel, mCalibrationLabel, mCalibrationNeedTitle;
+
+    //Camera
     private HandlerThread mBackgroundHandlerThread;
     private Handler mBackgroundHandler;
     private String mCameraId;
@@ -97,17 +109,13 @@ public class AutoNavigationActivity extends AppCompatActivity {
     private static final int STATE_PREVIEW = 0;
     private static final int STATE_WAIT_LOCK = 1;
     private int mCaptureState = STATE_PREVIEW;
-    private TextureView mTextureView;
     private CameraDevice mCameraDevice;
     private CameraCaptureSession mPreviewCaptureSession;
     private CaptureRequest.Builder mCaptureRequestBuilder;
-    private FloatingActionButton mFabMenu, mFabPictureCalib, mFabStop, mFabDirect, mFabL, mFabCalib;
-    private Button mButtonNext;
-    private ImageView mTestImage;
-    private Activity mActivity;
+
+    //Movement
     private int k = 1, colorCounter;
     private Mat mOriginal, caseHsv, caseLeft, caseRight, caseTarget, caseTarget2, touchedRegionHsv, touchedRegionRgba;
-    private TextView mCalibrationInfo;
     private Bitmap myBitmap;
     private Calibration mDetector;
     private boolean mIsCalibrating = false;
@@ -120,28 +128,37 @@ public class AutoNavigationActivity extends AppCompatActivity {
     private boolean stop = false, isYAligned = false, isFacing = false, isXAligned = false;
     private int movementType;
     private Double distanceTM;
-    private Animation mFabOpen, mFabClose, rotForward, rotBackward;
     private boolean isOpen = false;
-    private TextView mLMovLabel, mDirectMovLabel, mCalibrationLabel, mCalibrationNeedTitle;
     private boolean mIsCalibrated = false;
+
+    //enables the next button
+    private boolean debug = true;
+
+    /* ####### UI METHODS ####### */
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
         super.onCreate(savedInstanceState);
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setContentView(R.layout.auto_navigation_main);
-        mTestImage = (ImageView) findViewById(R.id.imageViewTest);
-        mCalibrationInfo = (TextView) findViewById(R.id.calibrationInfo);
+        mActivity = this;
+
+        //fab
+        mFabMenu = (FloatingActionButton) findViewById(R.id.fabAutoNav);
         mFabPictureCalib = (FloatingActionButton) findViewById(R.id.fabCalibration);
         mFabStop = (FloatingActionButton) findViewById(R.id.fabStop);
         mFabDirect = (FloatingActionButton) findViewById(R.id.fabDirect);
         mFabL = (FloatingActionButton) findViewById(R.id.fabL);
         mLMovLabel = (TextView) findViewById(R.id.l_mov_label);
+        mFabCalib = (FloatingActionButton) findViewById(R.id.fabRecalibration);
+
+        //text views
+        mCalibrationInfo = (TextView) findViewById(R.id.calibrationInfo);
         mDirectMovLabel = (TextView) findViewById(R.id.direct_mov_label);
         mCalibrationLabel = (TextView) findViewById(R.id.calibration_label);
         mCalibrationNeedTitle = (TextView) findViewById(R.id.calibrationNeed);
-        mFabCalib = (FloatingActionButton) findViewById(R.id.fabRecalibration);
 
         //animations
         mFabOpen = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.fab_open);
@@ -149,27 +166,24 @@ public class AutoNavigationActivity extends AppCompatActivity {
         rotForward = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.rotate_forward);
         rotBackward = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.rotate_backward);
 
-        mDeviceAddress = getIntent().getStringExtra(ConstantApp.DEVICE_ADDRESS);
+        mTestImage = (ImageView) findViewById(R.id.imageViewTest);
+        mTextureView = (TextureView) findViewById(R.id.textureView);
+        if (debug) mButtonNext = (Button) findViewById(R.id.next);
 
-        mActivity = this;
+        mDeviceAddress = getIntent().getStringExtra(ConstantApp.DEVICE_ADDRESS);
 
         if (!OpenCVLoader.initDebug()) {
             onBackPressed();
             Log.d(TAG, "opencv not init");
         }
 
-        mButtonNext = (Button) findViewById(R.id.next);
-
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-
             if (ActivityCompat.checkSelfPermission(this, PERMISSIONS_CAMERA[0]) != PackageManager.PERMISSION_GRANTED) {
-
                 ActivityCompat.requestPermissions(this, PERMISSIONS_CAMERA, REQUEST_CAMERA_PERMISSION);
             }
         }
 
-        mTextureView = (TextureView) findViewById(R.id.textureView);
-        mFabMenu = (FloatingActionButton) findViewById(R.id.fabAutoNav);
+        //Check if the calibration is done
         mIsCalibrated = Utility.isCalibrationDone(getApplicationContext());
 
         if (!mIsCalibrated) {
@@ -179,59 +193,47 @@ public class AutoNavigationActivity extends AppCompatActivity {
             mFabL.setVisibility(View.GONE);
         }
 
+        initFabListener();
+
+        if (debug) initMaskVisualizerButton();
+    }
+
+    public void initFabListener() {
+
+        mFabMenu.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                animateFab();
+            }
+        });
+
         mFabDirect.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Log.d(TAG, "DIRECT FAB CLICKED");
-                //mFabMenu.setEnabled(false);
-
-
                 animateFab();
                 movementType = ConstantApp.DIRECT_MOVEMENT;
-                //mButtonRecalibrate.setVisibility(View.GONE);
                 mFabMenu.hide();
                 mFabStop.show();
                 stop = false;
-                //
-                //mFabMenu.setEnabled(true);
                 isYAligned = false;
                 isXAligned = false;
                 isFacing = false;
                 takePicture();
-
-
             }
         });
 
         mFabL.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Log.d(TAG, "L FAB CLICKED");
-                //mFabMenu.setEnabled(false);
-
-
                 animateFab();
                 movementType = ConstantApp.L_MOVEMENT;
-                //mButtonRecalibrate.setVisibility(View.GONE);
                 mFabMenu.hide();
                 mFabStop.setVisibility(View.VISIBLE);
                 stop = false;
-                //mFabMenu.setEnabled(true);
                 isYAligned = false;
                 isXAligned = false;
                 isFacing = false;
                 takePicture();
-
-
-            }
-        });
-
-        mFabMenu.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Log.d(TAG, "BIG FAB CLICKED");
-
-                animateFab();
             }
         });
 
@@ -239,16 +241,12 @@ public class AutoNavigationActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 animateFab();
-
                 mFabMenu.hide();
                 mFabPictureCalib.show();
                 mIsCalibrating = true;
-
                 mCalibrationInfo.setVisibility(View.VISIBLE);
-                //mFabMenu.setVisibility(View.GONE);
                 mFabPictureCalib.setVisibility(View.VISIBLE);
                 mCalibrationNeedTitle.setVisibility(View.GONE);
-                //mButtonRecalibrate.setVisibility(View.GONE);
                 colorCounter = 0;
             }
         });
@@ -256,35 +254,17 @@ public class AutoNavigationActivity extends AppCompatActivity {
         mFabStop.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                //mButtonRecalibrate.setVisibility(View.VISIBLE);
                 Toast.makeText(mActivity, getResources().getString(R.string.stopping), Toast.LENGTH_SHORT).show();
                 mFabStop.hide();
-
                 mFabMenu.show();
                 mCalibrationInfo.setVisibility(View.GONE);
-
                 //return to the "classic" camera view
                 mTestImage.setVisibility(View.INVISIBLE);
                 mTextureView.setVisibility(View.VISIBLE);
                 mTextureView.getTop();
-                //mFabMenu.setEnabled(true);
-
                 stop = true;
-
             }
         });
-
-/*        mButtonRecalibrate.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                mIsCalibrating = true;
-                mCalibrationInfo.setVisibility(View.VISIBLE);
-                mFabMenu.setVisibility(View.GONE);
-                mFabPictureCalib.setVisibility(View.VISIBLE);
-                colorCounter = 0;
-                mButtonRecalibrate.setVisibility(View.GONE);
-            }
-        });*/
 
         mFabPictureCalib.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -293,6 +273,87 @@ public class AutoNavigationActivity extends AppCompatActivity {
                 takePicture();
             }
         });
+    }
+
+    public void animateFab() {
+
+        if (isOpen) {
+
+            //main fab animation
+            mFabMenu.startAnimation(rotBackward);
+            mFabMenu.setImageDrawable(ContextCompat.getDrawable(getApplicationContext(), R.drawable.ic_menu));
+
+            if (mIsCalibrated) {
+
+                //sub fab animation
+                mFabCalib.startAnimation(mFabClose);
+                mFabL.startAnimation(mFabClose);
+                mFabDirect.startAnimation(mFabClose);
+                //fab label animation
+                mCalibrationLabel.startAnimation(mFabClose);
+                mLMovLabel.startAnimation(mFabClose);
+                mDirectMovLabel.startAnimation(mFabClose);
+                //hide fab label
+                mCalibrationLabel.setVisibility(View.GONE);
+                mLMovLabel.setVisibility(View.GONE);
+                mDirectMovLabel.setVisibility(View.GONE);
+                //hide fab
+                mFabCalib.hide();
+                mFabL.hide();
+                mFabDirect.hide();
+
+            } else {
+                //sub fab animation
+                mFabCalib.startAnimation(mFabClose);
+                //fab label animation
+                mCalibrationLabel.startAnimation(mFabClose);
+                //hide fab label
+                mCalibrationLabel.setVisibility(View.GONE);
+                //hide fab
+                mFabCalib.hide();
+            }
+            isOpen = false;
+
+        } else {
+
+            //main fab animation
+            mFabMenu.startAnimation(rotForward);
+            mFabMenu.setImageDrawable(ContextCompat.getDrawable(getApplicationContext(), R.drawable.ic_add));
+
+            if (mIsCalibrated) {
+
+                //sub fab animation
+                mFabCalib.startAnimation(mFabOpen);
+                mFabL.startAnimation(mFabOpen);
+                mFabDirect.startAnimation(mFabOpen);
+                //fab label animation
+                mCalibrationLabel.startAnimation(mFabOpen);
+                mLMovLabel.startAnimation(mFabOpen);
+                mDirectMovLabel.startAnimation(mFabOpen);
+                //show fab
+                mFabCalib.show();
+                mFabL.show();
+                mFabDirect.show();
+                //show fab label
+                mCalibrationLabel.setVisibility(View.VISIBLE);
+                mLMovLabel.setVisibility(View.VISIBLE);
+                mDirectMovLabel.setVisibility(View.VISIBLE);
+
+            } else {
+                //sub fab animation
+                mFabCalib.startAnimation(mFabOpen);
+                //fab label animation
+                mCalibrationLabel.startAnimation(mFabOpen);
+                //show fab
+                mFabCalib.show();
+                //show fab label
+                mCalibrationLabel.setVisibility(View.VISIBLE);
+            }
+            isOpen = true;
+        }
+    }
+
+    public void initMaskVisualizerButton() {
 
         mButtonNext.setOnClickListener(new View.OnClickListener() {
 
@@ -322,9 +383,6 @@ public class AutoNavigationActivity extends AppCompatActivity {
 
                     case 2:
                         Log.d(TAG, "CASE LEFT");
-
-                        /*org.opencv.core.Point center = findCentroid(caseLeft);
-                        Imgproc.circle(caseLeft,center,3,new Scalar(0,255,0),3);*/
                         mCalibrationInfo.setVisibility(View.VISIBLE);
                         mCalibrationInfo.setText("CASE LEFT");
 
@@ -342,9 +400,6 @@ public class AutoNavigationActivity extends AppCompatActivity {
                         break;
                     case 3:
                         Log.d(TAG, "CASE TARGET");
-
-                       /* org.opencv.core.Point center2 = findCentroid(caseTarget);
-                        Imgproc.circle(caseTarget,center2,3,new Scalar(0,255,0),3);*/
                         mCalibrationInfo.setVisibility(View.VISIBLE);
                         mCalibrationInfo.setText("CASE TARGET");
 
@@ -363,9 +418,6 @@ public class AutoNavigationActivity extends AppCompatActivity {
 
                     case 4:
                         Log.d(TAG, "CASE RIGHT");
-
-                       /* org.opencv.core.Point center3 = findCentroid(caseRight);
-                        Imgproc.circle(caseRight,center3,3,new Scalar(0,255,0),3);*/
                         mCalibrationInfo.setVisibility(View.VISIBLE);
                         mCalibrationInfo.setText("CASE RIGHT");
 
@@ -381,165 +433,10 @@ public class AutoNavigationActivity extends AppCompatActivity {
                         });
                         k = 1;
                         break;
-
                 }
-
             }
         });
     }
-
-    public void animateFab() {
-
-        if (isOpen) {
-
-            mFabMenu.startAnimation(rotBackward);
-            mFabMenu.setImageDrawable(ContextCompat.getDrawable(getApplicationContext(), R.drawable.ic_menu));
-            if (mIsCalibrated) {
-
-                mFabCalib.startAnimation(mFabClose);
-                mFabL.startAnimation(mFabClose);
-                mFabDirect.startAnimation(mFabClose);
-                mCalibrationLabel.startAnimation(mFabClose);
-                mLMovLabel.startAnimation(mFabClose);
-                mDirectMovLabel.startAnimation(mFabClose);
-                mFabCalib.hide();
-                mCalibrationLabel.setVisibility(View.GONE);
-                mFabL.hide();
-                mLMovLabel.setVisibility(View.GONE);
-                mFabDirect.hide();
-                mDirectMovLabel.setVisibility(View.GONE);
-
-            } else {
-                mFabCalib.startAnimation(mFabClose);
-                mCalibrationLabel.startAnimation(mFabClose);
-                mFabCalib.hide();
-                mCalibrationLabel.setVisibility(View.GONE);
-            }
-
-            isOpen = false;
-        } else {
-
-            mFabMenu.startAnimation(rotForward);
-            mFabMenu.setImageDrawable(ContextCompat.getDrawable(getApplicationContext(), R.drawable.ic_add));
-            if (mIsCalibrated) {
-
-                mFabCalib.startAnimation(mFabOpen);
-                mFabL.startAnimation(mFabOpen);
-                mFabDirect.startAnimation(mFabOpen);
-                mCalibrationLabel.startAnimation(mFabOpen);
-                mLMovLabel.startAnimation(mFabOpen);
-                mDirectMovLabel.startAnimation(mFabOpen);
-                mFabCalib.show();
-                mCalibrationLabel.setVisibility(View.VISIBLE);
-                mFabL.show();
-                mLMovLabel.setVisibility(View.VISIBLE);
-                mFabDirect.show();
-                mDirectMovLabel.setVisibility(View.VISIBLE);
-
-            } else {
-                mFabCalib.startAnimation(mFabOpen);
-                mCalibrationLabel.startAnimation(mFabOpen);
-                mFabCalib.show();
-                mCalibrationLabel.setVisibility(View.VISIBLE);
-            }
-
-            isOpen = true;
-        }
-
-    }
-
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-
-        startBackgroundThread();
-
-
-        if (mTextureView.isAvailable()) {
-            setupCamera(mTextureView.getWidth(), mTextureView.getHeight());
-            connectCamera();
-        } else {
-            mTextureView.setSurfaceTextureListener(mSurfaceTextureListener);
-        }
-
-        Intent gattServiceIntent = new Intent(this, BluetoothLeService.class);
-        bindService(gattServiceIntent, mServiceConnection, BIND_AUTO_CREATE);
-
-        registerReceiver(mGattUpdateReceiver, ConstantApp.makeGattUpdateIntentFilter());
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        Log.v(TAG, "onDestroy");
-        //mBluetoothLeService.disconnect();
-        unbindService(mServiceConnection);
-        mBluetoothLeService = null;
-    }
-
-
-    // Manage Service lifecycle.
-    private final ServiceConnection mServiceConnection = new ServiceConnection() {
-
-        //what to do when connected to the service
-        @Override
-        public void onServiceConnected(ComponentName componentName, IBinder service) {
-
-            mBluetoothLeService = ((BluetoothLeService.LocalBinder) service).getService();
-            if (!mBluetoothLeService.initialize()) {
-                Log.e("", "Unable to initialize Bluetooth");
-                finish();
-            }
-            if (mDeviceAddress != null) {
-
-             /*   //if connected send a toast message
-                if (mBluetoothLeService.connect(mDeviceAddress)) {
-                    Log.v(TAG, "Connected to: Cyber Robot from navigation");
-                }*/
-
-
-                mMovementGattService = mBluetoothLeService.getSupportedGattServices().get(mBluetoothLeService.getSupportedGattServices().size() - 1);
-                mMovementCharacteristic = mMovementGattService.getCharacteristic(ConstantApp.UUID_MOVEMENT);
-
-            } else {
-                Toast.makeText(mBluetoothLeService, getResources().getString(R.string.action_disconnected), Toast.LENGTH_SHORT).show();
-            }
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName componentName) {
-            mBluetoothLeService = null;
-            Log.v(TAG, "onServiceDisconnected");
-
-        }
-    };
-
-    @Override
-    protected void onPause() {
-
-        closeCamera();
-        //TODO: scollegare ugo
-        stopBackgroundThread();
-        mTextureView.setSurfaceTextureListener(null);
-        super.onPause();
-        unregisterReceiver(mGattUpdateReceiver);
-    }
-
-    @Override
-    public void onWindowFocusChanged(boolean hasFocas) {
-        super.onWindowFocusChanged(hasFocas);
-        View decorView = getWindow().getDecorView();
-        if (hasFocas) {
-            decorView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                    | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-                    | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                    | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                    | View.SYSTEM_UI_FLAG_FULLSCREEN
-                    | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION);
-        }
-    }
-
 
     private TextureView.SurfaceTextureListener mSurfaceTextureListener = new TextureView.SurfaceTextureListener() {
         @Override
@@ -559,7 +456,6 @@ public class AutoNavigationActivity extends AppCompatActivity {
             } else {
                 mTextureView.setSurfaceTextureListener(mSurfaceTextureListener);
             }
-
         }
 
         @Override
@@ -572,6 +468,120 @@ public class AutoNavigationActivity extends AppCompatActivity {
         }
     };
 
+    //show a dialog of error that will close the scan activity after ok is pressed
+    private void showNegativeDialog(String title, String message) {
+        final AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(this);
+        dialogBuilder.setTitle(title);
+        dialogBuilder.setMessage(message);
+        dialogBuilder.setCancelable(false);
+        dialogBuilder.setNegativeButton(android.R.string.ok,
+                new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                        finish();
+                    }
+                });
+        dialogBuilder.show();
+    }
+
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        View decorView = getWindow().getDecorView();
+        if (hasFocus) {
+            decorView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                    | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                    | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                    | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                    | View.SYSTEM_UI_FLAG_FULLSCREEN
+                    | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION);
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        startBackgroundThread();
+
+        if (mTextureView.isAvailable()) {
+            setupCamera(mTextureView.getWidth(), mTextureView.getHeight());
+            connectCamera();
+        } else {
+            mTextureView.setSurfaceTextureListener(mSurfaceTextureListener);
+        }
+
+        Intent gattServiceIntent = new Intent(this, BluetoothLeService.class);
+        bindService(gattServiceIntent, mServiceConnection, BIND_AUTO_CREATE);
+
+        registerReceiver(mGattUpdateReceiver, ConstantApp.makeGattUpdateIntentFilter());
+    }
+
+    @Override
+    protected void onPause() {
+        closeCamera();
+        stopBackgroundThread();
+        mTextureView.setSurfaceTextureListener(null);
+        super.onPause();
+        unregisterReceiver(mGattUpdateReceiver);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        unbindService(mServiceConnection);
+        mBluetoothLeService = null;
+    }
+
+    /* ####### BLUETOOTH METHODS ####### */
+
+    // Manage Service lifecycle.
+    private final ServiceConnection mServiceConnection = new ServiceConnection() {
+
+        //what to do when connected to the service
+        @Override
+        public void onServiceConnected(ComponentName componentName, IBinder service) {
+
+            mBluetoothLeService = ((BluetoothLeService.LocalBinder) service).getService();
+            if (!mBluetoothLeService.initialize()) {
+                Log.e("", "Unable to initialize Bluetooth");
+                finish();
+            }
+
+            if (mDeviceAddress != null) {
+                mMovementGattService = mBluetoothLeService.getSupportedGattServices().get(mBluetoothLeService.getSupportedGattServices().size() - 1);
+                mMovementCharacteristic = mMovementGattService.getCharacteristic(ConstantApp.UUID_MOVEMENT);
+
+            } else {
+                Toast.makeText(mBluetoothLeService, getResources().getString(R.string.action_disconnected), Toast.LENGTH_SHORT).show();
+            }
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName componentName) {
+            mBluetoothLeService = null;
+            Log.v(TAG, "onServiceDisconnected");
+        }
+    };
+
+    //manage connected, disconnected and discovered action
+    private final BroadcastReceiver mGattUpdateReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+
+            final String action = intent.getAction();
+            if (ConstantApp.ACTION_GATT_DISCONNECTED.equals(action)) {
+
+                Log.v(TAG, "Robot Disconnected");
+                Toast.makeText(mBluetoothLeService, getResources().getString(R.string.message_disconnecting), Toast.LENGTH_SHORT).show();
+
+                mBluetoothLeService.disconnect();
+                mBluetoothLeService = null;
+                onBackPressed();
+            }
+        }
+    };
+
+    /* ####### CAMERA METHODS ####### */
 
     private CameraDevice.StateCallback mCameraDeviceStateCallback = new CameraDevice.StateCallback() {
         @Override
@@ -579,7 +589,6 @@ public class AutoNavigationActivity extends AppCompatActivity {
             mCameraOpenCloseLock.release();
             mCameraDevice = camera;
             startPreview();
-
         }
 
         @Override
@@ -600,22 +609,28 @@ public class AutoNavigationActivity extends AppCompatActivity {
     private void setupCamera(int width, int height) {
 
         CameraCharacteristics cameraCharacteristics = null;
-
         CameraManager cameraManager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
 
         try {
             for (String cameraId : cameraManager.getCameraIdList()) {
+
                 cameraCharacteristics = cameraManager.getCameraCharacteristics(cameraId);
-
                 Integer facing = cameraCharacteristics.get(CameraCharacteristics.LENS_FACING);
-                if (facing != null && facing == CameraCharacteristics.LENS_FACING_BACK) {
 
+                if (facing != null && facing == CameraCharacteristics.LENS_FACING_BACK) {
                     mCameraId = cameraId;
                     break;
                 }
             }
 
-            StreamConfigurationMap mMap = cameraCharacteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
+            StreamConfigurationMap mMap = null;
+            try {
+                mMap = cameraCharacteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
+            } catch (NullPointerException e) {
+                e.printStackTrace();
+                onBackPressed();
+                Toast.makeText(mActivity, getResources().getString(R.string.error_camera), Toast.LENGTH_SHORT).show();
+            }
             Size[] mSizeList = null;
 
             if (mMap != null) {
@@ -624,7 +639,13 @@ public class AutoNavigationActivity extends AppCompatActivity {
 
             int maxResIndex = Utility.maxRes(mSizeList);
             if (maxResIndex != -1) {
-                mMaxSize = mSizeList[maxResIndex];
+                try {
+                    mMaxSize = mSizeList[maxResIndex];
+                } catch (NullPointerException e) {
+                    e.printStackTrace();
+                    onBackPressed();
+                    Toast.makeText(mActivity, getResources().getString(R.string.error_camera), Toast.LENGTH_SHORT).show();
+                }
             }
 
             mImageReader = ImageReader.newInstance(mMaxSize.getWidth(), mMaxSize.getHeight(), ImageFormat.JPEG, 3);
@@ -636,8 +657,13 @@ public class AutoNavigationActivity extends AppCompatActivity {
             int maxPreviewWidth = displaySize.y;
             int maxPreviewHeight = displaySize.x;
 
-            mPreviewSize = Utility.chooseOptimalSize(mMap.getOutputSizes(SurfaceTexture.class), width, height, maxPreviewWidth, maxPreviewHeight, mMaxSize);
-            //mImageSize = chooseOptimalSize(mMap.getOutputSizes(ImageFormat.JPEG), width, height, maxPreviewWidth, maxPreviewHeight, mMaxSize);
+            try {
+                mPreviewSize = Utility.chooseOptimalSize(mMap.getOutputSizes(SurfaceTexture.class), width, height, maxPreviewWidth, maxPreviewHeight, mMaxSize);
+            } catch (NullPointerException e) {
+                e.printStackTrace();
+                onBackPressed();
+                Toast.makeText(mActivity, getResources().getString(R.string.error_camera), Toast.LENGTH_SHORT).show();
+            }
 
             Matrix matrix = new Matrix();
             RectF viewRect = new RectF(0, 0, width, height);
@@ -662,31 +688,29 @@ public class AutoNavigationActivity extends AppCompatActivity {
     }
 
     private void connectCamera() {
+
         CameraManager cameraManager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
+
         try {
-
             if (ActivityCompat.checkSelfPermission(this, PERMISSIONS_CAMERA[0]) == PackageManager.PERMISSION_GRANTED) {
-
                 try {
-
                     if (!mCameraOpenCloseLock.tryAcquire(2500, TimeUnit.MILLISECONDS)) {
                         throw new RuntimeException("Time out waiting to lock camera opening.");
                     }
-
                     cameraManager.openCamera(mCameraId, mCameraDeviceStateCallback, mBackgroundHandler);
 
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
-
-
             }
+
         } catch (CameraAccessException e) {
             e.printStackTrace();
         }
     }
 
     private void startPreview() {
+
         SurfaceTexture surfaceTexture = mTextureView.getSurfaceTexture();
         surfaceTexture.setDefaultBufferSize(mPreviewSize.getWidth(), mPreviewSize.getHeight());
         Surface previewSurface = new Surface(surfaceTexture);
@@ -698,22 +722,18 @@ public class AutoNavigationActivity extends AppCompatActivity {
                     new CameraCaptureSession.StateCallback() {
                         @Override
                         public void onConfigured(CameraCaptureSession session) {
-                            Log.d(TAG, "onConfigured: startPreview");
                             mPreviewCaptureSession = session;
                             try {
                                 mPreviewCaptureSession.setRepeatingRequest(mCaptureRequestBuilder.build(), null, mBackgroundHandler);
                             } catch (Exception e) {
-                                //if the camera is closed for some reason come back to main activity
                                 e.printStackTrace();
                                 closeCamera();
-                                //onBackPressed();
                             }
                         }
 
                         @Override
                         public void onConfigureFailed(CameraCaptureSession session) {
                             Log.d(TAG, "onConfigureFailed: startPreview");
-
                         }
                     }, null);
         } catch (CameraAccessException e) {
@@ -721,14 +741,11 @@ public class AutoNavigationActivity extends AppCompatActivity {
         }
     }
 
-
     private void startCapturing() {
         try {
-
             mCaptureRequestBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
             mCaptureRequestBuilder.addTarget(mImageReader.getSurface());
             mCaptureRequestBuilder.set(CaptureRequest.JPEG_ORIENTATION, null);
-
 
         } catch (CameraAccessException e) {
             e.printStackTrace();
@@ -737,10 +754,9 @@ public class AutoNavigationActivity extends AppCompatActivity {
 
     private final ImageReader.OnImageAvailableListener mOnImageAvailableListener = new ImageReader.OnImageAvailableListener() {
 
-
         @Override
         public void onImageAvailable(ImageReader reader) {
-            Log.v(TAG, "IMAGE AVAILABLE SAVE IT");
+            Log.v(TAG, "IMAGE AVAILABLE");
             if (mIsCalibrating)
                 mBackgroundHandler.post(new CalibrationThread(reader.acquireLatestImage()));
             else {
@@ -753,449 +769,122 @@ public class AutoNavigationActivity extends AppCompatActivity {
                     Toast.makeText(mActivity, getResources().getString(R.string.error_occured_camera), Toast.LENGTH_SHORT).show();
                 }
             }
+        }
+    };
 
+    private void takePicture() {
+
+        mCaptureState = STATE_WAIT_LOCK;
+        mCaptureRequestBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER, CaptureRequest.CONTROL_AF_TRIGGER_START);
+
+        try {
+            mCaptureRequestBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
+            mCaptureRequestBuilder.addTarget(mImageReader.getSurface());
+            mCaptureRequestBuilder.set(CaptureRequest.JPEG_ORIENTATION, null);
+            mPreviewCaptureSession.capture(mCaptureRequestBuilder.build(), mPreviewCaptureCallback, mBackgroundHandler);
+        } catch (Exception e) {
+            e.printStackTrace();
+            finish();
+            Toast.makeText(mActivity, getResources().getString(R.string.error_occured_camera), Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private CameraCaptureSession.CaptureCallback mPreviewCaptureCallback = new CameraCaptureSession.CaptureCallback() {
+
+        private void process(CaptureResult captureResult) {
+            switch (mCaptureState) {
+                case STATE_PREVIEW:
+                    Log.v(TAG, "STATE_PREVIEW---> stop the acquiring process");
+                    // Do nothing
+                    break;
+                case STATE_WAIT_LOCK:
+                    Log.v(TAG, "STATE_WAIT_LOCK--->continue with the acquiring process");
+                    mCaptureState = STATE_PREVIEW;
+                    Integer afState = captureResult.get(CaptureResult.CONTROL_AF_STATE);
+                    if (afState == CaptureResult.CONTROL_AF_STATE_FOCUSED_LOCKED || afState == CaptureResult.CONTROL_AF_STATE_NOT_FOCUSED_LOCKED) {
+                        startCapturing();
+                    }
+                    break;
+            }
+        }
+
+        @Override
+        public void onCaptureCompleted(CameraCaptureSession session, CaptureRequest request, TotalCaptureResult result) {
+            super.onCaptureCompleted(session, request, result);
+            process(result);
         }
     };
 
 
-    private class NavigationThread implements Runnable {
-        //scope of this class is to elaborate the image in background with openCv
+    private void closeCamera() {
+        try {
+            mCameraOpenCloseLock.acquire();
+            if (mCameraDevice != null) {
+                mCameraDevice.close();
+                mCameraDevice = null;
+            }
 
-        private final Image mImage;
+            if (null != mPreviewCaptureSession) {
+                mPreviewCaptureSession.close();
+                mPreviewCaptureSession = null;
+            }
 
-        private NavigationThread(Image image) {
-            mImage = image;
+            if (mImageReader != null) {
+                mImageReader.close();
+                mImageReader = null;
+            }
+
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } finally {
+            mCameraOpenCloseLock.release();
         }
 
-        @Override
-        public void run() {
-
-            if (!stop) {
-
-                mTestImage.setOnTouchListener(null);
-
-                Log.v(TAG, "Navigation Thread RUNNING##############");
-                ByteBuffer byteBuffer = mImage.getPlanes()[0].getBuffer();
-                byte[] bytes = new byte[byteBuffer.remaining()];
-                byteBuffer.get(bytes);
-                //pass datas into a bitmap
-                BitmapFactory.Options opt = new BitmapFactory.Options();
-                opt.inSampleSize = 2;
-                myBitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length, opt);
-
-
-                //TODO: if not working, puts 3.
-                mOriginal = new Mat(myBitmap.getWidth(), myBitmap.getHeight(), CvType.CV_8UC4);
-                Utils.bitmapToMat(myBitmap, mOriginal);
-
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        //mTestImage.setImageBitmap(myBitmap);
-                        //mTextureView.setVisibility(View.INVISIBLE);
-                        //mTestImage.setVisibility(View.VISIBLE);
-                        //mTestImage.getTop();
-                        mButtonNext.setVisibility(View.VISIBLE);
-
-                    }
-                });
-
-                //get a reference to the shared preferences
-                SharedPreferences sharedpreferences = getApplicationContext().getSharedPreferences(ConstantApp.SHARED_NAME, Context.MODE_PRIVATE);
-
-                String[] leftUpper = sharedpreferences.getString(ConstantApp.SHARED_ROBOT_LEFT_UPPER, null).split(":");
-                String[] leftLower = sharedpreferences.getString(ConstantApp.SHARED_ROBOT_LEFT_LOWER, null).split(":");
-
-                String[] rightUpper = sharedpreferences.getString(ConstantApp.SHARED_ROBOT_RIGHT_UPPER, null).split(":");
-                String[] rightLower = sharedpreferences.getString(ConstantApp.SHARED_ROBOT_RIGHT_LOWER, null).split(":");
-
-                String[] targetUpper = sharedpreferences.getString(ConstantApp.SHARED_TARGET_UPPER, null).split(":");
-                String[] targetLower = sharedpreferences.getString(ConstantApp.SHARED_TARGET_LOWER, null).split(":");
-
-                String focalS = sharedpreferences.getString(ConstantApp.SHARED_FOCAL, null);
-                double focal = -1;
-                if (focalS != null)
-                    focal = Double.valueOf(focalS);
-
-                if (focal == -1) {
-                    onBackPressed();
-                    Toast.makeText(mActivity, getResources().getString(R.string.error_occured_camera), Toast.LENGTH_SHORT).show();
-                    Log.v(TAG, "Distance is -1");
-                }
-
-
-                for (int i = 0; i < 3; i++) {
-                    if (Double.valueOf(leftUpper[i]) >= 255)
-                        leftUpper[i] = "255";
-                    else if (Double.valueOf(rightUpper[i]) >= 255)
-                        leftUpper[i] = "255";
-                    else if (Double.valueOf(targetUpper[i]) >= 255)
-                        leftUpper[i] = "255";
-                }
-
-               /* Log.v(TAG, "leftUpper: " + leftUpper[0] + " " + leftUpper[1] + " " + leftUpper[2]);
-                Log.v(TAG, "leftLower: " + leftLower[0] + " " + leftLower[1] + " " + leftLower[2]);
-
-                Log.v(TAG, "rightUpper: " + rightUpper[0] + " " + rightUpper[1] + " " + rightUpper[2]);
-                Log.v(TAG, "rightLower: " + rightLower[0] + " " + rightLower[1] + " " + rightLower[2]);
-
-                Log.v(TAG, "targetUpper: " + targetUpper[0] + " " + targetUpper[1] + " " + targetUpper[2]);
-                Log.v(TAG, "targetLower: " + targetLower[0] + " " + targetLower[1] + " " + targetLower[2]);*/
-
-
-                Scalar lowTarget2 = null, upTarget2 = null;
-
-                if (Double.valueOf(targetLower[3]) != -1) {
-
-                    lowTarget2 = new Scalar(Double.valueOf(targetLower[3]), Double.valueOf(targetLower[1]), Double.valueOf(targetLower[2]));
-                    upTarget2 = new Scalar(Double.valueOf(targetUpper[3]), Double.valueOf(targetUpper[1]), Double.valueOf(targetUpper[2]));
-
-                }
-
-                Scalar lowLeft = new Scalar(Double.valueOf(leftLower[0]), Double.valueOf(leftLower[1]), Double.valueOf(leftLower[2]));
-                Scalar upLeft = new Scalar(Double.valueOf(leftUpper[0]), Double.valueOf(leftUpper[1]), Double.valueOf(leftUpper[2]));
-
-                Scalar lowRight = new Scalar(Double.valueOf(rightLower[0]), Double.valueOf(rightLower[1]), Double.valueOf(rightLower[2]));
-                Scalar upRight = new Scalar(Double.valueOf(rightUpper[0]), Double.valueOf(rightUpper[1]), Double.valueOf(rightUpper[2]));
-
-                Scalar lowTarget = new Scalar(Double.valueOf(targetLower[0]), Double.valueOf(targetLower[1]), Double.valueOf(targetLower[2]));
-                Scalar upTarget = new Scalar(Double.valueOf(targetUpper[0]), Double.valueOf(targetUpper[1]), Double.valueOf(targetUpper[2]));
-
-
-                //pass image in HSV
-                caseHsv = new Mat();
-                Imgproc.cvtColor(mOriginal, caseHsv, Imgproc.COLOR_RGB2HSV);
-
-                //filter color left
-                caseLeft = new Mat();
-                Core.inRange(caseHsv, lowLeft, upLeft, caseLeft);
-
-
-                //try {
-                List<MatOfPoint> contoursLeft = Navigation.findContours(caseLeft);
-                centerLeft = Navigation.findCentroid(contoursLeft);
-                //Imgproc.circle(caseLeft, centerLeft, 3, new Scalar(0, 255, 0), 3);
-
-/*                } catch (ArrayIndexOutOfBoundsException e) {
-                    e.printStackTrace();
-                    mImage.close();
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            finish();
-                            Toast.makeText(mActivity, getResources().getString(R.string.error_occured_camera), Toast.LENGTH_LONG).show();
-                        }
-                    });
-                }*/
-
-                //filter color right
-                caseRight = new Mat();
-                Core.inRange(caseHsv, lowRight, upRight, caseRight);
-                // try {
-                List<MatOfPoint> contoursRight = Navigation.findContours(caseRight);
-                centerRight = Navigation.findCentroid(contoursRight);
-                //Imgproc.circle(caseRight, centerRight, 3, new Scalar(0, 255, 0), 3);
-
-                /*} catch (Exception e) {
-                    e.printStackTrace();
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            onBackPressed();
-                            Toast.makeText(mActivity, getResources().getString(R.string.error_occured_camera), Toast.LENGTH_LONG).show();
-                        }
-                    });
-                }*/
-
-
-                //filter color target
-                caseTarget = new Mat();
-                Core.inRange(caseHsv, lowTarget, upTarget, caseTarget);
-
-                if (Double.valueOf(targetLower[3]) != -1) {
-                    caseTarget2 = new Mat();
-                    Core.inRange(caseHsv, lowTarget2, upTarget2, caseTarget2);
-                    Core.add(caseTarget, caseTarget2, caseTarget);
-                }
-
-
-                // try {
-
-                List<MatOfPoint> contoursTarget = Navigation.findContours(caseTarget);
-                centerTarget = Navigation.findCentroid(contoursTarget);
-
-                //one movement is about 100 pixel, so we take a bound of 200 pixels
-                //TODO: controllare se con i negativi va bene
-                if (centerTarget != null) {
-                    upperTarget = new org.opencv.core.Point(centerTarget.x, centerTarget.y + 75);
-                    lowerTarget = new org.opencv.core.Point(centerTarget.x, centerTarget.y - 75);
-                }
-
-
-                //Imgproc.circle(caseTarget, centerTarget, 3, new Scalar(0, 255, 0), 3);
-
-                /*} catch (Exception e) {
-                    e.printStackTrace();
-                    mImage.close();
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            finish();
-                            Toast.makeText(mActivity, getResources().getString(R.string.error_occured_camera), Toast.LENGTH_LONG).show();
-                        }
-                    });
-                }*/
-
-                double height = Navigation.computeHeight(mOriginal, getApplicationContext());
-                Log.v(TAG, "Height: " + height);
-
-                if (height == -1) {
-                    onBackPressed();
-                    Toast.makeText(mActivity, getResources().getString(R.string.error_occured_camera), Toast.LENGTH_SHORT).show();
-                    Log.v(TAG, "Height is -1");
-                }
-
-
-                mImage.close();
-
-
-                //begin the movement stuff
-                if (centerTarget != null && centerLeft != null && centerRight != null) {
-
-                    double meanX = (centerLeft.x + centerRight.x) / 2;
-                    double meanY = (centerLeft.y + centerRight.y) / 2;
-                    centerMean = new org.opencv.core.Point(meanX, meanY);
-                    Log.v(TAG, "CenterLeft: " + centerLeft.x + "," + centerLeft.y);
-                    Log.v(TAG, "CenterRight: " + centerRight.x + "," + centerRight.y);
-                    Log.v(TAG, "The mean point is: " + meanX + "," + meanY);
-
-                    Log.v(TAG, "centerTarget: " + centerTarget.x + "," + centerTarget.y);
-
-                    //L Movement
-                    if (movementType == ConstantApp.L_MOVEMENT) {
-
-
-                        if (Navigation.isInBound(true, centerMean, centerTarget, 5, height, focal)) {
-
-
-                            int action = Navigation.turnDirection(centerTarget, centerLeft, centerRight, true,focal,height);
-                            switch (action) {
-
-                                case 0:
-                                    mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.left);
-                                    Log.v(TAG, "Moving left on y");
-                                    break;
-
-                                case 1:
-                                    mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.right);
-                                    Log.v(TAG, "Moving right on y");
-                                    break;
-
-                                case 2:
-                                    if (Navigation.isWrongSide(centerTarget, centerRight, centerMean, true)) {
-                                        mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.right);
-                                        Log.v(TAG, "Turn right on y");
-
-                                    } else {
-                                        mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.forward);
-                                        Log.v(TAG, "Moving forward on y");
-                                    }
-                                    break;
-
-                                default:
-                                    break;
-                            }
-
-                        } else {
-                            org.opencv.core.Point tempTarget = new org.opencv.core.Point(meanX, centerTarget.y);
-
-                            int action = Navigation.turnDirection(tempTarget, centerLeft, centerRight, false,focal,height);
-                            switch (action) {
-
-                                case 0:
-                                    mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.left);
-                                    Log.v(TAG, "Moving left on x");
-                                    break;
-
-                                case 1:
-                                    mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.right);
-                                    Log.v(TAG, "Moving right on x");
-                                    break;
-
-                                case 2:
-                                    if (Navigation.isWrongSide(tempTarget, centerRight, centerMean, false)) {
-                                        mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.right);
-                                        Log.v(TAG, "Turn right on x");
-
-                                    } else {
-                                        mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.forward);
-                                        Log.v(TAG, "Moving forward on x");
-                                    }
-
-                                    break;
-
-                                default:
-                                    break;
-                            }
-                        }
-
-                        //direct movement
-                    } else {
-
-                        double offset = (ConstantApp.KNOWN_WIDTH * focal) / height;
-
-                        double pixelToCm = offset / 3;
-
-                        if (distanceTM == null) {
-                            distanceTM = Math.sqrt(Math.pow(centerTarget.x - centerMean.x, 2)
-                                    + Math.pow(centerTarget.y - centerMean.y, 2));
-
-                            Log.v(TAG, "distanceTM in pixel: " + distanceTM);
-
-                            distanceTM = distanceTM / pixelToCm;
-                            Log.v(TAG, "distanceTM in cm    : " + distanceTM);
-
-                        }
-
-                        //pendenza retta passante per il robot
-                        double m1 = (centerRight.y - centerLeft.y) / (centerRight.x - centerLeft.x);
-
-                        //pendenza target, centro medio
-                        double m2 = (centerMean.y - centerTarget.y) / (centerMean.x - centerTarget.x);
-
-
-                        Log.v(TAG, "m1*m2: " + m1 * m2);
-
-                        if (Navigation.isPerpendicular(m1, m2, focal, height, centerMean, centerTarget)) {
-
-                            mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.forward);
-                            Log.v(TAG, "Go Ahead");
-
-                            Log.v(TAG, "CenterTarget: " + centerTarget.x + " - " + centerTarget.y);
-                            Log.v(TAG, "centerMean: " + centerMean.x + " - " + centerMean.y);
-
-
-                            double newDistanceTM = Math.sqrt(Math.pow(centerTarget.x - centerMean.x, 2)
-                                    + Math.pow(centerTarget.y - centerMean.y, 2));
-
-                            Log.v(TAG, "newDistanceTM in pixel: " + newDistanceTM);
-
-                            newDistanceTM = newDistanceTM / pixelToCm;
-
-                            Log.v(TAG, "newDistanceTM in cm: " + newDistanceTM);
-
-
-                            if (newDistanceTM > distanceTM) {
-                                mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.right);
-                                Log.v(TAG, "Turn right on distance");
-                            }
-
-
-                        } else {
-                            double distanceTR = Math.sqrt(Math.pow(centerTarget.x - centerRight.x, 2)
-                                    + Math.pow(centerTarget.y - centerRight.y, 2));
-                            double distanceTL = Math.sqrt(Math.pow(centerTarget.x - centerLeft.x, 2)
-                                    + Math.pow(centerTarget.y - centerLeft.y, 2));
-
-                            if (distanceTL >= distanceTR) {
-                                mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.right);
-                                Log.v(TAG, "Turn righ");
-                            } else if (distanceTL < distanceTR) {
-                                mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.left);
-                                Log.v(TAG, "Turn left");
-                            }
-                        }
-
-
-                    }
-
-
-
-
-                } /*else if ()  {
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            mButtonRecalibrate.setVisibility(View.VISIBLE);
-                            mFabStop.setVisibility(View.GONE);
-                            mFabMenu.setVisibility(View.VISIBLE);
-                            mCalibrationInfo.setVisibility(View.GONE);
-
-                            //return to the "classic" camera view
-                            mTestImage.setVisibility(View.INVISIBLE);
-                            mTextureView.setVisibility(View.VISIBLE);
-                            mTextureView.getTop();
-                            mFabMenu.setEnabled(true);
-                            myBitmap = null;
-                        }
-                    });
-
-                    Toast.makeText(mActivity, getResources().getString(R.string.arrived_target_bound), Toast.LENGTH_LONG).show();
-                }  */ else if (centerTarget == null) {
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            //mButtonRecalibrate.setVisibility(View.VISIBLE);
-                            mFabStop.setVisibility(View.GONE);
-                            mFabMenu.show();
-                            mCalibrationInfo.setVisibility(View.GONE);
-
-                            //return to the "classic" camera view
-                            mTestImage.setVisibility(View.GONE);
-                            mTextureView.setVisibility(View.VISIBLE);
-                            mTextureView.getTop();
-                            //mFabMenu.setEnabled(true);
-                            //myBitmap = null;
-                        }
-                    });
-
-                    Toast.makeText(mActivity, getResources().getString(R.string.target_null_arrived), Toast.LENGTH_LONG).show();
-                } else {
-                    String message = null;
-                    if (contoursLeft == null)
-                        message = "LEFT is Null";
-                    else if (centerRight == null)
-                        message = "RIGHT is null";
-
-                    //centerTarget != null && centerLeft != null && centerRight != null
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            //mButtonRecalibrate.setVisibility(View.VISIBLE);
-                            mFabStop.setVisibility(View.GONE);
-                            mFabMenu.show();
-                            mCalibrationInfo.setVisibility(View.GONE);
-
-                            //return to the "classic" camera view
-                            mTestImage.setVisibility(View.GONE);
-                            mTextureView.setVisibility(View.VISIBLE);
-                            mTextureView.getTop();
-                            //mFabMenu.setEnabled(true);
-                            //myBitmap = null;
-                        }
-                    });
-                    Toast.makeText(mActivity, message, Toast.LENGTH_LONG).show();
-                    Toast.makeText(mActivity, getResources().getString(R.string.null_center), Toast.LENGTH_LONG).show();
-                }
-            }
-
-
-            Log.v(TAG, "########################################################");
-
-            try {
-                Thread.sleep(1000);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-
-            takePicture();
-
+    }
+
+    private void startBackgroundThread() {
+        mBackgroundHandlerThread = new HandlerThread("AutoNavigationCamera");
+        mBackgroundHandlerThread.start();
+        mBackgroundHandler = new Handler(mBackgroundHandlerThread.getLooper());
+    }
+
+    private void stopBackgroundThread() {
+        mBackgroundHandlerThread.quitSafely();
+        try {
+            mBackgroundHandlerThread.join();
+            mBackgroundHandlerThread = null;
+            mBackgroundHandler = null;
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
     }
 
 
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+
+        switch (requestCode) {
+
+            case (REQUEST_CAMERA_PERMISSION):
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    Log.v(TAG, "Permission Granted");
+                    mTextureView.setSurfaceTextureListener(mSurfaceTextureListener);
+
+                } else {
+                    Log.v(TAG, "Permission NOT Granted");
+                    showNegativeDialog(getResources().getString(R.string.perm_error_title),
+                            getResources().getString(R.string.camera_perm_error));
+                }
+                break;
+
+            default:
+                break;
+        }
+    }
+
+   /* ####### MOVEMENT METHODS ####### */
+
     private class CalibrationThread implements Runnable {
-        //scope of this class is to elaborate the image in background with openCv
 
         private final Image mImage;
 
@@ -1451,156 +1140,438 @@ public class AutoNavigationActivity extends AppCompatActivity {
 
     }
 
+    private class NavigationThread implements Runnable {
+        //scope of this class is to elaborate the image in background with openCv
 
-    private void takePicture() {
+        private final Image mImage;
 
-
-        mCaptureState = STATE_WAIT_LOCK;
-
-        mCaptureRequestBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER, CaptureRequest.CONTROL_AF_TRIGGER_START);
-
-        try {
-            mCaptureRequestBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
-            mCaptureRequestBuilder.addTarget(mImageReader.getSurface());
-            mCaptureRequestBuilder.set(CaptureRequest.JPEG_ORIENTATION, null);
-            mPreviewCaptureSession.capture(mCaptureRequestBuilder.build(), mPreviewCaptureCallback, mBackgroundHandler);
-        } catch (Exception e) {
-            e.printStackTrace();
-            finish();
-            Toast.makeText(mActivity, getResources().getString(R.string.error_occured_camera), Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    private CameraCaptureSession.CaptureCallback mPreviewCaptureCallback = new CameraCaptureSession.CaptureCallback() {
-
-        private void process(CaptureResult captureResult) {
-            switch (mCaptureState) {
-                case STATE_PREVIEW:
-                    Log.v(TAG, "STATE_PREVIEW---> stop the process");
-                    // Do nothing
-                    break;
-                case STATE_WAIT_LOCK:
-                    Log.v(TAG, "STATE_WAIT_LOCK--->continue with process");
-                    mCaptureState = STATE_PREVIEW;
-                    Integer afState = captureResult.get(CaptureResult.CONTROL_AF_STATE);
-                    if (afState == CaptureResult.CONTROL_AF_STATE_FOCUSED_LOCKED ||
-                            afState == CaptureResult.CONTROL_AF_STATE_NOT_FOCUSED_LOCKED) {
-                        Toast.makeText(getApplicationContext(), "AF Locked!", Toast.LENGTH_SHORT).show();
-                        startCapturing();
-                    }
-                    break;
-            }
+        private NavigationThread(Image image) {
+            mImage = image;
         }
 
         @Override
-        public void onCaptureCompleted(CameraCaptureSession session, CaptureRequest request, TotalCaptureResult result) {
-            super.onCaptureCompleted(session, request, result);
-            process(result);
-        }
-    };
+        public void run() {
+
+            if (!stop) {
+
+                mTestImage.setOnTouchListener(null);
+
+                Log.v(TAG, "Navigation Thread RUNNING##############");
+                ByteBuffer byteBuffer = mImage.getPlanes()[0].getBuffer();
+                byte[] bytes = new byte[byteBuffer.remaining()];
+                byteBuffer.get(bytes);
+                //pass datas into a bitmap
+                BitmapFactory.Options opt = new BitmapFactory.Options();
+                opt.inSampleSize = 2;
+                myBitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length, opt);
 
 
-    private void closeCamera() {
-        try {
-            mCameraOpenCloseLock.acquire();
-            if (mCameraDevice != null) {
-                mCameraDevice.close();
-                mCameraDevice = null;
-            }
+                //TODO: if not working, puts 3.
+                mOriginal = new Mat(myBitmap.getWidth(), myBitmap.getHeight(), CvType.CV_8UC4);
+                Utils.bitmapToMat(myBitmap, mOriginal);
 
-            if (null != mPreviewCaptureSession) {
-                mPreviewCaptureSession.close();
-                mPreviewCaptureSession = null;
-            }
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        //mTestImage.setImageBitmap(myBitmap);
+                        //mTextureView.setVisibility(View.INVISIBLE);
+                        //mTestImage.setVisibility(View.VISIBLE);
+                        //mTestImage.getTop();
+                        mButtonNext.setVisibility(View.VISIBLE);
 
-            if (mImageReader != null) {
-                mImageReader.close();
-                mImageReader = null;
-            }
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } finally {
-            mCameraOpenCloseLock.release();
-        }
-
-    }
-
-    private void startBackgroundThread() {
-        mBackgroundHandlerThread = new HandlerThread("AutoNavigationCamera");
-        mBackgroundHandlerThread.start();
-        mBackgroundHandler = new Handler(mBackgroundHandlerThread.getLooper());
-    }
-
-    private void stopBackgroundThread() {
-        mBackgroundHandlerThread.quitSafely();
-        try {
-            mBackgroundHandlerThread.join();
-            mBackgroundHandlerThread = null;
-            mBackgroundHandler = null;
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-    }
-
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-
-        switch (requestCode) {
-
-            case (REQUEST_CAMERA_PERMISSION):
-                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-
-                    Log.v(TAG, "Permission Granted");
-                    mTextureView.setSurfaceTextureListener(mSurfaceTextureListener);
-
-
-                } else {
-                    Log.v(TAG, "Permission NOT Granted");
-                    showNegativeDialog(getResources().getString(R.string.perm_error_title),
-                            getResources().getString(R.string.camera_perm_error));
-                }
-
-                break;
-
-            default:
-                break;
-        }
-    }
-
-    //show a dialog of error that will close the scan activity after ok is pressed
-    private void showNegativeDialog(String title, String message) {
-        final AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(this);
-        dialogBuilder.setTitle(title);
-        dialogBuilder.setMessage(message);
-        dialogBuilder.setCancelable(false);
-        dialogBuilder.setNegativeButton(android.R.string.ok,
-                new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int which) {
-                        finish();
                     }
                 });
-        dialogBuilder.show();
+
+                //get a reference to the shared preferences
+                SharedPreferences sharedpreferences = getApplicationContext().getSharedPreferences(ConstantApp.SHARED_NAME, Context.MODE_PRIVATE);
+
+                String[] leftUpper = sharedpreferences.getString(ConstantApp.SHARED_ROBOT_LEFT_UPPER, null).split(":");
+                String[] leftLower = sharedpreferences.getString(ConstantApp.SHARED_ROBOT_LEFT_LOWER, null).split(":");
+
+                String[] rightUpper = sharedpreferences.getString(ConstantApp.SHARED_ROBOT_RIGHT_UPPER, null).split(":");
+                String[] rightLower = sharedpreferences.getString(ConstantApp.SHARED_ROBOT_RIGHT_LOWER, null).split(":");
+
+                String[] targetUpper = sharedpreferences.getString(ConstantApp.SHARED_TARGET_UPPER, null).split(":");
+                String[] targetLower = sharedpreferences.getString(ConstantApp.SHARED_TARGET_LOWER, null).split(":");
+
+                String focalS = sharedpreferences.getString(ConstantApp.SHARED_FOCAL, null);
+                double focal = -1;
+                if (focalS != null)
+                    focal = Double.valueOf(focalS);
+
+                if (focal == -1) {
+                    onBackPressed();
+                    Toast.makeText(mActivity, getResources().getString(R.string.error_occured_camera), Toast.LENGTH_SHORT).show();
+                    Log.v(TAG, "Distance is -1");
+                }
+
+
+                for (int i = 0; i < 3; i++) {
+                    if (Double.valueOf(leftUpper[i]) >= 255)
+                        leftUpper[i] = "255";
+                    else if (Double.valueOf(rightUpper[i]) >= 255)
+                        leftUpper[i] = "255";
+                    else if (Double.valueOf(targetUpper[i]) >= 255)
+                        leftUpper[i] = "255";
+                }
+
+               /* Log.v(TAG, "leftUpper: " + leftUpper[0] + " " + leftUpper[1] + " " + leftUpper[2]);
+                Log.v(TAG, "leftLower: " + leftLower[0] + " " + leftLower[1] + " " + leftLower[2]);
+
+                Log.v(TAG, "rightUpper: " + rightUpper[0] + " " + rightUpper[1] + " " + rightUpper[2]);
+                Log.v(TAG, "rightLower: " + rightLower[0] + " " + rightLower[1] + " " + rightLower[2]);
+
+                Log.v(TAG, "targetUpper: " + targetUpper[0] + " " + targetUpper[1] + " " + targetUpper[2]);
+                Log.v(TAG, "targetLower: " + targetLower[0] + " " + targetLower[1] + " " + targetLower[2]);*/
+
+
+                Scalar lowTarget2 = null, upTarget2 = null;
+
+                if (Double.valueOf(targetLower[3]) != -1) {
+
+                    lowTarget2 = new Scalar(Double.valueOf(targetLower[3]), Double.valueOf(targetLower[1]), Double.valueOf(targetLower[2]));
+                    upTarget2 = new Scalar(Double.valueOf(targetUpper[3]), Double.valueOf(targetUpper[1]), Double.valueOf(targetUpper[2]));
+
+                }
+
+                Scalar lowLeft = new Scalar(Double.valueOf(leftLower[0]), Double.valueOf(leftLower[1]), Double.valueOf(leftLower[2]));
+                Scalar upLeft = new Scalar(Double.valueOf(leftUpper[0]), Double.valueOf(leftUpper[1]), Double.valueOf(leftUpper[2]));
+
+                Scalar lowRight = new Scalar(Double.valueOf(rightLower[0]), Double.valueOf(rightLower[1]), Double.valueOf(rightLower[2]));
+                Scalar upRight = new Scalar(Double.valueOf(rightUpper[0]), Double.valueOf(rightUpper[1]), Double.valueOf(rightUpper[2]));
+
+                Scalar lowTarget = new Scalar(Double.valueOf(targetLower[0]), Double.valueOf(targetLower[1]), Double.valueOf(targetLower[2]));
+                Scalar upTarget = new Scalar(Double.valueOf(targetUpper[0]), Double.valueOf(targetUpper[1]), Double.valueOf(targetUpper[2]));
+
+
+                //pass image in HSV
+                caseHsv = new Mat();
+                Imgproc.cvtColor(mOriginal, caseHsv, Imgproc.COLOR_RGB2HSV);
+
+                //filter color left
+                caseLeft = new Mat();
+                Core.inRange(caseHsv, lowLeft, upLeft, caseLeft);
+
+
+                //try {
+                List<MatOfPoint> contoursLeft = Navigation.findContours(caseLeft);
+                centerLeft = Navigation.findCentroid(contoursLeft);
+                //Imgproc.circle(caseLeft, centerLeft, 3, new Scalar(0, 255, 0), 3);
+
+/*                } catch (ArrayIndexOutOfBoundsException e) {
+                    e.printStackTrace();
+                    mImage.close();
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            finish();
+                            Toast.makeText(mActivity, getResources().getString(R.string.error_occured_camera), Toast.LENGTH_LONG).show();
+                        }
+                    });
+                }*/
+
+                //filter color right
+                caseRight = new Mat();
+                Core.inRange(caseHsv, lowRight, upRight, caseRight);
+                // try {
+                List<MatOfPoint> contoursRight = Navigation.findContours(caseRight);
+                centerRight = Navigation.findCentroid(contoursRight);
+                //Imgproc.circle(caseRight, centerRight, 3, new Scalar(0, 255, 0), 3);
+
+                /*} catch (Exception e) {
+                    e.printStackTrace();
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            onBackPressed();
+                            Toast.makeText(mActivity, getResources().getString(R.string.error_occured_camera), Toast.LENGTH_LONG).show();
+                        }
+                    });
+                }*/
+
+
+                //filter color target
+                caseTarget = new Mat();
+                Core.inRange(caseHsv, lowTarget, upTarget, caseTarget);
+
+                if (Double.valueOf(targetLower[3]) != -1) {
+                    caseTarget2 = new Mat();
+                    Core.inRange(caseHsv, lowTarget2, upTarget2, caseTarget2);
+                    Core.add(caseTarget, caseTarget2, caseTarget);
+                }
+
+
+                // try {
+
+                List<MatOfPoint> contoursTarget = Navigation.findContours(caseTarget);
+                centerTarget = Navigation.findCentroid(contoursTarget);
+
+                //one movement is about 100 pixel, so we take a bound of 200 pixels
+                //TODO: controllare se con i negativi va bene
+                if (centerTarget != null) {
+                    upperTarget = new org.opencv.core.Point(centerTarget.x, centerTarget.y + 75);
+                    lowerTarget = new org.opencv.core.Point(centerTarget.x, centerTarget.y - 75);
+                }
+
+
+                //Imgproc.circle(caseTarget, centerTarget, 3, new Scalar(0, 255, 0), 3);
+
+                /*} catch (Exception e) {
+                    e.printStackTrace();
+                    mImage.close();
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            finish();
+                            Toast.makeText(mActivity, getResources().getString(R.string.error_occured_camera), Toast.LENGTH_LONG).show();
+                        }
+                    });
+                }*/
+
+                double height = Navigation.computeHeight(mOriginal, getApplicationContext());
+                Log.v(TAG, "Height: " + height);
+
+                if (height == -1) {
+                    onBackPressed();
+                    Toast.makeText(mActivity, getResources().getString(R.string.error_occured_camera), Toast.LENGTH_SHORT).show();
+                    Log.v(TAG, "Height is -1");
+                }
+
+
+                mImage.close();
+
+
+                //begin the movement stuff
+                if (centerTarget != null && centerLeft != null && centerRight != null) {
+
+                    double meanX = (centerLeft.x + centerRight.x) / 2;
+                    double meanY = (centerLeft.y + centerRight.y) / 2;
+                    centerMean = new org.opencv.core.Point(meanX, meanY);
+                    Log.v(TAG, "CenterLeft: " + centerLeft.x + "," + centerLeft.y);
+                    Log.v(TAG, "CenterRight: " + centerRight.x + "," + centerRight.y);
+                    Log.v(TAG, "The mean point is: " + meanX + "," + meanY);
+
+                    Log.v(TAG, "centerTarget: " + centerTarget.x + "," + centerTarget.y);
+
+                    //L Movement
+                    if (movementType == ConstantApp.L_MOVEMENT) {
+
+
+                        if (Navigation.isInBound(true, centerMean, centerTarget, 5, height, focal)) {
+
+
+                            int action = Navigation.turnDirection(centerTarget, centerLeft, centerRight, true, focal, height);
+                            switch (action) {
+
+                                case 0:
+                                    mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.left);
+                                    Log.v(TAG, "Moving left on y");
+                                    break;
+
+                                case 1:
+                                    mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.right);
+                                    Log.v(TAG, "Moving right on y");
+                                    break;
+
+                                case 2:
+                                    if (Navigation.isWrongSide(centerTarget, centerRight, centerMean, true)) {
+                                        mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.right);
+                                        Log.v(TAG, "Turn right on y");
+
+                                    } else {
+                                        mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.forward);
+                                        Log.v(TAG, "Moving forward on y");
+                                    }
+                                    break;
+
+                                default:
+                                    break;
+                            }
+
+                        } else {
+                            org.opencv.core.Point tempTarget = new org.opencv.core.Point(meanX, centerTarget.y);
+
+                            int action = Navigation.turnDirection(tempTarget, centerLeft, centerRight, false, focal, height);
+                            switch (action) {
+
+                                case 0:
+                                    mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.left);
+                                    Log.v(TAG, "Moving left on x");
+                                    break;
+
+                                case 1:
+                                    mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.right);
+                                    Log.v(TAG, "Moving right on x");
+                                    break;
+
+                                case 2:
+                                    if (Navigation.isWrongSide(tempTarget, centerRight, centerMean, false)) {
+                                        mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.right);
+                                        Log.v(TAG, "Turn right on x");
+
+                                    } else {
+                                        mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.forward);
+                                        Log.v(TAG, "Moving forward on x");
+                                    }
+
+                                    break;
+
+                                default:
+                                    break;
+                            }
+                        }
+
+                        //direct movement
+                    } else {
+
+                        double offset = (ConstantApp.KNOWN_WIDTH * focal) / height;
+
+                        double pixelToCm = offset / 3;
+
+                        if (distanceTM == null) {
+                            distanceTM = Math.sqrt(Math.pow(centerTarget.x - centerMean.x, 2)
+                                    + Math.pow(centerTarget.y - centerMean.y, 2));
+
+                            Log.v(TAG, "distanceTM in pixel: " + distanceTM);
+
+                            distanceTM = distanceTM / pixelToCm;
+                            Log.v(TAG, "distanceTM in cm    : " + distanceTM);
+
+                        }
+
+                        //pendenza retta passante per il robot
+                        double m1 = (centerRight.y - centerLeft.y) / (centerRight.x - centerLeft.x);
+
+                        //pendenza target, centro medio
+                        double m2 = (centerMean.y - centerTarget.y) / (centerMean.x - centerTarget.x);
+
+
+                        Log.v(TAG, "m1*m2: " + m1 * m2);
+
+                        if (Navigation.isPerpendicular(m1, m2, focal, height, centerMean, centerTarget)) {
+
+                            mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.forward);
+                            Log.v(TAG, "Go Ahead");
+
+                            Log.v(TAG, "CenterTarget: " + centerTarget.x + " - " + centerTarget.y);
+                            Log.v(TAG, "centerMean: " + centerMean.x + " - " + centerMean.y);
+
+
+                            double newDistanceTM = Math.sqrt(Math.pow(centerTarget.x - centerMean.x, 2)
+                                    + Math.pow(centerTarget.y - centerMean.y, 2));
+
+                            Log.v(TAG, "newDistanceTM in pixel: " + newDistanceTM);
+
+                            newDistanceTM = newDistanceTM / pixelToCm;
+
+                            Log.v(TAG, "newDistanceTM in cm: " + newDistanceTM);
+
+
+                            if (newDistanceTM > distanceTM) {
+                                mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.right);
+                                Log.v(TAG, "Turn right on distance");
+                            }
+
+
+                        } else {
+                            double distanceTR = Math.sqrt(Math.pow(centerTarget.x - centerRight.x, 2)
+                                    + Math.pow(centerTarget.y - centerRight.y, 2));
+                            double distanceTL = Math.sqrt(Math.pow(centerTarget.x - centerLeft.x, 2)
+                                    + Math.pow(centerTarget.y - centerLeft.y, 2));
+
+                            if (distanceTL >= distanceTR) {
+                                mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.right);
+                                Log.v(TAG, "Turn righ");
+                            } else if (distanceTL < distanceTR) {
+                                mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.left);
+                                Log.v(TAG, "Turn left");
+                            }
+                        }
+
+
+                    }
+
+
+                } /*else if ()  {
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            mButtonRecalibrate.setVisibility(View.VISIBLE);
+                            mFabStop.setVisibility(View.GONE);
+                            mFabMenu.setVisibility(View.VISIBLE);
+                            mCalibrationInfo.setVisibility(View.GONE);
+
+                            //return to the "classic" camera view
+                            mTestImage.setVisibility(View.INVISIBLE);
+                            mTextureView.setVisibility(View.VISIBLE);
+                            mTextureView.getTop();
+                            mFabMenu.setEnabled(true);
+                            myBitmap = null;
+                        }
+                    });
+
+                    Toast.makeText(mActivity, getResources().getString(R.string.arrived_target_bound), Toast.LENGTH_LONG).show();
+                }  */ else if (centerTarget == null) {
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            //mButtonRecalibrate.setVisibility(View.VISIBLE);
+                            mFabStop.setVisibility(View.GONE);
+                            mFabMenu.show();
+                            mCalibrationInfo.setVisibility(View.GONE);
+
+                            //return to the "classic" camera view
+                            mTestImage.setVisibility(View.GONE);
+                            mTextureView.setVisibility(View.VISIBLE);
+                            mTextureView.getTop();
+                            //mFabMenu.setEnabled(true);
+                            //myBitmap = null;
+                        }
+                    });
+
+                    Toast.makeText(mActivity, getResources().getString(R.string.target_null_arrived), Toast.LENGTH_LONG).show();
+                } else {
+                    String message = null;
+                    if (contoursLeft == null)
+                        message = "LEFT is Null";
+                    else if (centerRight == null)
+                        message = "RIGHT is null";
+
+                    //centerTarget != null && centerLeft != null && centerRight != null
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            //mButtonRecalibrate.setVisibility(View.VISIBLE);
+                            mFabStop.setVisibility(View.GONE);
+                            mFabMenu.show();
+                            mCalibrationInfo.setVisibility(View.GONE);
+
+                            //return to the "classic" camera view
+                            mTestImage.setVisibility(View.GONE);
+                            mTextureView.setVisibility(View.VISIBLE);
+                            mTextureView.getTop();
+                            //mFabMenu.setEnabled(true);
+                            //myBitmap = null;
+                        }
+                    });
+                    Toast.makeText(mActivity, message, Toast.LENGTH_LONG).show();
+                    Toast.makeText(mActivity, getResources().getString(R.string.null_center), Toast.LENGTH_LONG).show();
+                }
+            }
+
+
+            Log.v(TAG, "########################################################");
+
+            try {
+                Thread.sleep(1000);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            takePicture();
+
+        }
     }
 
-    //manage connected, disconnected and discovered action
-    private final BroadcastReceiver mGattUpdateReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            final String action = intent.getAction();
 
-            if (ConstantApp.ACTION_GATT_DISCONNECTED.equals(action)) {
-
-                Log.v(TAG, "sono scollegato ");
-                Toast.makeText(mBluetoothLeService, getResources().getString(R.string.message_disconnecting), Toast.LENGTH_SHORT).show();
-
-                mBluetoothLeService.disconnect();
-                mBluetoothLeService = null;
-                onBackPressed();
-
-                Log.v(TAG, "unregistred");
-
-            }
-        }
-    };
 }
