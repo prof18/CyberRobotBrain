@@ -11,6 +11,7 @@ import java.util.UUID;
 public class ConstantApp {
 
     public static final String TAG = "CyberRobot";
+    public static final String ROBOT_BLE_NAME = "Cyber Robot";
     public static final UUID UUID_MOVEMENT = UUID.fromString("0000fff5-0000-1000-8000-00805f9b34fb");
     public static final String DEVICE_ADDRESS = "DEVICE_ADDRESS";
 
