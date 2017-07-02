@@ -41,9 +41,6 @@ public class MainActivity extends AppCompatActivity {
     private Button mManualNav, mAutoNavigation;
     private boolean isDebug = false;
 
-
-
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
@@ -52,14 +49,10 @@ public class MainActivity extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         mainActivity = this;
-
         mFab = (FloatingActionButton) findViewById(R.id.fab);
-
         mManualNav = (Button) findViewById(R.id.manual_nav_btn);
         mManualNav.setEnabled(false);
-
         mAutoNavigation = (Button) findViewById(R.id.auto_navigation_btn);
-        //TODO:abilitare
         mAutoNavigation.setEnabled(false);
 
         mFab.setOnClickListener(new View.OnClickListener() {
@@ -148,6 +141,9 @@ public class MainActivity extends AppCompatActivity {
     }
 
     //manage connected, disconnected and discovered action
+    /**
+     *
+     */
     private final BroadcastReceiver mGattUpdateReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -187,22 +183,27 @@ public class MainActivity extends AppCompatActivity {
                 unregisterReceiver(mGattUpdateReceiver);
                 unbindService(mServiceConnection);
                 mBluetoothLeService = null;
-
                 Log.v(TAG, "unregistred");
 
             } else if (ConstantApp.ACTION_GATT_SERVICES_DISCOVERED.equals(action)) {
 
                 Log.v(TAG, "gatt discovered");
                 mManualNav.setEnabled(true);
-                //TODO:abilitare
                 mAutoNavigation.setEnabled(true);
-
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        mFab.setImageDrawable(ContextCompat.getDrawable(mainActivity, R.drawable.ic_bluetooth_connected));
+                        mFab.setBackgroundTintList(ColorStateList.valueOf(ContextCompat.getColor(mainActivity, R.color.green)));
+                        Toast.makeText(getApplicationContext(), getResources().getString(R.string.message_connected), Toast.LENGTH_SHORT).show();
+                        mFab.setEnabled(true);
+                        mConnected = true;
+                        //mReady = true;
+                    }
+                });
             }
         }
     };
-
-
-
 
     // Manage Service lifecycle.
     private final ServiceConnection mServiceConnection = new ServiceConnection() {
@@ -216,30 +217,10 @@ public class MainActivity extends AppCompatActivity {
                 finish();
             }
 
-
             //if connected send a toast message
             if (mBluetoothLeService.connect(mDeviceAddress)) {
                 Log.v(TAG, "Connected to: Cyber Robot");
                 Toast.makeText(mBluetoothLeService, getResources().getString(R.string.message_connecting), Toast.LENGTH_SHORT).show();
-
-                Handler handler = new Handler();
-                handler.postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                mFab.setImageDrawable(ContextCompat.getDrawable(mainActivity, R.drawable.ic_bluetooth_connected));
-                                mFab.setBackgroundTintList(ColorStateList.valueOf(ContextCompat.getColor(mainActivity, R.color.green)));
-                                Toast.makeText(getApplicationContext(), getResources().getString(R.string.message_connected), Toast.LENGTH_SHORT).show();
-                                mFab.setEnabled(true);
-
-                                mConnected = true;
-                                //mReady = true;
-                            }
-                        });
-                    }
-                }, 2000);
             }
         }
 

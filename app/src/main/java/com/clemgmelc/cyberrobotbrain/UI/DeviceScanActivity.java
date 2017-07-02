@@ -211,7 +211,7 @@ public class DeviceScanActivity extends AppCompatActivity {
                                 if (mLocationManager != null)
                                     mLocationManager.removeUpdates(mLocationListener);
                                 showNegativeDialog(getResources().getString(R.string.gps_error_title),
-                                        getResources().getString(R.string.blue_error_msg)
+                                        getResources().getString(R.string.gps_error_msg)
                                 );
                             }
                         });
@@ -584,6 +584,7 @@ public class DeviceScanActivity extends AppCompatActivity {
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                 Log.d(TAG, "stopLeScan STOP scan is ended after SCAN_PERIOD");
+                if( mBluetoothAdapter.getState() == BluetoothAdapter.STATE_ON)
                 mLeScanner.stopScan(mScanCallback);
             } else {
                 mBluetoothAdapter.stopLeScan(mLeScanCallback);

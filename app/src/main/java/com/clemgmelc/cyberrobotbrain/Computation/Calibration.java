@@ -86,7 +86,7 @@ public class Calibration {
         return mUpperBound.val[0] + ":" + mUpperBound.val[1] + ":" + mUpperBound.val[2] + ":" + mUpperBound.val[3];
     }
 
-    //TODO: ELIMARE
+    //TODO: we can eliminate this and also the relative part in autonavigation, not useful
     public static Scalar hsvToRGBA(Scalar hsvColor) {
 
         Mat pointMatRgba = new Mat();

@@ -321,8 +321,8 @@ public class Navigation {
     }
 
     /**
-     * @param m1 slope of the first line
-     * @param m2 slope of the second line
+     * @param m1 slope of the first line passing from LEFT_MARKER and RIGHT_MARKER
+     * @param m2 slope of the second line passing from the target and the mean point between LEFT_MARKER and RIGHT_MARKER
      * @param focal is the factor of scalability from real dimension to pixel dimension
      *              (x pixel = 3 cm. Value 3 is the diameter of the TARGET_MARKER)
      * @param height is the current height from the device to the target marker
@@ -333,8 +333,6 @@ public class Navigation {
     public static boolean isPerpendicular(double m1, double m2, double focal, double height, Point start, Point target) {
 
         boolean isPerpendicular = false;
-
-        //  m1 * m2 <= -0.5 && m1 * m2 >= -1.5
 
         double lowerBound;
         double upperBound;
@@ -351,17 +349,7 @@ public class Navigation {
 
         Log.v(TAG, "Distance in cm: " + distanceCm);
 
-    /*    if (distanceCm >= 21) {
-
-            lowerBound = -1.8;
-            upperBound = -0.2;
-
-        }  else  {
-            lowerBound = -3.0;
-            upperBound = 0.0;
-        }*/
-
-        if (distanceCm <= 8) {
+         if (distanceCm <= 8) {
 
             upperBound = -0.000000001;
             lowerBound = -1.999999999;
@@ -373,10 +361,6 @@ public class Navigation {
         }
 
         Log.v(TAG, "Lower Bound: " + lowerBound + " - Upper Bound: " + upperBound);
-
-        //tmp = boundCm * pixelToCm;
-
-        //  m1 * m2 <= -0.5 && m1 * m2 >= -1.5
 
         if (m1 * m2 >= lowerBound && m1 * m2 <= upperBound)
             isPerpendicular = true;

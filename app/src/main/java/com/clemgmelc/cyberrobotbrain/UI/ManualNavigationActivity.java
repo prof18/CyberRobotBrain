@@ -43,29 +43,26 @@ public class ManualNavigationActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
 
         mDeviceAddress = getIntent().getStringExtra(ConstantApp.DEVICE_ADDRESS);
-
         mForward = (ImageButton) findViewById(R.id.forward_button);
         mBackward = (ImageButton) findViewById(R.id.backward_button);
         mRight = (ImageButton) findViewById(R.id.right_button);
         mLeft = (ImageButton) findViewById(R.id.left_button);
 
-        //add listeners
+        //add listeners for the 4 different movements
         mForward.setOnTouchListener(movementListener(ConstantApp.CODE_FORWARD));
         mBackward.setOnTouchListener(movementListener(ConstantApp.CODE_BACKWARD));
         mLeft.setOnTouchListener(movementListener(ConstantApp.CODE_LEFT));
         mRight.setOnTouchListener(movementListener(ConstantApp.CODE_RIGHT));
 
-        registerReceiver(mGattUpdateReceiver, ConstantApp.makeGattUpdateIntentFilter());
     }
-
 
     @Override
     public void onResume() {
         super.onResume();
 
+        registerReceiver(mGattUpdateReceiver, ConstantApp.makeGattUpdateIntentFilter());
         Intent gattServiceIntent = new Intent(this, BluetoothLeService.class);
         bindService(gattServiceIntent, mServiceConnection, BIND_AUTO_CREATE);
-
     }
 
     @Override
@@ -79,7 +76,6 @@ public class ManualNavigationActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         Log.v(TAG, "onDestroy");
-        //mBluetoothLeService.disconnect();
         unbindService(mServiceConnection);
         mBluetoothLeService = null;
     }
@@ -98,15 +94,8 @@ public class ManualNavigationActivity extends AppCompatActivity {
             }
             if (mDeviceAddress != null) {
 
-             /*   //if connected send a toast message
-                if (mBluetoothLeService.connect(mDeviceAddress)) {
-                    Log.v(TAG, "Connected to: Cyber Robot from navigation");
-                }*/
-
-
                 mMovementGattService = mBluetoothLeService.getSupportedGattServices().get(mBluetoothLeService.getSupportedGattServices().size() - 1);
                 mMovementCharacteristic = mMovementGattService.getCharacteristic(ConstantApp.UUID_MOVEMENT);
-
             } else {
                 Toast.makeText(mBluetoothLeService, getResources().getString(R.string.action_disconnected), Toast.LENGTH_SHORT).show();
             }
@@ -142,6 +131,8 @@ public class ManualNavigationActivity extends AppCompatActivity {
                 listener = new View.OnTouchListener() {
                     @Override
                     public boolean onTouch(View v, MotionEvent event) {
+
+                        //This section select the different motion event of the user
                         if (event.getAction() == MotionEvent.ACTION_DOWN) {
 
                             if (mHandlerF != null) {
@@ -181,6 +172,7 @@ public class ManualNavigationActivity extends AppCompatActivity {
                         return false;
                     }
 
+                    //this is the action of movement
                     Runnable mActionF = new Runnable() {
                         @Override
                         public void run() {
