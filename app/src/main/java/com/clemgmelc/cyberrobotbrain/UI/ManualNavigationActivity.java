@@ -7,11 +7,9 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
-import android.content.res.ColorStateList;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
-import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
@@ -53,7 +51,6 @@ public class ManualNavigationActivity extends AppCompatActivity {
         mBackward.setOnTouchListener(movementListener(ConstantApp.CODE_BACKWARD));
         mLeft.setOnTouchListener(movementListener(ConstantApp.CODE_LEFT));
         mRight.setOnTouchListener(movementListener(ConstantApp.CODE_RIGHT));
-
     }
 
     @Override
@@ -80,6 +77,17 @@ public class ManualNavigationActivity extends AppCompatActivity {
         mBluetoothLeService = null;
     }
 
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+
+            case android.R.id.home:
+                super.onBackPressed();
+                break;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
     // Manage Service lifecycle.
     private final ServiceConnection mServiceConnection = new ServiceConnection() {
 
@@ -94,8 +102,10 @@ public class ManualNavigationActivity extends AppCompatActivity {
             }
             if (mDeviceAddress != null) {
 
+                //get the Characteristic for the Movement
                 mMovementGattService = mBluetoothLeService.getSupportedGattServices().get(mBluetoothLeService.getSupportedGattServices().size() - 1);
                 mMovementCharacteristic = mMovementGattService.getCharacteristic(ConstantApp.UUID_MOVEMENT);
+
             } else {
                 Toast.makeText(mBluetoothLeService, getResources().getString(R.string.action_disconnected), Toast.LENGTH_SHORT).show();
             }
@@ -105,20 +115,9 @@ public class ManualNavigationActivity extends AppCompatActivity {
         public void onServiceDisconnected(ComponentName componentName) {
             mBluetoothLeService = null;
             Log.v(TAG, "onServiceDisconnected");
-
         }
     };
 
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId()) {
-
-            case android.R.id.home:
-                super.onBackPressed();
-                break;
-        }
-        return super.onOptionsItemSelected(item);
-    }
 
     private View.OnTouchListener movementListener(int movement) {
 
@@ -126,11 +125,11 @@ public class ManualNavigationActivity extends AppCompatActivity {
 
         switch (movement) {
 
-            case ConstantApp.CODE_FORWARD: {
+            case ConstantApp.CODE_FORWARD:
 
                 listener = new View.OnTouchListener() {
 
-                    /**
+                    /*
                      * This is the action of movement_FORWARD executed inside a new Runnable
                      * The Runnable execute itself with a delay. When pressure on the button ends
                      * the run will be destroyed
@@ -152,7 +151,7 @@ public class ManualNavigationActivity extends AppCompatActivity {
                     @Override
                     public boolean onTouch(View v, MotionEvent event) {
 
-                        //On the pressure of the button: handler is created, a single movement is executed and and the runnable is started
+                        //On the pressure of the button: handler is created, a single movement is executed and the runnable is started
                         if (event.getAction() == MotionEvent.ACTION_DOWN) {
 
                             if (mHandlerF != null)
@@ -165,7 +164,7 @@ public class ManualNavigationActivity extends AppCompatActivity {
                             }
                             return false;
 
-                        //On the release of the button destroy the runnable
+                            //On the release of the button destroy the runnable
                         } else if (event.getAction() == MotionEvent.ACTION_UP) {
 
                             if (mHandlerF == null)
@@ -175,10 +174,10 @@ public class ManualNavigationActivity extends AppCompatActivity {
                             mHandlerF = null;
                             return false;
 
-                        /**
-                         * This action in returned when something appends during a press gesture (between ACTION_DOWN and ACTION_UP)
-                         * Here it's used to recognize a pressure on other buttons in order to be able to manage multiple pressures
-                         */
+                            /*
+                             * This action is returned when something appends during a press gesture (between ACTION_DOWN and ACTION_UP)
+                             * Here it's used to recognize a pressure on other buttons in order to be able to manage multiple pressures
+                             */
                         } else if (event.getAction() == MotionEvent.ACTION_MOVE) {
                             if (mHandlerF != null)
                                 return true;
@@ -193,14 +192,14 @@ public class ManualNavigationActivity extends AppCompatActivity {
                         return false;
                     }
                 };
-                break;
-            }
+                break; // Forward
 
-            case ConstantApp.CODE_BACKWARD: {
+
+            case ConstantApp.CODE_BACKWARD:
 
                 listener = new View.OnTouchListener() {
 
-                    /**
+                    /*
                      * This is the action of movement_BACKWARD executed inside a new Runnable
                      * The Runnable execute itself with a delay. When pressure on the button ends
                      * the run will be destroyed
@@ -233,7 +232,7 @@ public class ManualNavigationActivity extends AppCompatActivity {
                             }
                             return false;
 
-                        //On the release of the button destroy the runnable
+                            //On the release of the button destroy the runnable
                         } else if (event.getAction() == MotionEvent.ACTION_UP) {
 
                             if (mHandlerB == null)
@@ -243,10 +242,10 @@ public class ManualNavigationActivity extends AppCompatActivity {
                             mHandlerB = null;
                             return false;
 
-                        /**
-                          * This action in returned when something appends during a press gesture (between ACTION_DOWN and ACTION_UP)
-                          * Here it's used to recognize a pressure on other buttons in order to be able to manage multiple pressures
-                          */
+                            /*
+                             * This action is returned when something appends during a press gesture (between ACTION_DOWN and ACTION_UP)
+                             * Here it's used to recognize a pressure on other buttons in order to be able to manage multiple pressures
+                             */
                         } else if (event.getAction() == MotionEvent.ACTION_MOVE) {
 
                             if (mHandlerB != null)
@@ -262,13 +261,13 @@ public class ManualNavigationActivity extends AppCompatActivity {
                         return false;
                     }
                 };
-                break;
-            }
+                break; // Backward
 
-            case ConstantApp.CODE_LEFT: {
+            case ConstantApp.CODE_LEFT:
 
                 listener = new View.OnTouchListener() {
-                    /**
+
+                    /*
                      * This is the action of movement_LEFT executed inside a new Runnable
                      * The Runnable execute itself with a delay. When pressure on the button ends
                      * the run will be destroyed
@@ -304,7 +303,7 @@ public class ManualNavigationActivity extends AppCompatActivity {
                             }
                             return false;
 
-                        //On the release of the button destroy the runnable
+                            //On the release of the button destroy the runnable
                         } else if (event.getAction() == MotionEvent.ACTION_UP) {
 
                             if (mHandlerL == null)
@@ -314,10 +313,10 @@ public class ManualNavigationActivity extends AppCompatActivity {
                             mHandlerL = null;
                             return false;
 
-                        /**
-                         * This action in returned when something appends during a press gesture (between ACTION_DOWN and ACTION_UP)
-                         * Here it's used to recognize a pressure on other buttons in order to be able to manage multiple pressures
-                         */
+                            /*
+                             * This action is returned when something appends during a press gesture (between ACTION_DOWN and ACTION_UP)
+                             * Here it's used to recognize a pressure on other buttons in order to be able to manage multiple pressures
+                             */
                         } else if (event.getAction() == MotionEvent.ACTION_MOVE) {
 
                             if (mHandlerL != null)
@@ -333,14 +332,13 @@ public class ManualNavigationActivity extends AppCompatActivity {
                         return false;
                     }
                 };
-                break;
-            }
+                break; // Left
 
-            case ConstantApp.CODE_RIGHT: {
+            case ConstantApp.CODE_RIGHT:
 
                 listener = new View.OnTouchListener() {
 
-                    /**
+                    /*
                      * This is the action of movement_RIGHT executed inside a new Runnable
                      * The Runnable execute itself with a delay. When pressure on the button ends
                      * the run will be destroyed
@@ -375,7 +373,7 @@ public class ManualNavigationActivity extends AppCompatActivity {
                             }
                             return false;
 
-                        //On the release of the button destroy the runnable
+                            //On the release of the button destroy the runnable
                         } else if (event.getAction() == MotionEvent.ACTION_UP) {
 
                             if (mHandlerR == null)
@@ -385,10 +383,10 @@ public class ManualNavigationActivity extends AppCompatActivity {
                             mHandlerR = null;
                             return false;
 
-                        /**
-                         * This action in returned when something appends during a press gesture (between ACTION_DOWN and ACTION_UP)
-                         * Here it's used to recognize a pressure on other buttons in order to be able to manage multiple pressures
-                         */
+                            /*
+                             * This action is returned when something appends during a press gesture (between ACTION_DOWN and ACTION_UP)
+                             * Here it's used to recognize a pressure on other buttons in order to be able to manage multiple pressures
+                             */
                         } else if (event.getAction() == MotionEvent.ACTION_MOVE) {
 
                             if (mHandlerR != null)
@@ -404,21 +402,23 @@ public class ManualNavigationActivity extends AppCompatActivity {
                         return false;
                     }
                 };
-                break;
-            }
+                break; // Right
 
             default:
                 break;
         }
+
         return listener;
     }
 
     //manage connected, disconnected and discovered action
     private final BroadcastReceiver mGattUpdateReceiver = new BroadcastReceiver() {
+
         @Override
         public void onReceive(Context context, Intent intent) {
 
             final String action = intent.getAction();
+
             if (ConstantApp.ACTION_GATT_DISCONNECTED.equals(action)) {
 
                 Log.v(TAG, "disconnected");
