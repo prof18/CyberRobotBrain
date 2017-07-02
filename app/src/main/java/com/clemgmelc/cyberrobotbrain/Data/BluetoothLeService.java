@@ -1,9 +1,5 @@
 package com.clemgmelc.cyberrobotbrain.Data;
 
-/**
- * Created by marco on 4/19/17.
- */
-
 import android.app.Service;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -27,7 +23,6 @@ import java.util.List;
 /**
  *
  * Service that manages the Bluetooth Low Energy connection
- *
  */
 public class BluetoothLeService extends Service {
 
@@ -36,12 +31,8 @@ public class BluetoothLeService extends Service {
     private BluetoothAdapter mBluetoothAdapter;
     private String mBluetoothDeviceAddress;
     private BluetoothGatt mBluetoothGatt;
-    //never used
 
-    private static final int STATE_DISCONNECTED = 0;
-    private static final int STATE_CONNECTING = 1;
-    private static final int STATE_CONNECTED = 2;
-
+    private final IBinder mBinder = new LocalBinder();
 
     //Handling of the Service Binding
     public class LocalBinder extends Binder {
@@ -61,9 +52,6 @@ public class BluetoothLeService extends Service {
         return super.onUnbind(intent);
     }
 
-    private final IBinder mBinder = new LocalBinder();
-
-
     /**
      * Get a reference of the Bluetooth Adapter
      *
@@ -75,7 +63,7 @@ public class BluetoothLeService extends Service {
         if (mBluetoothManager == null) {
             mBluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
             if (mBluetoothManager == null) {
-                Log.e(TAG, "Unable to initialize BluetoothManager.");
+                Log.e(TAG, "Unable to initialize BluetoothManager");
                 return false;
             }
         }
@@ -84,10 +72,9 @@ public class BluetoothLeService extends Service {
         mBluetoothAdapter = mBluetoothManager.getAdapter();
         Log.v(TAG, "Bluetooth Adapter Initialized");
         if (mBluetoothAdapter == null) {
-            Log.e(TAG, "Unable to obtain a BluetoothAdapter.");
+            Log.e(TAG, "Unable to obtain a BluetoothAdapter");
             return false;
         }
-
         return true;
     }
 
@@ -98,25 +85,21 @@ public class BluetoothLeService extends Service {
      * @return          The method returns true if the connection is successful
      */
     public boolean connect(final String address) {
+
         if (mBluetoothAdapter == null || address == null) {
             Log.v(TAG, "BluetoothAdapter not initialized or null address.");
             return false;
         }
 
         //The device is already connected. Try a reconnection
-        if (mBluetoothDeviceAddress != null && address.equals(mBluetoothDeviceAddress)
-                && mBluetoothGatt != null) {
+        if (mBluetoothDeviceAddress != null && address.equals(mBluetoothDeviceAddress) && mBluetoothGatt != null) {
             Log.v(TAG, "Trying to use an existing mBluetoothGatt for connection.");
-            if (mBluetoothGatt.connect()) {
-                return true;
-            } else {
-                return false;
-            }
+            return mBluetoothGatt.connect();
         }
 
         final BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(address);
         if (device == null) {
-            Log.v(TAG, "Device not found.  Unable to connect.");
+            Log.v(TAG, "Device not found. Unable to connect.");
             return false;
         }
 
@@ -185,6 +168,11 @@ public class BluetoothLeService extends Service {
         }
     };
 
+    /**
+     * Send a broadcast when a specific situation occurs
+     *
+     * @param action The type of action that is occurred, e.g. connection, disconnection, etc
+     */
     private void broadcastUpdate(final String action) {
         final Intent intent = new Intent(action);
         sendBroadcast(intent);

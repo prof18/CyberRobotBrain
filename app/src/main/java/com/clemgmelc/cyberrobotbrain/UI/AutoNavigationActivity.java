@@ -119,17 +119,15 @@ public class AutoNavigationActivity extends AppCompatActivity {
     private Bitmap myBitmap;
     private Calibration mDetector;
     private boolean mIsCalibrating = false;
-    private org.opencv.core.Point centerLeft, centerRight, centerTarget, centerMean, upperTarget, lowerTarget;
+    private org.opencv.core.Point centerLeft, centerRight, centerTarget, centerMean;
     private BluetoothLeService mBluetoothLeService;
     private String mDeviceAddress;
     private BluetoothGattService mMovementGattService;
     private BluetoothGattCharacteristic mMovementCharacteristic;
     private NavigationThread navigationThread;
-    private boolean stop = false, isYAligned = false, isFacing = false, isXAligned = false;
+    private boolean stop = false, mIsCalibrated = false, isOpen = false;
     private int movementType;
     private Double distanceTM;
-    private boolean isOpen = false;
-    private boolean mIsCalibrated = false;
 
     //enables the next button
     private boolean debug = true;
@@ -216,9 +214,6 @@ public class AutoNavigationActivity extends AppCompatActivity {
                 mFabMenu.hide();
                 mFabStop.show();
                 stop = false;
-                isYAligned = false;
-                isXAligned = false;
-                isFacing = false;
                 takePicture();
             }
         });
@@ -231,9 +226,6 @@ public class AutoNavigationActivity extends AppCompatActivity {
                 mFabMenu.hide();
                 mFabStop.show();
                 stop = false;
-                isYAligned = false;
-                isXAligned = false;
-                isFacing = false;
                 takePicture();
             }
         });
