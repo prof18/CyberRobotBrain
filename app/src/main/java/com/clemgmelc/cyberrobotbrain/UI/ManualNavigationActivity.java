@@ -89,7 +89,7 @@ public class ManualNavigationActivity extends AppCompatActivity {
 
             mBluetoothLeService = ((BluetoothLeService.LocalBinder) service).getService();
             if (!mBluetoothLeService.initialize()) {
-                Log.e("", "Unable to initialize Bluetooth");
+                Log.e(TAG, "Unable to initialize Bluetooth");
                 finish();
             }
             if (mDeviceAddress != null) {
@@ -129,63 +129,69 @@ public class ManualNavigationActivity extends AppCompatActivity {
             case ConstantApp.CODE_FORWARD: {
 
                 listener = new View.OnTouchListener() {
-                    @Override
-                    public boolean onTouch(View v, MotionEvent event) {
 
-                        //This section select the different motion event of the user
-                        if (event.getAction() == MotionEvent.ACTION_DOWN) {
-
-                            if (mHandlerF != null) {
-                                return true;
-                            }
-
-                            if (mHandlerB == null && mHandlerL == null && mHandlerR == null) {
-                                mHandlerF = new Handler();
-                                Log.d(TAG, "FORWARD1");
-                                mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.forward);
-                                mHandlerF.postDelayed(mActionF, 200);
-                            }
-                            return false;
-
-                        } else if (event.getAction() == MotionEvent.ACTION_UP) {
-
-                            if (mHandlerF == null) {
-                                return true;
-                            }
-                            mHandlerF.removeCallbacks(mActionF);
-                            mHandlerF = null;
-                            return false;
-
-                        } else if (event.getAction() == MotionEvent.ACTION_MOVE) {
-                            if (mHandlerF != null) {
-                                return true;
-                            }
-
-                            if (mHandlerB == null && mHandlerL == null && mHandlerR == null) {
-                                mHandlerF = new Handler();
-                                mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.forward);
-                                mHandlerF.postDelayed(mActionF, 200);
-                            }
-                            return false;
-                        }
-
-                        return false;
-                    }
-
-                    //this is the action of movement
+                    /**
+                     * This is the action of movement_FORWARD executed inside a new Runnable
+                     * The Runnable execute itself with a delay. When pressure on the button ends
+                     * the run will be destroyed
+                     */
                     Runnable mActionF = new Runnable() {
                         @Override
                         public void run() {
-                            if (mHandlerF == null)
-                                mHandlerF = new Handler();
+
+                            //Controls that no other action are in execution checking their corresponding handler == null
                             if (mHandlerB == null && mHandlerL == null && mHandlerR == null) {
-                                Log.d(TAG, "FORWARD2");
+                                if (mHandlerF == null)
+                                    mHandlerF = new Handler();
                                 mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.forward);
                                 mHandlerF.postDelayed(this, 200);
                             }
                         }
                     };
 
+                    @Override
+                    public boolean onTouch(View v, MotionEvent event) {
+
+                        //On the pressure of the button: handler is created, a single movement is executed and and the runnable is started
+                        if (event.getAction() == MotionEvent.ACTION_DOWN) {
+
+                            if (mHandlerF != null)
+                                return true;
+
+                            if (mHandlerB == null && mHandlerL == null && mHandlerR == null) {
+                                mHandlerF = new Handler();
+                                mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.forward);
+                                mHandlerF.postDelayed(mActionF, 200);
+                            }
+                            return false;
+
+                        //On the release of the button destroy the runnable
+                        } else if (event.getAction() == MotionEvent.ACTION_UP) {
+
+                            if (mHandlerF == null)
+                                return true;
+
+                            mHandlerF.removeCallbacks(mActionF);
+                            mHandlerF = null;
+                            return false;
+
+                        /**
+                         * This action in returned when something appends during a press gesture (between ACTION_DOWN and ACTION_UP)
+                         * Here it's used to recognize a pressure on other buttons in order to be able to manage multiple pressures
+                         */
+                        } else if (event.getAction() == MotionEvent.ACTION_MOVE) {
+                            if (mHandlerF != null)
+                                return true;
+
+                            if (mHandlerB == null && mHandlerL == null && mHandlerR == null) {
+                                mHandlerF = new Handler();
+                                mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.forward);
+                                mHandlerF.postDelayed(mActionF, 200);
+                            }
+                            return false;
+                        }
+                        return false;
+                    }
                 };
                 break;
             }
@@ -193,49 +199,17 @@ public class ManualNavigationActivity extends AppCompatActivity {
             case ConstantApp.CODE_BACKWARD: {
 
                 listener = new View.OnTouchListener() {
-                    @Override
-                    public boolean onTouch(View v, MotionEvent event) {
-                        if (event.getAction() == MotionEvent.ACTION_DOWN) {
 
-                            if (mHandlerB != null) {
-                                return true;
-                            }
-
-                            if (mHandlerF == null && mHandlerL == null && mHandlerR == null) {
-                                mHandlerB = new Handler();
-                                mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.backward);
-                                mHandlerB.postDelayed(mActionB, 200);
-                            }
-                            return false;
-
-                        } else if (event.getAction() == MotionEvent.ACTION_UP) {
-
-                            if (mHandlerB == null) {
-                                return true;
-                            }
-                            mHandlerB.removeCallbacks(mActionB);
-                            mHandlerB = null;
-                            return false;
-
-                        } else if (event.getAction() == MotionEvent.ACTION_MOVE) {
-
-                            if (mHandlerB != null) {
-                                return true;
-                            }
-                            if (mHandlerF == null && mHandlerL == null && mHandlerR == null) {
-                                mHandlerB = new Handler();
-                                mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.backward);
-                                mHandlerB.postDelayed(mActionB, 200);
-                            }
-                            return false;
-                        }
-
-                        return false;
-                    }
-
+                    /**
+                     * This is the action of movement_BACKWARD executed inside a new Runnable
+                     * The Runnable execute itself with a delay. When pressure on the button ends
+                     * the run will be destroyed
+                     */
                     Runnable mActionB = new Runnable() {
                         @Override
                         public void run() {
+
+                            //Controls that no other action are in execution checking their corresponding handler == null
                             if (mHandlerF == null && mHandlerL == null && mHandlerR == null) {
                                 if (mHandlerB == null)
                                     mHandlerB = new Handler();
@@ -245,6 +219,48 @@ public class ManualNavigationActivity extends AppCompatActivity {
                         }
                     };
 
+                    @Override
+                    public boolean onTouch(View v, MotionEvent event) {
+                        if (event.getAction() == MotionEvent.ACTION_DOWN) {
+
+                            if (mHandlerB != null)
+                                return true;
+
+                            if (mHandlerF == null && mHandlerL == null && mHandlerR == null) {
+                                mHandlerB = new Handler();
+                                mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.backward);
+                                mHandlerB.postDelayed(mActionB, 200);
+                            }
+                            return false;
+
+                        //On the release of the button destroy the runnable
+                        } else if (event.getAction() == MotionEvent.ACTION_UP) {
+
+                            if (mHandlerB == null)
+                                return true;
+
+                            mHandlerB.removeCallbacks(mActionB);
+                            mHandlerB = null;
+                            return false;
+
+                        /**
+                          * This action in returned when something appends during a press gesture (between ACTION_DOWN and ACTION_UP)
+                          * Here it's used to recognize a pressure on other buttons in order to be able to manage multiple pressures
+                          */
+                        } else if (event.getAction() == MotionEvent.ACTION_MOVE) {
+
+                            if (mHandlerB != null)
+                                return true;
+
+                            if (mHandlerF == null && mHandlerL == null && mHandlerR == null) {
+                                mHandlerB = new Handler();
+                                mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.backward);
+                                mHandlerB.postDelayed(mActionB, 200);
+                            }
+                            return false;
+                        }
+                        return false;
+                    }
                 };
                 break;
             }
@@ -252,47 +268,16 @@ public class ManualNavigationActivity extends AppCompatActivity {
             case ConstantApp.CODE_LEFT: {
 
                 listener = new View.OnTouchListener() {
-                    @Override
-                    public boolean onTouch(View v, MotionEvent event) {
-                        if (event.getAction() == MotionEvent.ACTION_DOWN) {
-
-                            if (mHandlerL != null) {
-                                return true;
-                            }
-
-                            if (mHandlerF == null && mHandlerB == null && mHandlerR == null) {
-                                mHandlerL = new Handler();
-                                mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.left);
-                                mHandlerL.postDelayed(mActionL, 200);
-                            }
-                            return false;
-                        } else if (event.getAction() == MotionEvent.ACTION_UP) {
-
-                            if (mHandlerL == null) {
-                                return true;
-                            }
-                            mHandlerL.removeCallbacks(mActionL);
-                            mHandlerL = null;
-                            return false;
-
-                        } else if (event.getAction() == MotionEvent.ACTION_MOVE) {
-
-                            if (mHandlerL != null) {
-                                return true;
-                            }
-                            if (mHandlerF == null && mHandlerB == null && mHandlerR == null) {
-                                mHandlerL = new Handler();
-                                mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.left);
-                                mHandlerL.postDelayed(mActionL, 200);
-                            }
-                            return false;
-                        }
-                        return false;
-                    }
-
+                    /**
+                     * This is the action of movement_LEFT executed inside a new Runnable
+                     * The Runnable execute itself with a delay. When pressure on the button ends
+                     * the run will be destroyed
+                     */
                     Runnable mActionL = new Runnable() {
                         @Override
                         public void run() {
+
+                            //Controls that no other action are in execution checking their corresponding handler == null
                             if (mHandlerF == null && mHandlerB == null && mHandlerR == null) {
                                 if (mHandlerL == null)
                                     mHandlerL = new Handler();
@@ -302,6 +287,51 @@ public class ManualNavigationActivity extends AppCompatActivity {
                         }
                     };
 
+                    @Override
+                    public boolean onTouch(View v, MotionEvent event) {
+
+                        //On the pressure of the button: handler is created, a single movement is executed and and the runnable is started
+                        if (event.getAction() == MotionEvent.ACTION_DOWN) {
+
+                            if (mHandlerL != null)
+                                return true;
+
+
+                            if (mHandlerF == null && mHandlerB == null && mHandlerR == null) {
+                                mHandlerL = new Handler();
+                                mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.left);
+                                mHandlerL.postDelayed(mActionL, 200);
+                            }
+                            return false;
+
+                        //On the release of the button destroy the runnable
+                        } else if (event.getAction() == MotionEvent.ACTION_UP) {
+
+                            if (mHandlerL == null)
+                                return true;
+
+                            mHandlerL.removeCallbacks(mActionL);
+                            mHandlerL = null;
+                            return false;
+
+                        /**
+                         * This action in returned when something appends during a press gesture (between ACTION_DOWN and ACTION_UP)
+                         * Here it's used to recognize a pressure on other buttons in order to be able to manage multiple pressures
+                         */
+                        } else if (event.getAction() == MotionEvent.ACTION_MOVE) {
+
+                            if (mHandlerL != null)
+                                return true;
+
+                            if (mHandlerF == null && mHandlerB == null && mHandlerR == null) {
+                                mHandlerL = new Handler();
+                                mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.left);
+                                mHandlerL.postDelayed(mActionL, 200);
+                            }
+                            return false;
+                        }
+                        return false;
+                    }
                 };
                 break;
             }
@@ -309,47 +339,17 @@ public class ManualNavigationActivity extends AppCompatActivity {
             case ConstantApp.CODE_RIGHT: {
 
                 listener = new View.OnTouchListener() {
-                    @Override
-                    public boolean onTouch(View v, MotionEvent event) {
-                        if (event.getAction() == MotionEvent.ACTION_DOWN) {
 
-                            if (mHandlerR != null) {
-                                return true;
-                            }
-
-                            if (mHandlerF == null && mHandlerB == null && mHandlerL == null) {
-                                mHandlerR = new Handler();
-                                mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.right);
-                                mHandlerR.postDelayed(mActionR, 200);
-                            }
-                            return false;
-                        } else if (event.getAction() == MotionEvent.ACTION_UP) {
-
-                            if (mHandlerR == null) {
-                                return true;
-                            }
-                            mHandlerR.removeCallbacks(mActionR);
-                            mHandlerR = null;
-                            return false;
-
-                        } else if (event.getAction() == MotionEvent.ACTION_MOVE) {
-
-                            if (mHandlerR != null) {
-                                return true;
-                            }
-                            if (mHandlerF == null && mHandlerB == null && mHandlerL == null) {
-                                mHandlerR = new Handler();
-                                mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.right);
-                                mHandlerR.postDelayed(mActionR, 200);
-                            }
-                            return false;
-                        }
-                        return false;
-                    }
-
+                    /**
+                     * This is the action of movement_RIGHT executed inside a new Runnable
+                     * The Runnable execute itself with a delay. When pressure on the button ends
+                     * the run will be destroyed
+                     */
                     Runnable mActionR = new Runnable() {
                         @Override
                         public void run() {
+
+                            //Controls that no other action are in execution checking their corresponding handler == null
                             if (mHandlerF == null && mHandlerB == null && mHandlerL == null) {
                                 if (mHandlerR == null)
                                     mHandlerR = new Handler();
@@ -359,14 +359,57 @@ public class ManualNavigationActivity extends AppCompatActivity {
                         }
                     };
 
+                    @Override
+                    public boolean onTouch(View v, MotionEvent event) {
+
+                        //On the pressure of the button: handler is created, a single movement is executed and and the runnable is started
+                        if (event.getAction() == MotionEvent.ACTION_DOWN) {
+
+                            if (mHandlerR != null)
+                                return true;
+
+                            if (mHandlerF == null && mHandlerB == null && mHandlerL == null) {
+                                mHandlerR = new Handler();
+                                mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.right);
+                                mHandlerR.postDelayed(mActionR, 200);
+                            }
+                            return false;
+
+                        //On the release of the button destroy the runnable
+                        } else if (event.getAction() == MotionEvent.ACTION_UP) {
+
+                            if (mHandlerR == null)
+                                return true;
+
+                            mHandlerR.removeCallbacks(mActionR);
+                            mHandlerR = null;
+                            return false;
+
+                        /**
+                         * This action in returned when something appends during a press gesture (between ACTION_DOWN and ACTION_UP)
+                         * Here it's used to recognize a pressure on other buttons in order to be able to manage multiple pressures
+                         */
+                        } else if (event.getAction() == MotionEvent.ACTION_MOVE) {
+
+                            if (mHandlerR != null)
+                                return true;
+
+                            if (mHandlerF == null && mHandlerB == null && mHandlerL == null) {
+                                mHandlerR = new Handler();
+                                mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.right);
+                                mHandlerR.postDelayed(mActionR, 200);
+                            }
+                            return false;
+                        }
+                        return false;
+                    }
                 };
                 break;
             }
+
             default:
                 break;
-
         }
-
         return listener;
     }
 
@@ -374,22 +417,17 @@ public class ManualNavigationActivity extends AppCompatActivity {
     private final BroadcastReceiver mGattUpdateReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            final String action = intent.getAction();
 
+            final String action = intent.getAction();
             if (ConstantApp.ACTION_GATT_DISCONNECTED.equals(action)) {
 
-                Log.v(TAG, "sono scollegato ");
+                Log.v(TAG, "disconnected");
                 Toast.makeText(mBluetoothLeService, getResources().getString(R.string.message_disconnecting), Toast.LENGTH_SHORT).show();
-
                 mBluetoothLeService.disconnect();
                 mBluetoothLeService = null;
-
                 onBackPressed();
-
                 Log.v(TAG, "unregistred");
-
             }
         }
     };
-
 }
