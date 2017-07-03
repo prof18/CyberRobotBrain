@@ -375,8 +375,6 @@ public class DeviceScanActivity extends AppCompatActivity {
         super.onStop();
         Log.v(TAG, "onStop() called");
 
-       /* if (blueBroadcastReceiver != null)
-            unregisterReceiver(blueBroadcastReceiver);*/
         if (mScanning || (mLeDeviceListAdapter != null && mLeDeviceListAdapter.getItemCount() > 0)) {
             Log.d(TAG, "scanLeDevice(false) in onStop()");
             Log.d(TAG, "mLeDeviceListAdapter cleared in onStop()");

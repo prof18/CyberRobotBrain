@@ -12,7 +12,6 @@ import java.util.List;
 
 /**
  * This class contains some useful static methods
- *
  */
 public class Utility {
 
@@ -22,8 +21,8 @@ public class Utility {
      * This method checks if the color calibration of the markers is done. To do that, it checks if
      * the color ranges are saved into the shared preference
      *
-     * @param context   A reference of the Application Context
-     * @return          The method returns true if the calibration is already done, false otherwise
+     * @param context A reference of the Application Context
+     * @return The method returns true if the calibration is already done, false otherwise
      */
     public static boolean isCalibrationDone(Context context) {
 
@@ -52,8 +51,8 @@ public class Utility {
      * This method checks if the color calibration of the target markers is done. To do that, it checks if
      * the color ranges are saved into the shared preference
      *
-     * @param context   A reference of the Application Context
-     * @return          The method returns true if the calibration is already done, false otherwise
+     * @param context A reference of the Application Context
+     * @return The method returns true if the calibration is already done, false otherwise
      */
     public static boolean isTargetCalibrationDone(Context context) {
 
@@ -66,7 +65,7 @@ public class Utility {
         String targetUpper = sharedpreferences.getString(ConstantApp.SHARED_TARGET_UPPER, null);
         String targetLower = sharedpreferences.getString(ConstantApp.SHARED_TARGET_LOWER, null);
 
-        if ( targetUpper != null && targetLower != null)
+        if (targetUpper != null && targetLower != null)
             isCalibrationDone = true;
 
         return isCalibrationDone;
@@ -75,8 +74,8 @@ public class Utility {
     /**
      * This method chooses the max resolution by comparing the area.
      *
-     * @param sizeList  An array of Size that contains all the resolutions
-     * @return          The method returns the index of the max resolution
+     * @param sizeList An array of Size that contains all the resolutions
+     * @return The method returns the index of the max resolution
      */
     public static int maxRes(Size[] sizeList) {
 
@@ -97,7 +96,18 @@ public class Utility {
         return index;
     }
 
-    //TODO: controllare e pulire
+    /**
+     *
+     * This method chooses the optimal sizes of the camera preview
+     *
+     * @param choices list of image sizes that camera supports
+     * @param textureViewWidth width of the texture view
+     * @param textureViewHeight height of the texture view
+     * @param maxWidth max preview width
+     * @param maxHeight max preview height
+     * @param aspectRatio aspect ratio
+     * @return optimal size to fit the screen
+     */
     public static Size chooseOptimalSize(Size[] choices, int textureViewWidth, int textureViewHeight,
                                          int maxWidth, int maxHeight, Size aspectRatio) {
 

@@ -177,7 +177,7 @@ public class Navigation {
     }
 
     /**
-     * This method evaluate if the robot is turned away to target (is oriented in the wrong direction).
+     * This method evaluates if the robot is turned away to target (is oriented in the wrong direction).
      * (for the movement of L shape)
      *
      * @param target is the TARGET_CENTROID
@@ -212,7 +212,7 @@ public class Navigation {
     }
 
     /**
-     * This method compute height in cm from the camera to the TARGET_MARKER using this formula
+     * This method computes height in cm from the camera to the TARGET_MARKER using this formula
      * ACTUAL_HEIGHT = (TARGET_WIDTH * FOCAL) / ACTUAL_PIXEL_WIDTH
      *
      * @param original Mat in RGB format, containing the image framed
@@ -281,7 +281,6 @@ public class Navigation {
             }
         }
 
-        //TODO: look what arrives if null is OK
         if (finalcontour != null) {
 
             //Find the min rect that contains contour with max area
@@ -314,6 +313,8 @@ public class Navigation {
     }
 
     /**
+     * This method evaluates if the two lines are perpendicular
+     *
      * @param m1     slope of the first line passing from LEFT_MARKER and RIGHT_MARKER
      * @param m2     slope of the second line passing from the target and the mean point between LEFT_MARKER and RIGHT_MARKER
      * @param focal  is the factor of scalability from real dimension to pixel dimension

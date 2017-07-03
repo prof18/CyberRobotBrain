@@ -101,6 +101,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
     private String mCameraId;
     private Size mPreviewSize, mMaxSize;
     private ImageReader mImageReader;
+    //The semaphore is necessary to securely release the camera
     private Semaphore mCameraOpenCloseLock = new Semaphore(1);
     private static String[] PERMISSIONS_CAMERA = {
             Manifest.permission.CAMERA
@@ -518,10 +519,9 @@ public class AutoNavigationActivity extends AppCompatActivity {
         unregisterReceiver(mGattUpdateReceiver);
     }
 
-    //TODO: ask marco
     @Override
-    protected void onDestroy() {
-        super.onDestroy();
+    protected void onStop() {
+        super.onStop();
         unbindService(mServiceConnection);
         mBluetoothLeService = null;
     }
@@ -537,7 +537,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
 
             mBluetoothLeService = ((BluetoothLeService.LocalBinder) service).getService();
             if (!mBluetoothLeService.initialize()) {
-                Log.e("", "Unable to initialize Bluetooth");
+                Log.e(TAG, "Unable to initialize Bluetooth");
                 finish();
             }
 
@@ -1222,15 +1222,6 @@ public class AutoNavigationActivity extends AppCompatActivity {
                     Toast.makeText(mActivity, getResources().getString(R.string.error_occured_camera), Toast.LENGTH_SHORT).show();
                     Log.v(TAG, "ERROR Distance is -1");
                 }
-                //TODO: eliminate for cycle & select reed double band is necessary???
-                /*for (int i = 0; i < 3; i++) {
-                    if (Double.valueOf(leftUpper[i]) >= 255)
-                        leftUpper[i] = "255";
-                    else if (Double.valueOf(rightUpper[i]) >= 255)
-                        leftUpper[i] = "255";
-                    else if (Double.valueOf(targetUpper[i]) >= 255)
-                        leftUpper[i] = "255";
-                }*/
 
                 //Retrieve from shared preferences lower and upper bounds
                 Scalar lowTarget2 = null, upTarget2 = null;

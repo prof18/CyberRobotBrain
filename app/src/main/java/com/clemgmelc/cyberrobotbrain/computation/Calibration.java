@@ -158,27 +158,26 @@ public class Calibration {
 
         //Find the contour wrapping the max area
         double maxArea = 0;
-        MatOfPoint finalcontour = new MatOfPoint();
+        MatOfPoint finalContours = new MatOfPoint();
         List<MatOfPoint> finacontourlist = new ArrayList<>( );
         Iterator<MatOfPoint> each = contoursTarget.iterator();
         while (each.hasNext()) {
             MatOfPoint wrapper = each.next();
             double area = Imgproc.contourArea(wrapper);
             if (area > maxArea) {
-                finalcontour = wrapper;
+                finalContours = wrapper;
                 finacontourlist.add(0, wrapper);
                 maxArea = area;
             }
         }
 
-        //TODO: look what arrives if null is OK
-        if (finalcontour != null) {
+        if (finalContours != null) {
 
             SharedPreferences sharedpreferences = context.getSharedPreferences(ConstantApp.SHARED_NAME, Context.MODE_PRIVATE);
             SharedPreferences.Editor editor = sharedpreferences.edit();
 
             //Find the min rect that contains contour with max area
-            Rect rect = Imgproc.boundingRect(finalcontour);
+            Rect rect = Imgproc.boundingRect(finalContours);
             org.opencv.core.Size rectsize = rect.size();
 
             //Use these lines to visualize the results
