@@ -38,6 +38,8 @@ public class MainActivity extends AppCompatActivity {
     private FloatingActionButton mFab;
     private boolean mConnected = false;
     private Button mManualNav, mAutoNavigation;
+
+    //With this boolean at true, the buttons are enabled even if the robot isn't connected
     private boolean isDebug = false;
 
     @Override
@@ -45,13 +47,16 @@ public class MainActivity extends AppCompatActivity {
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main_activity_main);
+        mainActivity = this;
+
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-        mainActivity = this;
+
         mFab = (FloatingActionButton) findViewById(R.id.fab);
         mManualNav = (Button) findViewById(R.id.manual_nav_btn);
-        mManualNav.setEnabled(false);
         mAutoNavigation = (Button) findViewById(R.id.auto_navigation_btn);
+
+        mManualNav.setEnabled(false);
         mAutoNavigation.setEnabled(false);
 
         mFab.setOnClickListener(new View.OnClickListener() {
@@ -65,11 +70,11 @@ public class MainActivity extends AppCompatActivity {
                     startActivityForResult(launchScan, SCAN_DEVICE_REQUEST);
                 } else {
                     Log.v(TAG, "INTENTIONAL REMOVAL OF CONNECTION");
-                        mBluetoothLeService.disconnect();
-                        mConnected = false;
-                        mFab.setEnabled(false);
-                    }
+                    mBluetoothLeService.disconnect();
+                    mConnected = false;
+                    mFab.setEnabled(false);
                 }
+            }
         });
 
 
@@ -78,12 +83,11 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View v) {
 
                 List<BluetoothGattService> list = mBluetoothLeService.getSupportedGattServices();
-
-                if (mConnected && list.size() == 9) {
+                if (mConnected) {
                     Intent startManualNav = new Intent(MainActivity.this, ManualNavigationActivity.class);
                     startManualNav.putExtra(ConstantApp.DEVICE_ADDRESS, mDeviceAddress);
                     startActivity(startManualNav);
-                } else if (!mConnected){
+                } else if (!mConnected) {
                     Toast.makeText(mainActivity, getResources().getString(R.string.action_disconnected), Toast.LENGTH_SHORT).show();
                 } else if (list.size() != 9) {
                     Toast.makeText(mainActivity, getResources().getString(R.string.error_occured), Toast.LENGTH_SHORT).show();
@@ -95,9 +99,10 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 if (!isDebug) {
+
                     List<BluetoothGattService> list = mBluetoothLeService.getSupportedGattServices();
 
-                    if (mConnected && list.size() == 9) {
+                    if (mConnected) {
                         Intent startMan = new Intent(MainActivity.this, AutoNavigationActivity.class);
                         startMan.putExtra(ConstantApp.DEVICE_ADDRESS, mDeviceAddress);
                         startActivity(startMan);
@@ -113,10 +118,8 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        if (isDebug) {
+        if (isDebug) mAutoNavigation.setEnabled(true);
 
-            mAutoNavigation.setEnabled(true);
-        }
     }
 
     @Override
@@ -127,6 +130,8 @@ public class MainActivity extends AppCompatActivity {
 
             if (resultCode == Activity.RESULT_OK) {
 
+                //If the scan has find the Cyber Robot, get the address from the scan activity,
+                //bind the service and connect to the robot
                 mDeviceAddress = data.getStringExtra(ConstantApp.DEVICE_ADDRESS);
                 mFab.setEnabled(false);
 
@@ -134,7 +139,6 @@ public class MainActivity extends AppCompatActivity {
 
                 Intent gattServiceIntent = new Intent(this, BluetoothLeService.class);
                 bindService(gattServiceIntent, mServiceConnection, BIND_AUTO_CREATE);
-
             }
         }
     }
@@ -147,17 +151,16 @@ public class MainActivity extends AppCompatActivity {
 
             if (ConstantApp.ACTION_GATT_CONNECTED.equals(action)) {
 
-                //mConnected = true;
+                Log.v(TAG, "Robot Connected");
 
             } else if (ConstantApp.ACTION_GATT_DISCONNECTED.equals(action)) {
 
-                Log.v(TAG, "sono scollegato ");
+                Log.v(TAG, "Robot Disconnected");
                 Toast.makeText(mBluetoothLeService, getResources().getString(R.string.message_disconnecting), Toast.LENGTH_SHORT).show();
                 mManualNav.setEnabled(false);
-                //TODO:abilitare
                 mAutoNavigation.setEnabled(false);
 
-                //bad thing to respect low timing
+                //We change the UI after a few second to respect the timing or unexpected delay during the disconnection
                 Handler handler = new Handler();
                 handler.postDelayed(new Runnable() {
                     @Override
@@ -169,8 +172,6 @@ public class MainActivity extends AppCompatActivity {
                                 mFab.setBackgroundTintList(ColorStateList.valueOf(ContextCompat.getColor(mainActivity, R.color.googleRed)));
                                 mFab.setEnabled(true);
                                 mDeviceAddress = null;
-
-
                             }
                         });
                     }
@@ -179,7 +180,7 @@ public class MainActivity extends AppCompatActivity {
                 unregisterReceiver(mGattUpdateReceiver);
                 unbindService(mServiceConnection);
                 mBluetoothLeService = null;
-                Log.v(TAG, "unregistred");
+                Log.v(TAG, "Unregistred");
 
             } else if (ConstantApp.ACTION_GATT_SERVICES_DISCOVERED.equals(action)) {
 
@@ -193,8 +194,9 @@ public class MainActivity extends AppCompatActivity {
                         mFab.setBackgroundTintList(ColorStateList.valueOf(ContextCompat.getColor(mainActivity, R.color.green)));
                         Toast.makeText(getApplicationContext(), getResources().getString(R.string.message_connected), Toast.LENGTH_SHORT).show();
                         mFab.setEnabled(true);
+                        //For a better UX, we consider the robot connected only when all the GATT Services are discovered.
+                        //For a user when a device is connected has to be immediately ready to its job
                         mConnected = true;
-                        //mReady = true;
                     }
                 });
             }
@@ -232,9 +234,7 @@ public class MainActivity extends AppCompatActivity {
         super.onBackPressed();
 
         if (mBluetoothLeService != null) {
-
             mBluetoothLeService.disconnect();
         }
     }
-
 }
