@@ -1,4 +1,4 @@
-package com.clemgmelc.cyberrobotbrain.Util;
+package com.clemgmelc.cyberrobotbrain.util;
 
 import android.content.IntentFilter;
 

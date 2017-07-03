@@ -1,4 +1,4 @@
-package com.clemgmelc.cyberrobotbrain.UI;
+package com.clemgmelc.cyberrobotbrain.ui;
 
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattService;
@@ -19,9 +19,9 @@ import android.view.View;
 import android.widget.ImageButton;
 import android.widget.Toast;
 
-import com.clemgmelc.cyberrobotbrain.Data.BluetoothLeService;
+import com.clemgmelc.cyberrobotbrain.data.BluetoothLeService;
 import com.clemgmelc.cyberrobotbrain.R;
-import com.clemgmelc.cyberrobotbrain.Util.ConstantApp;
+import com.clemgmelc.cyberrobotbrain.util.ConstantApp;
 
 public class ManualNavigationActivity extends AppCompatActivity {
 

@@ -9,8 +9,6 @@
     <string name="blue_error_title">Attention: BLUE ERROR</string>
     <string name="blue_error_msg">You must turn on the Bluetooth to connect to the Cyber Robot</string>
     <string name="no_name_device">Unknown Device</string>
-    <string name="title_connect_dialog">Connect to Cyber Robot</string>
-    <string name="connect_dialog_cancel">Cancel</string>
     <string name="no_device">No device found</string>
     <string name="title_activity_scan">ScanActivity</string>
     <string name="nav_forward">Move forward</string>
@@ -21,7 +19,6 @@
     <string name="title_navigation">Manual Navigation</string>
     <string name="sound">Play Sound</string>
     <string name="btn_auto_navigation">Auto Navigation</string>
-    <string name="title_activity_camera">CameraActivity</string>
     <string name="gps_required">Gps Required for device discovery</string>
     <string name="gps_enabling">Enable Gps</string>
     <string name="gps_cancel">Cancel</string>
@@ -30,8 +27,8 @@
     <string name="message_disconnecting">Disconnecting from Cyber Robot</string>
     <string name="action_disconnected">You cannot move the Cyber Robot if you are not connected</string>
     <string name="wait_during_scan">You must wait until scanning is complete</string>
-    <string name="take_picture">Take picture</string>
     <string name="repeat">REPEAT</string>
+    <string name="next_step">NEXT STEP</string>
     <string name="camera_perm_error">You must accept the permission to use the camera</string>
     <string name="info_target">Tap the target indicator</string>
     <string name="info_left">Tap the left indicator of the robot</string>

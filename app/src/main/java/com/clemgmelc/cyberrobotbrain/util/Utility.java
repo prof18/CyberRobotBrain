@@ -1,11 +1,9 @@
-package com.clemgmelc.cyberrobotbrain.Util;
+package com.clemgmelc.cyberrobotbrain.util;
 
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.util.Log;
 import android.util.Size;
-
-import com.clemgmelc.cyberrobotbrain.UI.AutoNavigationActivity;
 
 import java.util.ArrayList;
 import java.util.Collections;

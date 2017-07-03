@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="com.clemgmelc.cyberrobotbrain.UI.MainActivity">
+    tools:context="com.clemgmelc.cyberrobotbrain.ui.MainActivity">
 
 
     <android.support.design.widget.AppBarLayout
@@ -50,7 +50,7 @@
             android:layout_centerHorizontal="true"
             android:text="@string/no_device"
             android:textColor="@color/white"
-            android:textSize="24dp"
+            android:textSize="24sp"
             android:layout_marginTop="40dp"/>
     </RelativeLayout>
 

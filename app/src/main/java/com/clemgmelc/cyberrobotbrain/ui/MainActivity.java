@@ -1,4 +1,4 @@
-package com.clemgmelc.cyberrobotbrain.UI;
+package com.clemgmelc.cyberrobotbrain.ui;
 
 import android.app.Activity;
 import android.bluetooth.BluetoothGattService;
@@ -20,9 +20,9 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
 
-import com.clemgmelc.cyberrobotbrain.Data.BluetoothLeService;
+import com.clemgmelc.cyberrobotbrain.data.BluetoothLeService;
 import com.clemgmelc.cyberrobotbrain.R;
-import com.clemgmelc.cyberrobotbrain.Util.ConstantApp;
+import com.clemgmelc.cyberrobotbrain.util.ConstantApp;
 
 import java.util.List;
 

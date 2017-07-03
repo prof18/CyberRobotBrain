@@ -1,4 +1,4 @@
-package com.clemgmelc.cyberrobotbrain.UI;
+package com.clemgmelc.cyberrobotbrain.ui;
 
 import android.Manifest;
 import android.app.Activity;
@@ -40,7 +40,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.clemgmelc.cyberrobotbrain.R;
-import com.clemgmelc.cyberrobotbrain.Util.ConstantApp;
+import com.clemgmelc.cyberrobotbrain.util.ConstantApp;
 
 import java.util.ArrayList;
 
@@ -282,7 +282,7 @@ public class DeviceScanActivity extends AppCompatActivity {
         }
 
         @Override
-        public void onBindViewHolder(ViewHolder viewHolder, final int position) {
+        public void onBindViewHolder(final ViewHolder viewHolder, int position) {
 
             final BluetoothDevice mDevice = mLeDevices.get(position);
             final String deviceName = mDevice.getName();
@@ -300,7 +300,7 @@ public class DeviceScanActivity extends AppCompatActivity {
                     if (mScanning) {
                         Toast.makeText(mActivity, getResources().getText(R.string.wait_during_scan), Toast.LENGTH_SHORT).show();
                     } else {
-                        BluetoothDevice device = mLeDevices.get(position);
+                        BluetoothDevice device = mLeDevices.get(viewHolder.getAdapterPosition());
                         mActivity.scanLeDevice(false);
                         //send back the address to the main activity
                         Intent intent = new Intent();

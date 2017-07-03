@@ -1,4 +1,4 @@
-package com.clemgmelc.cyberrobotbrain.Data;
+package com.clemgmelc.cyberrobotbrain.data;
 
 import android.app.Service;
 import android.bluetooth.BluetoothAdapter;
@@ -15,8 +15,8 @@ import android.os.Binder;
 import android.os.IBinder;
 import android.util.Log;
 
-import com.clemgmelc.cyberrobotbrain.UI.AutoNavigationActivity;
-import com.clemgmelc.cyberrobotbrain.Util.ConstantApp;
+import com.clemgmelc.cyberrobotbrain.ui.AutoNavigationActivity;
+import com.clemgmelc.cyberrobotbrain.util.ConstantApp;
 
 import java.util.List;
 

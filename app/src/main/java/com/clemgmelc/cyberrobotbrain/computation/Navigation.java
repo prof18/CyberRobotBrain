@@ -1,11 +1,11 @@
-package com.clemgmelc.cyberrobotbrain.Computation;
+package com.clemgmelc.cyberrobotbrain.computation;
 
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.util.Log;
 
-import com.clemgmelc.cyberrobotbrain.Util.ConstantApp;
-import com.clemgmelc.cyberrobotbrain.Util.Utility;
+import com.clemgmelc.cyberrobotbrain.util.ConstantApp;
+import com.clemgmelc.cyberrobotbrain.util.Utility;
 
 import org.opencv.core.Core;
 import org.opencv.core.Mat;

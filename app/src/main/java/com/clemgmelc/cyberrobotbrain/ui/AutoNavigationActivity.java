@@ -1,4 +1,4 @@
-package com.clemgmelc.cyberrobotbrain.UI;
+package com.clemgmelc.cyberrobotbrain.ui;
 
 import android.Manifest;
 import android.app.Activity;
@@ -58,12 +58,12 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.clemgmelc.cyberrobotbrain.Computation.Calibration;
-import com.clemgmelc.cyberrobotbrain.Computation.Navigation;
-import com.clemgmelc.cyberrobotbrain.Data.BluetoothLeService;
+import com.clemgmelc.cyberrobotbrain.computation.Calibration;
+import com.clemgmelc.cyberrobotbrain.computation.Navigation;
+import com.clemgmelc.cyberrobotbrain.data.BluetoothLeService;
 import com.clemgmelc.cyberrobotbrain.R;
-import com.clemgmelc.cyberrobotbrain.Util.ConstantApp;
-import com.clemgmelc.cyberrobotbrain.Util.Utility;
+import com.clemgmelc.cyberrobotbrain.util.ConstantApp;
+import com.clemgmelc.cyberrobotbrain.util.Utility;
 
 import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;

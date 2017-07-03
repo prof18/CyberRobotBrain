@@ -1,7 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="horizontal"
@@ -11,16 +9,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:gravity="bottom|left"
-        android:layout_marginBottom="20dp"
-        >
-
-    </LinearLayout>
-    <LinearLayout
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="bottom|left"
+        android:gravity="bottom|start"
         android:layout_marginBottom="20dp"
         >
         <ImageButton
@@ -31,7 +20,7 @@
             android:src="@drawable/ic_left_arrow"
             android:background="@android:color/transparent"
             android:clickable="true"
-            android:layout_marginRight="40dp"
+            android:layout_marginEnd="40dp"
             />
         <ImageButton
             android:id="@+id/right_button"
@@ -48,7 +37,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:layout_marginLeft="350dp"
+        android:layout_marginStart="350dp"
         android:layout_marginBottom="20dp"
         >
         <ImageButton
