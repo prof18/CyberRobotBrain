@@ -143,17 +143,17 @@ public class Navigation {
     }
 
     /**
-     *
      * This method computes a bound for the path, for a specific axis. This bound is used to estimate if the robot
      * is deviating too much from the straight route. (for the movement of L shape)
-     * @param type  Type is used to select the axis on which the robot will move. FALSE if it moves on x axis,
-     *               TRUE for movement on y axis
-     * @param start is the mean point among LEFT_CENTROID and RIGHT_CENTROID
-     * @param end is the TARGET_CENTROID
+     *
+     * @param type    Type is used to select the axis on which the robot will move. FALSE if it moves on x axis,
+     *                TRUE for movement on y axis
+     * @param start   is the mean point among LEFT_CENTROID and RIGHT_CENTROID
+     * @param end     is the TARGET_CENTROID
      * @param boundCm is half of the bound in cm that will be fixed
-     * @param height is the current height from the device to the target marker
-     * @param focal is the factor of scalability from real dimension to pixel dimension
-     *              (x pixel = 3 cm. Value 3 is the diameter of the TARGET_MARKER)
+     * @param height  is the current height from the device to the target marker
+     * @param focal   is the factor of scalability from real dimension to pixel dimension
+     *                (x pixel = 3 cm. Value 3 is the diameter of the TARGET_MARKER)
      * @return TRUE if robot is in the bound, FALSE otherwise
      */
     public static boolean isInBound(boolean type, Point start, Point end, double boundCm, double height, double focal) {
@@ -185,13 +185,13 @@ public class Navigation {
     }
 
     /**
-     *
      * This method evaluate if the robot is turned away to target (is oriented in the wrong direction).
      * (for the movement of L shape)
+     *
      * @param target is the TARGET_CENTROID
-     * @param right is the RIGHT_MARKER
-     * @param mean is the mean point among LEFT_CENTROID and RIGHT_CENTROID
-     * @param type Type is used to select the axis on which the robot will move. FALSE if it moves on x axis,
+     * @param right  is the RIGHT_MARKER
+     * @param mean   is the mean point among LEFT_CENTROID and RIGHT_CENTROID
+     * @param type   Type is used to select the axis on which the robot will move. FALSE if it moves on x axis,
      *               TRUE for movement on y axis
      * @return TRUE if robot is oriented in wrong direction, FALSE otherwise
      */
@@ -222,6 +222,7 @@ public class Navigation {
     /**
      * This method compute height in cm from the camera to the TARGET_MARKER using this formula
      * ACTUAL_HEIGHT = (TARGET_WIDTH * FOCAL) / ACTUAL_PIXEL_WIDTH
+     *
      * @param original Mat in RGB format, containing the image framed
      * @param context
      * @return the current height
@@ -321,41 +322,34 @@ public class Navigation {
     }
 
     /**
-     * @param m1 slope of the first line passing from LEFT_MARKER and RIGHT_MARKER
-     * @param m2 slope of the second line passing from the target and the mean point between LEFT_MARKER and RIGHT_MARKER
-     * @param focal is the factor of scalability from real dimension to pixel dimension
-     *              (x pixel = 3 cm. Value 3 is the diameter of the TARGET_MARKER)
+     * @param m1     slope of the first line passing from LEFT_MARKER and RIGHT_MARKER
+     * @param m2     slope of the second line passing from the target and the mean point between LEFT_MARKER and RIGHT_MARKER
+     * @param focal  is the factor of scalability from real dimension to pixel dimension
+     *               (x pixel = 3 cm. Value 3 is the diameter of the TARGET_MARKER)
      * @param height is the current height from the device to the target marker
-     * @param start is the mean point among LEFT_CENTROID and RIGHT_CENTROID
+     * @param start  is the mean point among LEFT_CENTROID and RIGHT_CENTROID
      * @param target is the TARGET_CENTROID
      * @return TRUE if m1 and m2 are perpendicular, FALSE otherwise
      */
     public static boolean isPerpendicular(double m1, double m2, double focal, double height, Point start, Point target) {
 
         boolean isPerpendicular = false;
-
         double lowerBound;
         double upperBound;
-
-        Log.v(TAG, "m1: " + m1);
-        Log.v(TAG, "m2: " + m2);
-
         double tmp = (ConstantApp.KNOWN_WIDTH * focal) / height;
-
         double pixelToCm = tmp / 3;
-
         double distance = Math.sqrt(Math.pow(target.x - start.x, 2) + Math.pow(target.y - start.y, 2));
         double distanceCm = distance / pixelToCm;
 
+        Log.v(TAG, "m1: " + m1);
+        Log.v(TAG, "m2: " + m2);
         Log.v(TAG, "Distance in cm: " + distanceCm);
 
-         if (distanceCm <= 8) {
-
+        //Based on distance take different condition of perpendicularity
+        if (distanceCm <= 8) {
             upperBound = -0.000000001;
             lowerBound = -1.999999999;
-
         } else {
-
             upperBound = -0.1;
             lowerBound = -1.9;
         }
@@ -366,8 +360,5 @@ public class Navigation {
             isPerpendicular = true;
 
         return isPerpendicular;
-
-
     }
-
 }

@@ -141,9 +141,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     //manage connected, disconnected and discovered action
-    /**
-     *
-     */
     private final BroadcastReceiver mGattUpdateReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {

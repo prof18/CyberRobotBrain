@@ -349,9 +349,10 @@ public class DeviceScanActivity extends AppCompatActivity {
         if (!mScanning && mBluetoothAdapter.isEnabled() && mLocationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
             Log.v(TAG, "scanLeDevice(true) in onResume()");
             scanLeDevice(true);
+            mSwipeRefreshLayout.setEnabled(false);
+            mProgress.setVisibility(View.VISIBLE);
         }
-        mSwipeRefreshLayout.setEnabled(false);
-        mProgress.setVisibility(View.VISIBLE);
+
     }
 
     @Override
@@ -373,10 +374,9 @@ public class DeviceScanActivity extends AppCompatActivity {
     public void onStop() {
         super.onStop();
         Log.v(TAG, "onStop() called");
-        if (mLocationManager != null)
-            mLocationManager.removeUpdates(locationListener);
-        if (blueBroadcastReceiver != null)
-            unregisterReceiver(blueBroadcastReceiver);
+
+       /* if (blueBroadcastReceiver != null)
+            unregisterReceiver(blueBroadcastReceiver);*/
         if (mScanning || (mLeDeviceListAdapter != null && mLeDeviceListAdapter.getItemCount() > 0)) {
             Log.d(TAG, "scanLeDevice(false) in onStop()");
             Log.d(TAG, "mLeDeviceListAdapter cleared in onStop()");
@@ -385,13 +385,27 @@ public class DeviceScanActivity extends AppCompatActivity {
         }
     }
 
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        Log.d(TAG, "onDestroy() called");
+        if (mLocationManager != null)
+            mLocationManager.removeUpdates(locationListener);
+
+        if (blueBroadcastReceiver != null)
+            unregisterReceiver(blueBroadcastReceiver);
+
+    }
+
+
     /* ####### PERMISSION METHODS ####### */
 
-    /**
-     * This method checks location permissions and control if gps and bluetooth are enabled
-     *
-     * @param activity Activity Reference
-     */
+        /**
+         * This method checks location permissions and control if gps and bluetooth are enabled
+         *
+         * @param activity Activity Reference
+         */
+
     public void verifyPermissions(Activity activity) {
 
         int coarseLocation = ActivityCompat.checkSelfPermission(activity, PERMISSIONS_LOCATION[0]);

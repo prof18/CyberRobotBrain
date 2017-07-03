@@ -101,7 +101,6 @@ public class ManualNavigationActivity extends AppCompatActivity {
                 finish();
             }
             if (mDeviceAddress != null) {
-
                 //get the Characteristic for the Movement
                 mMovementGattService = mBluetoothLeService.getSupportedGattServices().get(mBluetoothLeService.getSupportedGattServices().size() - 1);
                 mMovementCharacteristic = mMovementGattService.getCharacteristic(ConstantApp.UUID_MOVEMENT);
@@ -122,7 +121,6 @@ public class ManualNavigationActivity extends AppCompatActivity {
     private View.OnTouchListener movementListener(int movement) {
 
         View.OnTouchListener listener = null;
-
         switch (movement) {
 
             case ConstantApp.CODE_FORWARD:

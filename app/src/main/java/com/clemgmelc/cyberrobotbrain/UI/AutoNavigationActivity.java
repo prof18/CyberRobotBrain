@@ -129,7 +129,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
     private int movementType;
     private Double distanceTM;
 
-    //enables the next button
+    //Enables the next button
     private boolean debug = true;
 
     /* ####### UI METHODS ####### */
@@ -143,7 +143,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
         setContentView(R.layout.auto_navigation_main);
         mActivity = this;
 
-        //fab
+        //Fab
         mFabMenu = (FloatingActionButton) findViewById(R.id.fabAutoNav);
         mFabPictureCalib = (FloatingActionButton) findViewById(R.id.fabCalibration);
         mFabStop = (FloatingActionButton) findViewById(R.id.fabStop);
@@ -152,13 +152,13 @@ public class AutoNavigationActivity extends AppCompatActivity {
         mLMovLabel = (TextView) findViewById(R.id.l_mov_label);
         mFabCalib = (FloatingActionButton) findViewById(R.id.fabRecalibration);
 
-        //text views
+        //Text views
         mCalibrationInfo = (TextView) findViewById(R.id.calibrationInfo);
         mDirectMovLabel = (TextView) findViewById(R.id.direct_mov_label);
         mCalibrationLabel = (TextView) findViewById(R.id.calibration_label);
         mCalibrationNeedTitle = (TextView) findViewById(R.id.calibrationNeed);
 
-        //animations
+        //Animations
         mFabOpen = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.fab_open);
         mFabClose = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.fab_close);
         rotForward = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.rotate_forward);
@@ -196,6 +196,9 @@ public class AutoNavigationActivity extends AppCompatActivity {
         if (debug) initMaskVisualizerButton();
     }
 
+    /**
+     * This method initialize all the actions, visualization and pressure events on the fab buttons
+     */
     public void initFabListener() {
 
         mFabMenu.setOnClickListener(new View.OnClickListener() {
@@ -270,6 +273,9 @@ public class AutoNavigationActivity extends AppCompatActivity {
         });
     }
 
+    /**
+     * This method manage the animation of the fab button (menu)
+     */
     public void animateFab() {
 
         if (isOpen) {
@@ -348,6 +354,10 @@ public class AutoNavigationActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * This method (used during developing and debugging) display in steps all the picture elaboration
+     * done by the application (mask of HSV and markers recognition)
+     */
     public void initMaskVisualizerButton() {
 
         mButtonNext.setOnClickListener(new View.OnClickListener() {
@@ -433,6 +443,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
         });
     }
 
+    //The camera2 API require a surface on which display the camera preview.
     private TextureView.SurfaceTextureListener mSurfaceTextureListener = new TextureView.SurfaceTextureListener() {
         @Override
         public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
@@ -463,21 +474,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
         }
     };
 
-    //show a dialog of error that will close the scan activity after ok is pressed
-    private void showNegativeDialog(String title, String message) {
-        final AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(this);
-        dialogBuilder.setTitle(title);
-        dialogBuilder.setMessage(message);
-        dialogBuilder.setCancelable(false);
-        dialogBuilder.setNegativeButton(android.R.string.ok,
-                new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int which) {
-                        finish();
-                    }
-                });
-        dialogBuilder.show();
-    }
-
+    //Layout parameters
     @Override
     public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
@@ -520,6 +517,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
         unregisterReceiver(mGattUpdateReceiver);
     }
 
+    //TODO: ask marco
     @Override
     protected void onDestroy() {
         super.onDestroy();
@@ -529,7 +527,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
 
     /* ####### BLUETOOTH METHODS ####### */
 
-    // Manage Service lifecycle.
+    //Manage Service lifecycle.
     private final ServiceConnection mServiceConnection = new ServiceConnection() {
 
         //what to do when connected to the service
@@ -558,7 +556,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
         }
     };
 
-    //manage connected, disconnected and discovered action
+    //Manage connected, disconnected and discovered action
     private final BroadcastReceiver mGattUpdateReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -601,12 +599,18 @@ public class AutoNavigationActivity extends AppCompatActivity {
         }
     };
 
+    /**
+     * This method set up the camera.
+     * @param width width of the surface available
+     * @param height height of the surface available
+     */
     private void setupCamera(int width, int height) {
 
         CameraCharacteristics cameraCharacteristics = null;
         CameraManager cameraManager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
 
         try {
+            //Scan all cameras available and obtain the index of the back camera
             for (String cameraId : cameraManager.getCameraIdList()) {
 
                 cameraCharacteristics = cameraManager.getCameraCharacteristics(cameraId);
@@ -614,10 +618,12 @@ public class AutoNavigationActivity extends AppCompatActivity {
 
                 if (facing != null && facing == CameraCharacteristics.LENS_FACING_BACK) {
                     mCameraId = cameraId;
+                    //When camera is found exit
                     break;
                 }
             }
 
+            //Obtain characteristic of the back camera
             StreamConfigurationMap mMap = null;
             try {
                 mMap = cameraCharacteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
@@ -626,11 +632,11 @@ public class AutoNavigationActivity extends AppCompatActivity {
                 onBackPressed();
                 Toast.makeText(mActivity, getResources().getString(R.string.error_camera), Toast.LENGTH_SHORT).show();
             }
-            Size[] mSizeList = null;
 
-            if (mMap != null) {
+            //Obtain all available image resolution
+            Size[] mSizeList = null;
+            if (mMap != null)
                 mSizeList = mMap.getOutputSizes(ImageFormat.JPEG);
-            }
 
             int maxResIndex = Utility.maxRes(mSizeList);
             if (maxResIndex != -1) {
@@ -643,15 +649,17 @@ public class AutoNavigationActivity extends AppCompatActivity {
                 }
             }
 
+            //Initialize a new ImageReader using the MaxSize (capture picture with max resolution) and assign the listener
             mImageReader = ImageReader.newInstance(mMaxSize.getWidth(), mMaxSize.getHeight(), ImageFormat.JPEG, 3);
             mImageReader.setOnImageAvailableListener(mOnImageAvailableListener, mBackgroundHandler);
 
+            //To display image in landscape without stretching it image need to be adapted to the screen size available
             Point displaySize = new Point();
             this.getWindowManager().getDefaultDisplay().getSize(displaySize);
-
             int maxPreviewWidth = displaySize.y;
             int maxPreviewHeight = displaySize.x;
 
+            //Select the preview size comparing available sizes and the resolution
             try {
                 mPreviewSize = Utility.chooseOptimalSize(mMap.getOutputSizes(SurfaceTexture.class), width, height, maxPreviewWidth, maxPreviewHeight, mMaxSize);
             } catch (NullPointerException e) {
@@ -660,15 +668,23 @@ public class AutoNavigationActivity extends AppCompatActivity {
                 Toast.makeText(mActivity, getResources().getString(R.string.error_camera), Toast.LENGTH_SHORT).show();
             }
 
+            //Perform the rotation of the matrix image on the surface available
             Matrix matrix = new Matrix();
+
+            //Surface dimensions saved in a RectF object
             RectF viewRect = new RectF(0, 0, width, height);
+            //Image dimensions saved in a RectF object
             RectF bufferRect = new RectF(0, 0, mPreviewSize.getHeight(), mPreviewSize.getWidth());
 
             float centerX = viewRect.centerX();
             float centerY = viewRect.centerY();
 
+            //Align the centers of the 2 RectF
             bufferRect.offset(centerX - bufferRect.centerX(), centerY - bufferRect.centerY());
-            matrix.setRectToRect(viewRect, bufferRect, Matrix.ScaleToFit.FILL);
+
+            //TODO:MARCO following not needed
+            //matrix.setRectToRect(viewRect, bufferRect, Matrix.ScaleToFit.FILL);
+            //Scale and rotate
             float scale = Math.max(
                     (float) height / mPreviewSize.getHeight(),
                     (float) width / mPreviewSize.getWidth());
@@ -682,6 +698,9 @@ public class AutoNavigationActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * This method open the camera and connect it to the callback
+     */
     private void connectCamera() {
 
         CameraManager cameraManager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
@@ -689,6 +708,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
         try {
             if (ActivityCompat.checkSelfPermission(this, PERMISSIONS_CAMERA[0]) == PackageManager.PERMISSION_GRANTED) {
                 try {
+
                     if (!mCameraOpenCloseLock.tryAcquire(2500, TimeUnit.MILLISECONDS)) {
                         throw new RuntimeException("Time out waiting to lock camera opening.");
                     }
@@ -704,13 +724,18 @@ public class AutoNavigationActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * This method starts the preview on the screen
+     */
     private void startPreview() {
 
+        //Initialize the surface
         SurfaceTexture surfaceTexture = mTextureView.getSurfaceTexture();
         surfaceTexture.setDefaultBufferSize(mPreviewSize.getWidth(), mPreviewSize.getHeight());
         Surface previewSurface = new Surface(surfaceTexture);
 
         try {
+            //Build the capture request and session assigning the surface
             mCaptureRequestBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
             mCaptureRequestBuilder.addTarget(previewSurface);
             mCameraDevice.createCaptureSession(Arrays.asList(previewSurface, mImageReader.getSurface()),
@@ -736,24 +761,16 @@ public class AutoNavigationActivity extends AppCompatActivity {
         }
     }
 
-    private void startCapturing() {
-        try {
-            mCaptureRequestBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
-            mCaptureRequestBuilder.addTarget(mImageReader.getSurface());
-            mCaptureRequestBuilder.set(CaptureRequest.JPEG_ORIENTATION, null);
-
-        } catch (CameraAccessException e) {
-            e.printStackTrace();
-        }
-    }
-
     private final ImageReader.OnImageAvailableListener mOnImageAvailableListener = new ImageReader.OnImageAvailableListener() {
 
         @Override
         public void onImageAvailable(ImageReader reader) {
             Log.v(TAG, "IMAGE AVAILABLE");
+
+            //If in calibration phase execute the CalibrationThread
             if (mIsCalibrating)
                 mBackgroundHandler.post(new CalibrationThread(reader.acquireLatestImage()));
+            //If not in calibration, robot is ready to move and the NavigationThread is started
             else {
                 try {
                     navigationThread = new NavigationThread(reader.acquireLatestImage());
@@ -764,7 +781,6 @@ public class AutoNavigationActivity extends AppCompatActivity {
 
                     Toast.makeText(mActivity, getResources().getString(R.string.error_occured_camera), Toast.LENGTH_SHORT).show();
                     Log.v(TAG,"ERROR  in image available");
-                    Log.e("PUTTANA", "exception", e);
                 }
             }
         }
@@ -779,6 +795,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
             mCaptureRequestBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
             mCaptureRequestBuilder.addTarget(mImageReader.getSurface());
             mCaptureRequestBuilder.set(CaptureRequest.JPEG_ORIENTATION, null);
+            //Start capturing image, results are obtained in the mPreviewCaptureCallback
             mPreviewCaptureSession.capture(mCaptureRequestBuilder.build(), mPreviewCaptureCallback, mBackgroundHandler);
         } catch (Exception e) {
             e.printStackTrace();
@@ -789,7 +806,13 @@ public class AutoNavigationActivity extends AppCompatActivity {
     }
 
     private CameraCaptureSession.CaptureCallback mPreviewCaptureCallback = new CameraCaptureSession.CaptureCallback() {
+        @Override
+        public void onCaptureCompleted(CameraCaptureSession session, CaptureRequest request, TotalCaptureResult result) {
+            super.onCaptureCompleted(session, request, result);
+            process(result);
+        }
 
+        //Called when capture is completed
         private void process(CaptureResult captureResult) {
             switch (mCaptureState) {
                 case STATE_PREVIEW:
@@ -806,14 +829,18 @@ public class AutoNavigationActivity extends AppCompatActivity {
                     break;
             }
         }
-
-        @Override
-        public void onCaptureCompleted(CameraCaptureSession session, CaptureRequest request, TotalCaptureResult result) {
-            super.onCaptureCompleted(session, request, result);
-            process(result);
-        }
     };
 
+    private void startCapturing() {
+        try {
+            mCaptureRequestBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
+            mCaptureRequestBuilder.addTarget(mImageReader.getSurface());
+            mCaptureRequestBuilder.set(CaptureRequest.JPEG_ORIENTATION, null);
+
+        } catch (CameraAccessException e) {
+            e.printStackTrace();
+        }
+    }
 
     private void closeCamera() {
         try {
@@ -841,6 +868,9 @@ public class AutoNavigationActivity extends AppCompatActivity {
 
     }
 
+    /**
+     * All the operations performed by camera are executed in a different Thread from the main Thread
+     */
     private void startBackgroundThread() {
         mBackgroundHandlerThread = new HandlerThread("AutoNavigationCamera");
         mBackgroundHandlerThread.start();
@@ -858,7 +888,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
         }
     }
 
-
+    //Handle the permission request of the camera
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
 
@@ -881,8 +911,27 @@ public class AutoNavigationActivity extends AppCompatActivity {
         }
     }
 
-   /* ####### MOVEMENT METHODS ####### */
+    //Show a dialog of error that will close the AutoNavigationActivity after ok is pressed
+    private void showNegativeDialog(String title, String message) {
+        final AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(this);
+        dialogBuilder.setTitle(title);
+        dialogBuilder.setMessage(message);
+        dialogBuilder.setCancelable(false);
+        dialogBuilder.setNegativeButton(android.R.string.ok,
+                new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                        finish();
+                    }
+                });
+        dialogBuilder.show();
+    }
 
+   /* ####### CALIBRATION & MOVEMENT METHODS ####### */
+
+    /**
+     *
+     * This class manage the entire calibration phase in a separated Thread
+     */
     private class CalibrationThread implements Runnable {
 
         private final Image mImage;
@@ -894,17 +943,21 @@ public class AutoNavigationActivity extends AppCompatActivity {
         @Override
         public void run() {
 
+            //Parse the image in bytes before obtaining a bitmap
             Log.v(TAG, "Calibration Thread RUNNING##############");
             ByteBuffer byteBuffer = mImage.getPlanes()[0].getBuffer();
             byte[] bytes = new byte[byteBuffer.remaining()];
             byteBuffer.get(bytes);
-            //pass data into a bitmap
+            //Pass bytes data into a bitmap and scale it in order to display it completely in the screen
             BitmapFactory.Options opt = new BitmapFactory.Options();
             opt.inSampleSize = 2;
             myBitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length, opt);
+
+            //Transform Bitmap into a Mat
             mOriginal = new Mat(myBitmap.getWidth(), myBitmap.getHeight(), CvType.CV_8UC4);
             Utils.bitmapToMat(myBitmap, mOriginal);
 
+            //Display the photo taken before
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
@@ -916,15 +969,19 @@ public class AutoNavigationActivity extends AppCompatActivity {
                 }
             });
 
+            /*
+             * Handle the touch events guided by the text instructions displayed
+             */
             mTestImage.setOnTouchListener(new View.OnTouchListener() {
                 @Override
                 public boolean onTouch(View v, MotionEvent event) {
 
+                    //Variable colorCounter handle the current color calibration
                     if (colorCounter > 2) {
                         colorCounter = 0;
                         touchedRegionRgba.release();
                         touchedRegionHsv.release();
-                        //return to the "classic" camera view
+                        //return to the preview of camera
                         mTestImage.setVisibility(View.INVISIBLE);
                         mTextureView.setVisibility(View.VISIBLE);
                         mTextureView.getTop();
@@ -936,7 +993,14 @@ public class AutoNavigationActivity extends AppCompatActivity {
                     int cols = mOriginal.cols();
                     int rows = mOriginal.rows();
 
-                    //differenze tra immagine scattata e quella visualizzata sullo schermo
+
+                    /*
+                     * The touch event use coordinates of the screen. The image is reduced in order
+                     * to be displayed on the screen, so we need to relate coordinates of the screen
+                     * to those on the image
+                     */
+
+                    //Image should have 2 lateral black strips. Compute the dimension of on of them
                     int xOffset = (cols - mTestImage.getWidth()) / 2;
                     int yOffset = (rows - mTestImage.getHeight()) / 2;
 
