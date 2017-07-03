@@ -43,7 +43,7 @@ public class Navigation {
      * This method evaluates the centroid of a specific marker
      *
      * @param contours is the contour of the marker
-     * @return
+     * @return Centroid point
      */
     public static Point findCentroid(List<MatOfPoint> contours) {
 
@@ -143,11 +143,9 @@ public class Navigation {
     }
 
     /**
-     * This method computes a bound for the path, for a specific axis. This bound is used to estimate if the robot
-     * is deviating too much from the straight route. (for the movement of L shape)
+     * This method computes a bound for the Y coordinates (control if robot Y coordinates are similar
+     * to the Y coordinates of the target using a bound in cm. (for the movement of L shape)
      *
-     * @param type    Type is used to select the axis on which the robot will move. FALSE if it moves on x axis,
-     *                TRUE for movement on y axis
      * @param start   is the mean point among LEFT_CENTROID and RIGHT_CENTROID
      * @param end     is the TARGET_CENTROID
      * @param boundCm is half of the bound in cm that will be fixed
@@ -156,8 +154,7 @@ public class Navigation {
      *                (x pixel = 3 cm. Value 3 is the diameter of the TARGET_MARKER)
      * @return TRUE if robot is in the bound, FALSE otherwise
      */
-    //TODO: rimuovere type.. not useful
-    public static boolean isInBound(boolean type, Point start, Point end, double boundCm, double height, double focal) {
+    public static boolean isInBound(Point start, Point end, double boundCm, double height, double focal) {
 
         boolean isInBound = false;
         double offset = (ConstantApp.KNOWN_WIDTH * focal) / height;
@@ -173,14 +170,8 @@ public class Navigation {
         }
 
         //evaluate inBound condition
-        if (type) {
-            if (start.y >= end.y - offset && start.y <= end.y + offset)
-                isInBound = true;
-
-        } /*else {
-            if (start.x >= end.x - offset && start.x <= end.x + offset)
-                isInBound = true;
-        }*/
+        if (start.y >= end.y - offset && start.y <= end.y + offset)
+            isInBound = true;
 
         return isInBound;
     }
@@ -225,7 +216,7 @@ public class Navigation {
      * ACTUAL_HEIGHT = (TARGET_WIDTH * FOCAL) / ACTUAL_PIXEL_WIDTH
      *
      * @param original Mat in RGB format, containing the image framed
-     * @param context
+     * @param context  Context
      * @return the current height
      */
 
@@ -302,7 +293,7 @@ public class Navigation {
             //Imgproc.rectangle(original, rect.tl(), rect.br(), CONTOUR_COLOR, 5);
             //Imgproc.drawContours(original, finacontourlist, -1, CONTOUR_COLOR, 5);
 
-            //Retrieve focal from sahered
+            //Retrieve focal from shared
             String focalS = shared.getString(ConstantApp.SHARED_FOCAL, null);
 
             //Take width of the rect

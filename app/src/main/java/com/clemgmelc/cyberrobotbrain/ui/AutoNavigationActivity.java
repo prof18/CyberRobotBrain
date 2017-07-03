@@ -373,7 +373,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
                     case 1:
                         Log.d(TAG, "HSV MASK");
                         mCalibrationInfo.setVisibility(View.VISIBLE);
-                        mCalibrationInfo.setText("HSV MASK");
+                        mCalibrationInfo.setText(getResources().getString(R.string.hsv_mask));
                         Utils.matToBitmap(caseHsv, myBitmap);
                         runOnUiThread(new Runnable() {
                             @Override
@@ -390,7 +390,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
                     case 2:
                         Log.d(TAG, "CASE LEFT");
                         mCalibrationInfo.setVisibility(View.VISIBLE);
-                        mCalibrationInfo.setText("CASE LEFT");
+                        mCalibrationInfo.setText(getResources().getString(R.string.left_mask));
 
                         Utils.matToBitmap(caseLeft, myBitmap);
                         runOnUiThread(new Runnable() {
@@ -407,7 +407,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
                     case 3:
                         Log.d(TAG, "CASE TARGET");
                         mCalibrationInfo.setVisibility(View.VISIBLE);
-                        mCalibrationInfo.setText("CASE TARGET");
+                        mCalibrationInfo.setText(getResources().getString(R.string.target_mask));
 
                         Utils.matToBitmap(caseTarget, myBitmap);
                         runOnUiThread(new Runnable() {
@@ -425,7 +425,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
                     case 4:
                         Log.d(TAG, "CASE RIGHT");
                         mCalibrationInfo.setVisibility(View.VISIBLE);
-                        mCalibrationInfo.setText("CASE RIGHT");
+                        mCalibrationInfo.setText(getResources().getString(R.string.right_mask));
 
                         Utils.matToBitmap(caseRight, myBitmap);
                         runOnUiThread(new Runnable() {
@@ -1222,7 +1222,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
                     Toast.makeText(mActivity, getResources().getString(R.string.error_occured_camera), Toast.LENGTH_SHORT).show();
                     Log.v(TAG, "ERROR Distance is -1");
                 }
-//TODO: eliminate for cycle & select reed double band is necessary???
+                //TODO: eliminate for cycle & select reed double band is necessary???
                 /*for (int i = 0; i < 3; i++) {
                     if (Double.valueOf(leftUpper[i]) >= 255)
                         leftUpper[i] = "255";
@@ -1315,7 +1315,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
                          * start movements along X axis
                          */
 
-                        if (Navigation.isInBound(true, centerMean, centerTarget, 5, height, focal)) {
+                        if (Navigation.isInBound(centerMean, centerTarget, 5, height, focal)) {
 
                             //Call turnDirection method in order to obtain the next action
                             int action = Navigation.turnDirection(centerTarget, centerLeft, centerRight, true, focal, height);
@@ -1464,6 +1464,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
 
                 //If only the target marker is not visible the robot is arrived, set UI initial layout
                 } else if (centerTarget == null) {
+                    stop = true;
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
@@ -1483,6 +1484,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
                 //If one of the two marker of the robot is not visible stop the navigation
                 } else {
 
+                    stop = true;
                     String message = null;
                     if (contoursLeft == null)
                         message = "LEFT is Null";

@@ -424,7 +424,7 @@ public class ManualNavigationActivity extends AppCompatActivity {
                 mBluetoothLeService.disconnect();
                 mBluetoothLeService = null;
                 onBackPressed();
-                Log.v(TAG, "unregistred");
+                Log.v(TAG, "unregistered");
             }
         }
     };

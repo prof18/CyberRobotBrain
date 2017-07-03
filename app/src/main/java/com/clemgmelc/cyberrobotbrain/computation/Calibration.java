@@ -86,7 +86,12 @@ public class Calibration {
         return mUpperBound.val[0] + ":" + mUpperBound.val[1] + ":" + mUpperBound.val[2] + ":" + mUpperBound.val[3];
     }
 
-    //TODO: we can eliminate this and also the relative part in autonavigation, not useful
+    /**
+     *
+     * This method computes RGB values from HSV
+     * @param hsvColor Scalar containing HSV values
+     * @return Scalar containing RGB values
+     */
     public static Scalar hsvToRGBA(Scalar hsvColor) {
 
         Mat pointMatRgba = new Mat();
@@ -104,7 +109,7 @@ public class Calibration {
      * FOCAL = (PIXEL_DIMENSION * REAL_DISTANCE) /TARGET_DIMENSION
      *
      * @param original Mat containing the picture in RGB format
-     * @param context
+     * @param context Context
      */
     public static void computeFocal(Mat original, Context context) {
 
