@@ -156,6 +156,7 @@ public class Navigation {
      *                (x pixel = 3 cm. Value 3 is the diameter of the TARGET_MARKER)
      * @return TRUE if robot is in the bound, FALSE otherwise
      */
+    //TODO: rimuovere type.. not useful
     public static boolean isInBound(boolean type, Point start, Point end, double boundCm, double height, double focal) {
 
         boolean isInBound = false;
@@ -176,10 +177,10 @@ public class Navigation {
             if (start.y >= end.y - offset && start.y <= end.y + offset)
                 isInBound = true;
 
-        } else {
+        } /*else {
             if (start.x >= end.x - offset && start.x <= end.x + offset)
                 isInBound = true;
-        }
+        }*/
 
         return isInBound;
     }

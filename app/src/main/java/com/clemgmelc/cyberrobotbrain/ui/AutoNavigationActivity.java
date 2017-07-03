@@ -204,7 +204,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
         mFabMenu.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Log.v(TAG,"MENU pressed");
+                Log.v(TAG, "MENU pressed");
                 animateFab();
             }
         });
@@ -241,6 +241,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
                 mFabPictureCalib.show();
                 mIsCalibrating = true;
                 mCalibrationInfo.setVisibility(View.VISIBLE);
+                mCalibrationInfo.setText(R.string.info_recalibration);
                 mFabPictureCalib.setVisibility(View.VISIBLE);
                 mCalibrationNeedTitle.setVisibility(View.GONE);
                 colorCounter = 0;
@@ -250,7 +251,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
         mFabStop.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Log.v(TAG,"STOP pressed");
+                Log.v(TAG, "STOP pressed");
                 Toast.makeText(mActivity, getResources().getString(R.string.stopping), Toast.LENGTH_SHORT).show();
                 mFabStop.hide();
                 mFabMenu.show();
@@ -266,7 +267,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
         mFabPictureCalib.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Log.v(TAG,"PICTURE pressed");
+                Log.v(TAG, "PICTURE pressed");
                 mFabPictureCalib.hide();
                 takePicture();
             }
@@ -601,7 +602,8 @@ public class AutoNavigationActivity extends AppCompatActivity {
 
     /**
      * This method set up the camera.
-     * @param width width of the surface available
+     *
+     * @param width  width of the surface available
      * @param height height of the surface available
      */
     private void setupCamera(int width, int height) {
@@ -682,8 +684,8 @@ public class AutoNavigationActivity extends AppCompatActivity {
             //Align the centers of the 2 RectF
             bufferRect.offset(centerX - bufferRect.centerX(), centerY - bufferRect.centerY());
 
-            //TODO:MARCO following not needed
-            //matrix.setRectToRect(viewRect, bufferRect, Matrix.ScaleToFit.FILL);
+            //Adapt image without stretching it
+            matrix.setRectToRect(viewRect, bufferRect, Matrix.ScaleToFit.FILL);
             //Scale and rotate
             float scale = Math.max(
                     (float) height / mPreviewSize.getHeight(),
@@ -770,7 +772,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
             //If in calibration phase execute the CalibrationThread
             if (mIsCalibrating)
                 mBackgroundHandler.post(new CalibrationThread(reader.acquireLatestImage()));
-            //If not in calibration, robot is ready to move and the NavigationThread is started
+                //If not in calibration, robot is ready to move and the NavigationThread is started
             else {
                 try {
                     navigationThread = new NavigationThread(reader.acquireLatestImage());
@@ -780,7 +782,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
                     finish();
 
                     Toast.makeText(mActivity, getResources().getString(R.string.error_occured_camera), Toast.LENGTH_SHORT).show();
-                    Log.v(TAG,"ERROR  in image available");
+                    Log.v(TAG, "ERROR  in image available");
                 }
             }
         }
@@ -801,7 +803,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
             e.printStackTrace();
             finish();
             Toast.makeText(mActivity, getResources().getString(R.string.error_occured_camera), Toast.LENGTH_SHORT).show();
-            Log.v(TAG,"ERROR in take picture");
+            Log.v(TAG, "ERROR in take picture");
         }
     }
 
@@ -929,7 +931,6 @@ public class AutoNavigationActivity extends AppCompatActivity {
    /* ####### CALIBRATION & MOVEMENT METHODS ####### */
 
     /**
-     *
      * This class manage the entire calibration phase in a separated Thread
      */
     private class CalibrationThread implements Runnable {
@@ -948,7 +949,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
             ByteBuffer byteBuffer = mImage.getPlanes()[0].getBuffer();
             byte[] bytes = new byte[byteBuffer.remaining()];
             byteBuffer.get(bytes);
-            //Pass bytes data into a bitmap and scale it in order to display it completely in the screen
+            //Pass bytes data into a bitmap and scale it in order to display it completely on the screen
             BitmapFactory.Options opt = new BitmapFactory.Options();
             opt.inSampleSize = 2;
             myBitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length, opt);
@@ -1000,21 +1001,19 @@ public class AutoNavigationActivity extends AppCompatActivity {
                      * to those on the image
                      */
 
-                    //Image should have 2 lateral black strips. Compute the dimension of on of them
+                    //Image should have two lateral black strips. Compute the dimension of one of these
                     int xOffset = (cols - mTestImage.getWidth()) / 2;
                     int yOffset = (rows - mTestImage.getHeight()) / 2;
 
-                    //traslazione del tocco sulle coordinate relative all'immagine originale
+                    //The dimension of the strip is an offset that is needed to be add at coordinates
                     int x = (int) event.getX() + xOffset;
                     int y = (int) event.getY() + yOffset;
 
-                    Log.i(TAG, "offset: X" + xOffset + ", Y:" + yOffset + ")");
-                    Log.i(TAG, "testimage: W" + mTestImage.getWidth() + ",H: " + mTestImage.getHeight() + ")");
-                    Log.i(TAG, "textureview: W" + mTextureView.getWidth() + ",H: " + mTextureView.getHeight() + ")");
-                    Log.i(TAG, "originalImage: W" + mOriginal.width() + ",H: " + mOriginal.height() + ")");
-                    Log.i(TAG, "cols: " + cols + ",row: " + rows + ")");
-                    Log.i(TAG, "Touch image coordinates: (" + x + ", " + y + ")");
-
+                    /*
+                     * Around the point touched identify a rect 8x8 and on that rect evaluate
+                     * a mean value of color. To do this we need to be sure not to exit
+                     * margins of the image
+                     */
                     if (x <= 4)
                         x += 4;
                     else if (y <= 4)
@@ -1032,44 +1031,44 @@ public class AutoNavigationActivity extends AppCompatActivity {
                     touchedRect.width = x + 4 - touchedRect.x;
                     touchedRect.height = y + 4 - touchedRect.y;
 
+                    //Defined the rect use submat to extract that region of image
                     touchedRegionRgba = mOriginal.submat(touchedRect);
 
+                    //Convert color in HSV
                     touchedRegionHsv = new Mat();
                     Imgproc.cvtColor(touchedRegionRgba, touchedRegionHsv, Imgproc.COLOR_RGB2HSV);
 
+                    //Create new object to save color calibration
                     mDetector = new Calibration();
 
-                    // Calculate average color of touched region
+                    //Evaluate average HSV color of touched region (rect 8x8)
                     Scalar mBlobColorHsv = Core.sumElems(touchedRegionHsv);
                     int pointCount = touchedRect.width * touchedRect.height;
                     for (int i = 0; i < mBlobColorHsv.val.length; i++)
                         mBlobColorHsv.val[i] /= pointCount;
 
+                    //Save bounds
+                    mDetector.setHsvRange(mBlobColorHsv);
+
+                    //UI feedback: show color selected to user with option to accept or repeat sampling
                     Scalar mBlobColorRgba = Calibration.hsvToRGBA(mBlobColorHsv);
                     int red = (int) mBlobColorRgba.val[0];
                     int green = (int) mBlobColorRgba.val[1];
                     int blue = (int) mBlobColorRgba.val[2];
-                    int alpha = (int) (int) mBlobColorRgba.val[3];
-
-                    String hex = String.format("#%02x%02x%02x%02x", red, green, blue, alpha);
-                    String hex2 = String.format("#%02x%02x%02x", red, green, blue);
-
-                    Log.v(TAG, "COLOR CLICKED: " + hex);
+                    String hex = String.format("#%02x%02x%02x", red, green, blue);
                     Log.i(TAG, "Touched rgba color: (" + mBlobColorRgba.val[0] + ", " + mBlobColorRgba.val[1] +
                             ", " + mBlobColorRgba.val[2] + ", " + mBlobColorRgba.val[3] + ")");
-
-                    mDetector.setHsvRange(mBlobColorHsv);
-
-                    int cl = Color.parseColor(hex2);
+                    int cl = Color.parseColor(hex);
                     final GradientDrawable gd = new GradientDrawable();
                     gd.setColor(cl);
                     gd.setShape(GradientDrawable.OVAL);
 
+                    //Dialog with color feedback
                     final AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(AutoNavigationActivity.this);
                     dialogBuilder.setTitle(getResources().getString(R.string.selected_color));
                     dialogBuilder.setIcon(gd);
                     dialogBuilder.setCancelable(false);
-
+                    //Repeat sampling action
                     dialogBuilder.setNegativeButton(getString(R.string.repeat), new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
@@ -1077,6 +1076,10 @@ public class AutoNavigationActivity extends AppCompatActivity {
                         }
                     });
 
+                    /*
+                     * Accept color calibration and save it in the correct variables according to
+                     * the current colorCounter value
+                    */
                     dialogBuilder.setPositiveButton(android.R.string.ok,
                             new DialogInterface.OnClickListener() {
                                 public void onClick(DialogInterface dialog, int which) {
@@ -1120,17 +1123,17 @@ public class AutoNavigationActivity extends AppCompatActivity {
                                             Log.v(TAG, "LEFT_UPPER: " + mDetector.getUpperBound());
                                             editor.apply();
 
+                                            //Obtain "height calibration"
                                             if (Utility.isTargetCalibrationDone(getApplicationContext()))
                                                 Calibration.computeFocal(mOriginal, getApplicationContext());
 
-                                            //calibration is done
+                                            //When calibration is done
                                             mCalibrationInfo.setVisibility(View.GONE);
-                                            mCalibrationInfo.setText(R.string.info_recalibration);
                                             colorCounter = 0;
                                             touchedRegionRgba.release();
                                             touchedRegionHsv.release();
 
-                                            //return to the "classic" camera view
+                                            //Return to the preview of camera
                                             mTestImage.setVisibility(View.INVISIBLE);
                                             mTextureView.setVisibility(View.VISIBLE);
                                             mTextureView.getTop();
@@ -1150,10 +1153,10 @@ public class AutoNavigationActivity extends AppCompatActivity {
                             });
 
                     dialogBuilder.show();
-                    //we need only a single touch event
                     return false;
                 }
             });
+            //Close image
             mImage.close();
         }
     }
@@ -1169,22 +1172,25 @@ public class AutoNavigationActivity extends AppCompatActivity {
         @Override
         public void run() {
 
+            //When stop button is pressed the thread does nothing ( stop == true )
             if (!stop) {
 
                 mTestImage.setOnTouchListener(null);
+                //Parse the image in bytes before obtaining a bitmap
                 Log.v(TAG, "Navigation Thread RUNNING##############");
                 ByteBuffer byteBuffer = mImage.getPlanes()[0].getBuffer();
                 byte[] bytes = new byte[byteBuffer.remaining()];
                 byteBuffer.get(bytes);
-                //pass data into a bitmap
+
+                //Pass bytes data into a bitmap
                 BitmapFactory.Options opt = new BitmapFactory.Options();
                 opt.inSampleSize = 2;
                 myBitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length, opt);
-
                 mOriginal = new Mat(myBitmap.getWidth(), myBitmap.getHeight(), CvType.CV_8UC4);
                 Utils.bitmapToMat(myBitmap, mOriginal);
 
                 if (debug) {
+                    //Show button next for display partial results of image processing
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
@@ -1193,7 +1199,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
                     });
                 }
 
-                //get a reference to the shared preferences
+                //Get a reference to the shared preferences
                 SharedPreferences sharedpreferences = getApplicationContext().getSharedPreferences(ConstantApp.SHARED_NAME, Context.MODE_PRIVATE);
 
                 String[] leftUpper = sharedpreferences.getString(ConstantApp.SHARED_ROBOT_LEFT_UPPER, null).split(":");
@@ -1205,6 +1211,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
                 String[] targetUpper = sharedpreferences.getString(ConstantApp.SHARED_TARGET_UPPER, null).split(":");
                 String[] targetLower = sharedpreferences.getString(ConstantApp.SHARED_TARGET_LOWER, null).split(":");
 
+                //Retrieve from shared preferences focal value (scaling factor)
                 String focalS = sharedpreferences.getString(ConstantApp.SHARED_FOCAL, null);
                 double focal = -1;
                 if (focalS != null)
@@ -1215,16 +1222,17 @@ public class AutoNavigationActivity extends AppCompatActivity {
                     Toast.makeText(mActivity, getResources().getString(R.string.error_occured_camera), Toast.LENGTH_SHORT).show();
                     Log.v(TAG, "ERROR Distance is -1");
                 }
-
-                for (int i = 0; i < 3; i++) {
+//TODO: eliminate for cycle & select reed double band is necessary???
+                /*for (int i = 0; i < 3; i++) {
                     if (Double.valueOf(leftUpper[i]) >= 255)
                         leftUpper[i] = "255";
                     else if (Double.valueOf(rightUpper[i]) >= 255)
                         leftUpper[i] = "255";
                     else if (Double.valueOf(targetUpper[i]) >= 255)
                         leftUpper[i] = "255";
-                }
+                }*/
 
+                //Retrieve from shared preferences lower and upper bounds
                 Scalar lowTarget2 = null, upTarget2 = null;
 
                 if (Double.valueOf(targetLower[3]) != -1) {
@@ -1242,33 +1250,36 @@ public class AutoNavigationActivity extends AppCompatActivity {
                 Scalar lowTarget = new Scalar(Double.valueOf(targetLower[0]), Double.valueOf(targetLower[1]), Double.valueOf(targetLower[2]));
                 Scalar upTarget = new Scalar(Double.valueOf(targetUpper[0]), Double.valueOf(targetUpper[1]), Double.valueOf(targetUpper[2]));
 
-                //pass image in HSV
+                //Pass image in HSV
                 caseHsv = new Mat();
                 Imgproc.cvtColor(mOriginal, caseHsv, Imgproc.COLOR_RGB2HSV);
 
-                //filter color left
+                //Filter color LEFT_MARKER, find contours and find centroid
                 caseLeft = new Mat();
                 Core.inRange(caseHsv, lowLeft, upLeft, caseLeft);
                 List<MatOfPoint> contoursLeft = Navigation.findContours(caseLeft);
                 centerLeft = Navigation.findCentroid(contoursLeft);
 
-                //filter color right
+                //Filter color RIGHT_MARKER, find contours and find centroid
                 caseRight = new Mat();
                 Core.inRange(caseHsv, lowRight, upRight, caseRight);
                 List<MatOfPoint> contoursRight = Navigation.findContours(caseRight);
                 centerRight = Navigation.findCentroid(contoursRight);
 
-                //filter color target
+                //Filter color TARGET_MARKER, find contours and find centroid
                 caseTarget = new Mat();
                 Core.inRange(caseHsv, lowTarget, upTarget, caseTarget);
                 if (Double.valueOf(targetLower[3]) != -1) {
                     caseTarget2 = new Mat();
+                    //Compute second TARGET_MASK, for second range of colors
                     Core.inRange(caseHsv, lowTarget2, upTarget2, caseTarget2);
+                    //Merge the two mask in a singular one
                     Core.add(caseTarget, caseTarget2, caseTarget);
                 }
                 List<MatOfPoint> contoursTarget = Navigation.findContours(caseTarget);
                 centerTarget = Navigation.findCentroid(contoursTarget);
 
+                //Compute actual height from the target
                 double height = Navigation.computeHeight(mOriginal, getApplicationContext());
                 Log.v(TAG, "Height: " + height);
 
@@ -1278,38 +1289,53 @@ public class AutoNavigationActivity extends AppCompatActivity {
                     Log.v(TAG, "ERROR Height is -1");
                 }
 
+                //Done with elaboration on input image, release
                 mImage.close();
 
-                //begin the movement stuff
+                //Begin the movement: control if centers are correctly acquired
                 if (centerTarget != null && centerLeft != null && centerRight != null) {
 
+                    //Compute MEAN point among CENTER_LEFT and CENTER_RIGHT
                     double meanX = (centerLeft.x + centerRight.x) / 2;
                     double meanY = (centerLeft.y + centerRight.y) / 2;
                     centerMean = new org.opencv.core.Point(meanX, meanY);
+
                     Log.v(TAG, "CenterLeft: " + centerLeft.x + "," + centerLeft.y);
                     Log.v(TAG, "CenterRight: " + centerRight.x + "," + centerRight.y);
                     Log.v(TAG, "The mean point is: " + centerMean.x + "," + centerMean.y);
                     Log.v(TAG, "centerTarget: " + centerTarget.x + "," + centerTarget.y);
 
-                    //L Movement
+                    /*
+                     * L Movement
+                     */
                     if (movementType == ConstantApp.L_MOVEMENT) {
+
+                        /*
+                         * If Y coordinates of robot and target are in bound (robot is aligned with target on Y axis), so
+                         * start movements along X axis
+                         */
 
                         if (Navigation.isInBound(true, centerMean, centerTarget, 5, height, focal)) {
 
+                            //Call turnDirection method in order to obtain the next action
                             int action = Navigation.turnDirection(centerTarget, centerLeft, centerRight, true, focal, height);
                             switch (action) {
 
+                                //Rotate LEFT
                                 case 0:
                                     mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.left);
                                     Log.v(TAG, "Moving left on y");
                                     break;
 
+                                //Rotate RIGHT
                                 case 1:
                                     mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.right);
                                     Log.v(TAG, "Moving right on y");
                                     break;
 
+                                //Is aligned (is facing the target or is turned to the wrong side)
                                 case 2:
+                                    //Method isWrongSide evaluate the condition, if true turn right, otherwise go forward
                                     if (Navigation.isWrongSide(centerTarget, centerRight, centerMean, true)) {
                                         mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.right);
                                         Log.v(TAG, "Turn right on y");
@@ -1324,23 +1350,30 @@ public class AutoNavigationActivity extends AppCompatActivity {
                                     break;
                             }
 
+                        //When Y coordinates are not in bound (not similar), move the robot in the bound (align robot with target on Y axis)
                         } else {
+                            //Compute a temporary target corresponding to the point where robot should rotate in the L movement
                             org.opencv.core.Point tempTarget = new org.opencv.core.Point(meanX, centerTarget.y);
 
+                            //Call turnDirection method in order to obtain the next action respect to temporary target
                             int action = Navigation.turnDirection(tempTarget, centerLeft, centerRight, false, focal, height);
                             switch (action) {
 
+                                //Rotate LEFT
                                 case 0:
                                     mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.left);
                                     Log.v(TAG, "Moving left on x");
                                     break;
 
+                                //Rotate RIGHT
                                 case 1:
                                     mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.right);
                                     Log.v(TAG, "Moving right on x");
                                     break;
 
+                                //Is aligned (is facing the temporary target or is turned to the wrong side)
                                 case 2:
+                                    //Method isWrongSide evaluate the condition, if true turn right, otherwise go forward
                                     if (Navigation.isWrongSide(tempTarget, centerRight, centerMean, false)) {
                                         mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.right);
                                         Log.v(TAG, "Turn right on x");
@@ -1356,13 +1389,17 @@ public class AutoNavigationActivity extends AppCompatActivity {
                                     break;
                             }
                         }
-
-                        //direct movement
+                    /*
+                     * Direct Movement
+                     */
                     } else {
 
+                        //Compute offset as the actual scaling factor for the actual height of the device to target
                         double offset = (ConstantApp.KNOWN_WIDTH * focal) / height;
+                        //Scaling factor from X pixel to one cm
                         double pixelToCm = offset / 3;
 
+                        //Compute only once the initial distance in cm between CENTER_TARGET and MEAN point
                         if (distanceTM == null) {
                             distanceTM = Math.sqrt(Math.pow(centerTarget.x - centerMean.x, 2)
                                     + Math.pow(centerTarget.y - centerMean.y, 2));
@@ -1373,19 +1410,20 @@ public class AutoNavigationActivity extends AppCompatActivity {
                             Log.v(TAG, "distanceTM in cm: " + distanceTM);
                         }
 
-                        //pendenza retta passante per il robot
+                        //Slope of line passing through CENTER_RIGHT and CENTER_LEFT
                         double m1 = (centerRight.y - centerLeft.y) / (centerRight.x - centerLeft.x);
 
-                        //pendenza target, centro medio
+                        //Slope of line passing through MEAN and CENTER_TARGET
                         double m2 = (centerMean.y - centerTarget.y) / (centerMean.x - centerTarget.x);
-
                         Log.v(TAG, "m1*m2: " + m1 * m2);
 
+                        //Verify condition of perpendicularity, if true go straight else rotate
                         if (Navigation.isPerpendicular(m1, m2, focal, height, centerMean, centerTarget)) {
 
                             mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.forward);
                             Log.v(TAG, "Go Ahead");
 
+                            //Compute actual distance between CENTER_TARGET and MEAN point in cm
                             double newDistanceTM = Math.sqrt(Math.pow(centerTarget.x - centerMean.x, 2)
                                     + Math.pow(centerTarget.y - centerMean.y, 2));
 
@@ -1394,11 +1432,19 @@ public class AutoNavigationActivity extends AppCompatActivity {
                             newDistanceTM = newDistanceTM / pixelToCm;
                             Log.v(TAG, "newDistanceTM in cm: " + newDistanceTM);
 
+                            /*
+                             * Compare actual distance with initial one, if it increase the robot is in the wrong
+                             * direction and a rotation is done
+                             */
                             if (newDistanceTM > distanceTM) {
                                 mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.right);
                                 Log.v(TAG, "Turn right on distance");
                             }
 
+                        /*
+                         * If robot isn't perpendicular respect to target rotate it in the direction of
+                         * the nearest robot marker
+                         */
                         } else {
 
                             double distanceTR = Math.sqrt(Math.pow(centerTarget.x - centerRight.x, 2)
@@ -1408,7 +1454,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
 
                             if (distanceTL >= distanceTR) {
                                 mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.right);
-                                Log.v(TAG, "Turn righ");
+                                Log.v(TAG, "Turn right");
                             } else if (distanceTL < distanceTR) {
                                 mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.left);
                                 Log.v(TAG, "Turn left");
@@ -1416,6 +1462,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
                         }
                     }
 
+                //If only the target marker is not visible the robot is arrived, set UI initial layout
                 } else if (centerTarget == null) {
                     runOnUiThread(new Runnable() {
                         @Override
@@ -1424,7 +1471,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
                             mFabMenu.show();
                             mCalibrationInfo.setVisibility(View.GONE);
 
-                            //return to the "classic" camera view
+                            //Return to the preview of camera
                             mTestImage.setVisibility(View.GONE);
                             mTextureView.setVisibility(View.VISIBLE);
                             mTextureView.getTop();
@@ -1433,6 +1480,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
 
                     Toast.makeText(mActivity, getResources().getString(R.string.arrived_target_bound), Toast.LENGTH_LONG).show();
 
+                //If one of the two marker of the robot is not visible stop the navigation
                 } else {
 
                     String message = null;
@@ -1448,7 +1496,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
                             mFabMenu.show();
                             mCalibrationInfo.setVisibility(View.GONE);
 
-                            //return to the "classic" camera view
+                            //Return to the preview of camera
                             mTestImage.setVisibility(View.GONE);
                             mTextureView.setVisibility(View.VISIBLE);
                             mTextureView.getTop();
@@ -1463,11 +1511,12 @@ public class AutoNavigationActivity extends AppCompatActivity {
                 Log.v(TAG, "########################################################");
 
                 try {
-                    Thread.sleep(700);
+                    Thread.sleep(600);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
 
+                //Continue navigation taking a new picture
                 takePicture();
             }
 
