@@ -57,7 +57,7 @@ public class ManualNavigationActivity extends AppCompatActivity {
     public void onResume() {
         super.onResume();
 
-        registerReceiver(mGattUpdateReceiver, ConstantApp.makeGattUpdateIntentFilter());
+        registerReceiver(mGattUpdateReceiver, ConstantApp.gattUpdateIntentFilter());
         Intent gattServiceIntent = new Intent(this, BluetoothLeService.class);
         bindService(gattServiceIntent, mServiceConnection, BIND_AUTO_CREATE);
     }

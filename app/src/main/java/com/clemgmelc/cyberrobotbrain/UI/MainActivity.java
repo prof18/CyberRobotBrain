@@ -6,7 +6,6 @@ import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.res.ColorStateList;
 import android.os.Bundle;
@@ -131,7 +130,7 @@ public class MainActivity extends AppCompatActivity {
                 mDeviceAddress = data.getStringExtra(ConstantApp.DEVICE_ADDRESS);
                 mFab.setEnabled(false);
 
-                registerReceiver(mGattUpdateReceiver, ConstantApp.makeGattUpdateIntentFilter());
+                registerReceiver(mGattUpdateReceiver, ConstantApp.gattUpdateIntentFilter());
 
                 Intent gattServiceIntent = new Intent(this, BluetoothLeService.class);
                 bindService(gattServiceIntent, mServiceConnection, BIND_AUTO_CREATE);

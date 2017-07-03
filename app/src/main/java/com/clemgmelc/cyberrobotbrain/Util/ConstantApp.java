@@ -5,9 +5,9 @@ import android.content.IntentFilter;
 import java.util.UUID;
 
 /**
- * Created by marco on 4/18/17.
+ * This class contains all the necessary constants
+ * 
  */
-
 public class ConstantApp {
 
     public static final String TAG = "CyberRobot";
@@ -41,11 +41,10 @@ public class ConstantApp {
     public static final String SHARED_TARGET_UPPER = "target_upper";
     public static final String SHARED_TARGET_LOWER = "target_lower";
     public static final String SHARED_FOCAL = "focal";
-    public static final String SHARED_STANDARD_WIDTH = "standard_width";
 
     //distance computation
     //in order to do evaluate distance we use a rounded target of dimension: radius 1,5 cm
-    //for this reason the recatangle is a square with side l = 3 cm
+    //for this reason the rectangle is a square with side l = 3 cm
     //FOCAL = (pixelWidth * KNOWN_DISTANCE) / KNOWN_WIDTH;
     public static final double KNOWN_WIDTH = 3.0;
     public static final double KNOWN_DISTANCE = 15.0;
@@ -53,7 +52,7 @@ public class ConstantApp {
     public static final int L_MOVEMENT = 0;
     public static final int DIRECT_MOVEMENT = 1;
 
-    public static IntentFilter makeGattUpdateIntentFilter() {
+    public static IntentFilter gattUpdateIntentFilter() {
         final IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(ConstantApp.ACTION_GATT_CONNECTED);
         intentFilter.addAction(ConstantApp.ACTION_GATT_DISCONNECTED);
@@ -61,5 +60,4 @@ public class ConstantApp {
         intentFilter.addAction(ConstantApp.ACTION_DATA_AVAILABLE);
         return intentFilter;
     }
-
 }

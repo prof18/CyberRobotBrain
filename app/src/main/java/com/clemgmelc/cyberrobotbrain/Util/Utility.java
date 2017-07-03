@@ -13,13 +13,20 @@ import java.util.Comparator;
 import java.util.List;
 
 /**
- * Created by marco on 6/12/17.
+ * This class contains some useful static methods
+ *
  */
-
 public class Utility {
 
     private static final String TAG = ConstantApp.TAG + " - " + Utility.class.getSimpleName();
 
+    /**
+     * This method checks if the color calibration of the markers is done. To do that, it checks if
+     * the color ranges are saved into the shared preference
+     *
+     * @param context   A reference of the Application Context
+     * @return          The method returns true if the calibration is already done, false otherwise
+     */
     public static boolean isCalibrationDone(Context context) {
 
         boolean isCalibrationDone = false;
@@ -27,6 +34,7 @@ public class Utility {
         //get a reference to the shared preferences
         SharedPreferences sharedpreferences = context.getSharedPreferences(ConstantApp.SHARED_NAME, Context.MODE_PRIVATE);
 
+        //Get the value saved on the shared preferences
         String leftUpper = sharedpreferences.getString(ConstantApp.SHARED_ROBOT_LEFT_UPPER, null);
         String leftLower = sharedpreferences.getString(ConstantApp.SHARED_ROBOT_LEFT_LOWER, null);
         String rightUpper = sharedpreferences.getString(ConstantApp.SHARED_ROBOT_RIGHT_UPPER, null);
@@ -42,6 +50,13 @@ public class Utility {
         return isCalibrationDone;
     }
 
+    /**
+     * This method checks if the color calibration of the target markers is done. To do that, it checks if
+     * the color ranges are saved into the shared preference
+     *
+     * @param context   A reference of the Application Context
+     * @return          The method returns true if the calibration is already done, false otherwise
+     */
     public static boolean isTargetCalibrationDone(Context context) {
 
         boolean isCalibrationDone = false;
@@ -49,10 +64,9 @@ public class Utility {
         //get a reference to the shared preferences
         SharedPreferences sharedpreferences = context.getSharedPreferences(ConstantApp.SHARED_NAME, Context.MODE_PRIVATE);
 
-
+        //get the value saved on the shared preferences
         String targetUpper = sharedpreferences.getString(ConstantApp.SHARED_TARGET_UPPER, null);
         String targetLower = sharedpreferences.getString(ConstantApp.SHARED_TARGET_LOWER, null);
-
 
         if ( targetUpper != null && targetLower != null)
             isCalibrationDone = true;
@@ -60,8 +74,34 @@ public class Utility {
         return isCalibrationDone;
     }
 
+    /**
+     * This method chooses the max resolution by comparing the area.
+     *
+     * @param sizeList  An array of Size that contains all the resolutions
+     * @return          The method returns the index of the max resolution
+     */
+    public static int maxRes(Size[] sizeList) {
+
+        long surface = 0;
+        int index = -1;
+
+        for (int i = 0; i < sizeList.length; i++) {
+
+            Size size = sizeList[i];
+            //compute the area to find the best resolution
+            long tempSurface = size.getHeight() * size.getWidth();
+
+            if (tempSurface > surface) {
+                surface = tempSurface;
+                index = i;
+            }
+        }
+        return index;
+    }
+
+    //TODO: controllare e pulire
     public static Size chooseOptimalSize(Size[] choices, int textureViewWidth, int textureViewHeight,
-                                          int maxWidth, int maxHeight, Size aspectRatio) {
+                                         int maxWidth, int maxHeight, Size aspectRatio) {
 
         // Collect the supported resolutions that are at least as big as the preview Surface
         List<Size> bigEnough = new ArrayList<>();
@@ -102,25 +142,5 @@ public class Utility {
                     (long) rhs.getWidth() * rhs.getHeight());
         }
 
-    }
-
-    public static int maxRes(Size[] sizeList) {
-        long surface = 0;
-        int index = -1;
-
-        for (int i = 0; i < sizeList.length; i++) {
-
-            Size size = sizeList[i];
-
-            long tempSurface = size.getHeight() * size.getWidth();
-
-            if (tempSurface > surface) {
-
-                surface = tempSurface;
-                index = i;
-            }
-        }
-
-        return index;
     }
 }

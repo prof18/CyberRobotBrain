@@ -505,7 +505,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
         Intent gattServiceIntent = new Intent(this, BluetoothLeService.class);
         bindService(gattServiceIntent, mServiceConnection, BIND_AUTO_CREATE);
 
-        registerReceiver(mGattUpdateReceiver, ConstantApp.makeGattUpdateIntentFilter());
+        registerReceiver(mGattUpdateReceiver, ConstantApp.gattUpdateIntentFilter());
     }
 
     @Override
