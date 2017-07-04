@@ -40,7 +40,7 @@ public class MainActivity extends AppCompatActivity {
     private Button mManualNav, mAutoNavigation;
 
     //With this boolean at true, the buttons are enabled even if the robot isn't connected
-    private boolean isDebug = true;
+    private boolean isDebug = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -254,8 +254,10 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onResume() {
         super.onResume();
-        mFab.setEnabled(true);
-        mAutoNavigation.setClickable(true);
-        mManualNav.setClickable(true);
+        if (mFab != null && mAutoNavigation != null && mManualNav != null) {
+            mFab.setEnabled(true);
+            mAutoNavigation.setClickable(true);
+            mManualNav.setClickable(true);
+        }
     }
 }
