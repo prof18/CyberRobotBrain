@@ -37,6 +37,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
+import android.os.SystemClock;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
@@ -207,12 +208,18 @@ public class AutoNavigationActivity extends AppCompatActivity {
             public void onClick(View v) {
                 Log.v(TAG, "MENU pressed");
                 animateFab();
+                mFabDirect.setEnabled(true);
+                mFabL.setEnabled(true);
+                mFabCalib.setEnabled(true);
             }
         });
 
         mFabDirect.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                mFabDirect.setEnabled(false);
+                mFabL.setEnabled(false);
+                mFabCalib.setEnabled(false);
                 animateFab();
                 movementType = ConstantApp.DIRECT_MOVEMENT;
                 mFabMenu.hide();
@@ -225,6 +232,9 @@ public class AutoNavigationActivity extends AppCompatActivity {
         mFabL.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                mFabDirect.setEnabled(false);
+                mFabL.setEnabled(false);
+                mFabCalib.setEnabled(false);
                 animateFab();
                 movementType = ConstantApp.L_MOVEMENT;
                 mFabMenu.hide();
@@ -237,6 +247,9 @@ public class AutoNavigationActivity extends AppCompatActivity {
         mFabCalib.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                mFabDirect.setEnabled(false);
+                mFabL.setEnabled(false);
+                mFabCalib.setEnabled(false);
                 animateFab();
                 mFabMenu.hide();
                 mFabPictureCalib.show();
@@ -790,6 +803,8 @@ public class AutoNavigationActivity extends AppCompatActivity {
 
     private void takePicture() {
 
+        k= 1;
+
         mCaptureState = STATE_WAIT_LOCK;
         mCaptureRequestBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER, CaptureRequest.CONTROL_AF_TRIGGER_START);
 
@@ -1332,8 +1347,15 @@ public class AutoNavigationActivity extends AppCompatActivity {
                                         Log.v(TAG, "Turn right on y");
 
                                     } else {
-                                        mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.forward);
-                                        Log.v(TAG, "Moving forward on y");
+                                        for (int i = 0; i < 2; i++) {
+                                            try {
+                                                Thread.sleep(300);
+                                            } catch (InterruptedException e) {
+                                                e.printStackTrace();
+                                            }
+                                            mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.forward);
+                                            Log.v(TAG, "Moving forward on y");
+                                        }
                                     }
                                     break;
 
@@ -1370,8 +1392,16 @@ public class AutoNavigationActivity extends AppCompatActivity {
                                         Log.v(TAG, "Turn right on x");
 
                                     } else {
-                                        mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.forward);
-                                        Log.v(TAG, "Moving forward on x");
+                                        for (int i = 0; i < 2; i++) {
+                                            try {
+                                                Thread.sleep(300);
+                                            } catch (InterruptedException e) {
+                                                e.printStackTrace();
+                                            }
+                                            mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.forward);
+                                            Log.v(TAG, "Moving forward on x");
+                                        }
+
                                     }
 
                                     break;
@@ -1390,7 +1420,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
                         //Scaling factor from X pixel to one cm
                         double pixelToCm = offset / 3;
 
-                        //Compute only once the initial distance in cm between CENTER_TARGET and MEAN point
+                        /*//Compute only once the initial distance in cm between CENTER_TARGET and MEAN point
                         if (distanceTM == null) {
                             distanceTM = Math.sqrt(Math.pow(centerTarget.x - centerMean.x, 2)
                                     + Math.pow(centerTarget.y - centerMean.y, 2));
@@ -1399,7 +1429,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
 
                             distanceTM = distanceTM / pixelToCm;
                             Log.v(TAG, "distanceTM in cm: " + distanceTM);
-                        }
+                        }*/
 
                         //Slope of line passing through CENTER_RIGHT and CENTER_LEFT
                         double m1 = (centerRight.y - centerLeft.y) / (centerRight.x - centerLeft.x);
@@ -1411,26 +1441,46 @@ public class AutoNavigationActivity extends AppCompatActivity {
                         //Verify condition of perpendicularity, if true go straight else rotate
                         if (Navigation.isPerpendicular(m1, m2, focal, height, centerMean, centerTarget)) {
 
-                            mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.forward);
-                            Log.v(TAG, "Go Ahead");
+
 
                             //Compute actual distance between CENTER_TARGET and MEAN point in cm
                             double newDistanceTM = Math.sqrt(Math.pow(centerTarget.x - centerMean.x, 2)
                                     + Math.pow(centerTarget.y - centerMean.y, 2));
 
-                            Log.v(TAG, "newDistanceTM in pixel: " + newDistanceTM);
+                            Log.v("DIRECT", "newDistanceTM in pixel: " + newDistanceTM);
 
                             newDistanceTM = newDistanceTM / pixelToCm;
-                            Log.v(TAG, "newDistanceTM in cm: " + newDistanceTM);
+                            Log.v("DIRECT", "newDistanceTM in cm: " + newDistanceTM);
 
                             /*
                              * Compare actual distance with initial one, if it increase the robot is in the wrong
                              * direction and a rotation is done
                              */
-                            if (newDistanceTM > distanceTM) {
-                                mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.right);
-                                Log.v(TAG, "Turn right on distance");
+
+                            if (distanceTM != null && newDistanceTM > distanceTM + 3) {
+                                for (int i = 0; i < 6; i++){
+                                    try {
+                                        Thread.sleep(400);
+                                    } catch (InterruptedException e) {
+                                        e.printStackTrace();
+                                    }
+                                    mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.right);
+                                    Log.v("DIRECT", "getting far away turn");
+                                }
+                            } else {
+                                for (int i = 0; i < 2; i++) {
+                                    try {
+                                        Thread.sleep(300);
+                                    } catch (InterruptedException e) {
+                                        e.printStackTrace();
+                                    }
+                                    mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.forward);
+                                    Log.v("DIRECT", "Go Ahead");
+                                }
                             }
+                            //TODO: aggiornare commenti
+                            //aggiorna la distanza
+                            distanceTM = newDistanceTM;
 
                         /*
                          * If robot isn't perpendicular respect to target rotate it in the direction of
@@ -1445,10 +1495,10 @@ public class AutoNavigationActivity extends AppCompatActivity {
 
                             if (distanceTL >= distanceTR) {
                                 mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.right);
-                                Log.v(TAG, "Turn right");
+                                Log.v("DIRECT", "Turn right");
                             } else if (distanceTL < distanceTR) {
                                 mBluetoothLeService.writeCharacteristic(mMovementCharacteristic, ConstantApp.left);
-                                Log.v(TAG, "Turn left");
+                                Log.v("DIRECT", "Turn left");
                             }
                         }
                     }

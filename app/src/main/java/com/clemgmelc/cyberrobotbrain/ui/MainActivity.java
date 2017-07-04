@@ -81,16 +81,20 @@ public class MainActivity extends AppCompatActivity {
         mManualNav.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
-                List<BluetoothGattService> list = mBluetoothLeService.getSupportedGattServices();
-                if (mConnected) {
+                if (!isDebug) {
+                    List<BluetoothGattService> list = mBluetoothLeService.getSupportedGattServices();
+                    if (mConnected) {
+                        Intent startManualNav = new Intent(MainActivity.this, ManualNavigationActivity.class);
+                        startManualNav.putExtra(ConstantApp.DEVICE_ADDRESS, mDeviceAddress);
+                        startActivity(startManualNav);
+                    } else if (!mConnected) {
+                        Toast.makeText(mainActivity, getResources().getString(R.string.action_disconnected), Toast.LENGTH_SHORT).show();
+                    } else if (list.size() != 9) {
+                        Toast.makeText(mainActivity, getResources().getString(R.string.error_occured), Toast.LENGTH_SHORT).show();
+                    }
+                } else {
                     Intent startManualNav = new Intent(MainActivity.this, ManualNavigationActivity.class);
-                    startManualNav.putExtra(ConstantApp.DEVICE_ADDRESS, mDeviceAddress);
                     startActivity(startManualNav);
-                } else if (!mConnected) {
-                    Toast.makeText(mainActivity, getResources().getString(R.string.action_disconnected), Toast.LENGTH_SHORT).show();
-                } else if (list.size() != 9) {
-                    Toast.makeText(mainActivity, getResources().getString(R.string.error_occured), Toast.LENGTH_SHORT).show();
                 }
             }
         });
@@ -118,7 +122,10 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        if (isDebug) mAutoNavigation.setEnabled(true);
+        if (isDebug) {
+            mAutoNavigation.setEnabled(true);
+            mManualNav.setEnabled(true);
+        }
 
     }
 

@@ -343,8 +343,8 @@ public class Navigation {
             upperBound = -0.000000001;
             lowerBound = -1.999999999;
         } else {
-            upperBound = -0.1;
-            lowerBound = -1.9;
+            upperBound = -0.6;
+            lowerBound = -1.4;
         }
 
         Log.v(TAG, "Lower Bound: " + lowerBound + " - Upper Bound: " + upperBound);
