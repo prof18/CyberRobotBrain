@@ -46,7 +46,7 @@ import java.util.ArrayList;
 
 public class DeviceScanActivity extends AppCompatActivity {
 
-    private static final String TAG = ConstantApp.TAG + " - " + AutoNavigationActivity.class.getSimpleName();
+    private static final String TAG = ConstantApp.TAG + " - " + DeviceScanActivity.class.getSimpleName();
 
     //UI
     private DeviceScanActivity mActivity;
@@ -347,16 +347,21 @@ public class DeviceScanActivity extends AppCompatActivity {
         super.onResume();
         Log.v(TAG, "onResume() called");
         mNoDevice.setVisibility(View.INVISIBLE);
-        if (!mScanning && mBluetoothAdapter.isEnabled() && mLocationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-            Log.v(TAG, "scanLeDevice(true) in onResume()");
-            scanLeDevice(true);
-            mSwipeRefreshLayout.setEnabled(false);
-            mProgress.setVisibility(View.VISIBLE);
-        } else if (!mLocationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-            Log.v(TAG, "ACCENDI IL GPS");
-            if (mAlertGps == null) {
-                mAlertGps = showAlert(ALERT_GPS).create();
-                mAlertGps.show();
+        int coarseLocation = ActivityCompat.checkSelfPermission(this, PERMISSIONS_LOCATION[0]);
+        int fineLocation = ActivityCompat.checkSelfPermission(this, PERMISSIONS_LOCATION[1]);
+
+        if (coarseLocation == PackageManager.PERMISSION_GRANTED && fineLocation == PackageManager.PERMISSION_GRANTED) {
+            if (!mScanning && mBluetoothAdapter.isEnabled() && mLocationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+                Log.v(TAG, "scanLeDevice(true) in onResume()");
+                scanLeDevice(true);
+                mSwipeRefreshLayout.setEnabled(false);
+                mProgress.setVisibility(View.VISIBLE);
+            } else if (!mLocationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+                Log.v(TAG, "ACCENDI IL GPS");
+                if (mAlertGps == null) {
+                    mAlertGps = showAlert(ALERT_GPS).create();
+                    mAlertGps.show();
+                }
             }
         }
 
@@ -546,6 +551,8 @@ public class DeviceScanActivity extends AppCompatActivity {
                         //show a dialog to enable the bluetooth
                         if (mAlertBlue == null)
                             mAlertBlue = showAlert(ALERT_BLUE).create();
+                        if (mScanning)
+                            scanLeDevice(false);
                         break;
 
                     default:
