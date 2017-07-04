@@ -225,6 +225,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
                 mFabMenu.hide();
                 mFabStop.show();
                 stop = false;
+                distanceTM = null;
                 takePicture();
             }
         });

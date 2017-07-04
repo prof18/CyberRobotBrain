@@ -40,7 +40,7 @@ public class MainActivity extends AppCompatActivity {
     private Button mManualNav, mAutoNavigation;
 
     //With this boolean at true, the buttons are enabled even if the robot isn't connected
-    private boolean isDebug = false;
+    private boolean isDebug = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,6 +64,7 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View view) {
 
                 Log.v(TAG, "****************************************************TAP on mFAB***********************");
+                mFab.setEnabled(false);
                 if (!mConnected || mBluetoothLeService == null) {
                     Log.v(TAG, "no connected--->reopen scan activity");
                     Intent launchScan = new Intent(MainActivity.this, DeviceScanActivity.class);
@@ -81,6 +82,8 @@ public class MainActivity extends AppCompatActivity {
         mManualNav.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+
+                mManualNav.setClickable(false);
                 if (!isDebug) {
                     List<BluetoothGattService> list = mBluetoothLeService.getSupportedGattServices();
                     if (mConnected) {
@@ -102,6 +105,9 @@ public class MainActivity extends AppCompatActivity {
         mAutoNavigation.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+
+                mAutoNavigation.setClickable(false);
+
                 if (!isDebug) {
 
                     List<BluetoothGattService> list = mBluetoothLeService.getSupportedGattServices();
@@ -243,5 +249,13 @@ public class MainActivity extends AppCompatActivity {
         if (mBluetoothLeService != null) {
             mBluetoothLeService.disconnect();
         }
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        mFab.setEnabled(true);
+        mAutoNavigation.setClickable(true);
+        mManualNav.setClickable(true);
     }
 }
