@@ -132,7 +132,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
     private Double distanceTM;
 
     //Enables the next button
-    private boolean debug = true;
+    private boolean debug = false;
 
     /* ####### UI METHODS ####### */
 
@@ -1350,7 +1350,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
                                     } else {
                                         for (int i = 0; i < 2; i++) {
                                             try {
-                                                Thread.sleep(300);
+                                                Thread.sleep(400);
                                             } catch (InterruptedException e) {
                                                 e.printStackTrace();
                                             }
@@ -1395,7 +1395,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
                                     } else {
                                         for (int i = 0; i < 2; i++) {
                                             try {
-                                                Thread.sleep(300);
+                                                Thread.sleep(400);
                                             } catch (InterruptedException e) {
                                                 e.printStackTrace();
                                             }
@@ -1421,17 +1421,6 @@ public class AutoNavigationActivity extends AppCompatActivity {
                         //Scaling factor from X pixel to one cm
                         double pixelToCm = offset / 3;
 
-                        /*//Compute only once the initial distance in cm between CENTER_TARGET and MEAN point
-                        if (distanceTM == null) {
-                            distanceTM = Math.sqrt(Math.pow(centerTarget.x - centerMean.x, 2)
-                                    + Math.pow(centerTarget.y - centerMean.y, 2));
-
-                            Log.v(TAG, "distanceTM in pixel: " + distanceTM);
-
-                            distanceTM = distanceTM / pixelToCm;
-                            Log.v(TAG, "distanceTM in cm: " + distanceTM);
-                        }*/
-
                         //Slope of line passing through CENTER_RIGHT and CENTER_LEFT
                         double m1 = (centerRight.y - centerLeft.y) / (centerRight.x - centerLeft.x);
 
@@ -1442,22 +1431,17 @@ public class AutoNavigationActivity extends AppCompatActivity {
                         //Verify condition of perpendicularity, if true go straight else rotate
                         if (Navigation.isPerpendicular(m1, m2, focal, height, centerMean, centerTarget)) {
 
-
-
                             //Compute actual distance between CENTER_TARGET and MEAN point in cm
                             double newDistanceTM = Math.sqrt(Math.pow(centerTarget.x - centerMean.x, 2)
                                     + Math.pow(centerTarget.y - centerMean.y, 2));
-
-                            Log.v("DIRECT", "newDistanceTM in pixel: " + newDistanceTM);
-
                             newDistanceTM = newDistanceTM / pixelToCm;
+                            Log.v("DIRECT", "newDistanceTM in pixel: " + newDistanceTM);
                             Log.v("DIRECT", "newDistanceTM in cm: " + newDistanceTM);
 
                             /*
-                             * Compare actual distance with initial one, if it increase the robot is in the wrong
-                             * direction and a rotation is done
+                             * Compare actual distance with previous one, if it's increasing the robot is in the wrong
+                             * direction and a series of rotations is done
                              */
-
                             if (distanceTM != null && newDistanceTM > distanceTM + 3) {
                                 for (int i = 0; i < 6; i++){
                                     try {
@@ -1471,7 +1455,7 @@ public class AutoNavigationActivity extends AppCompatActivity {
                             } else {
                                 for (int i = 0; i < 2; i++) {
                                     try {
-                                        Thread.sleep(300);
+                                        Thread.sleep(400);
                                     } catch (InterruptedException e) {
                                         e.printStackTrace();
                                     }
@@ -1479,8 +1463,8 @@ public class AutoNavigationActivity extends AppCompatActivity {
                                     Log.v("DIRECT", "Go Ahead");
                                 }
                             }
-                            //TODO: aggiornare commenti
-                            //aggiorna la distanza
+
+                            //Update distance for the next iteration
                             distanceTM = newDistanceTM;
 
                         /*
