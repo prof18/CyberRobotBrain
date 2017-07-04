@@ -200,6 +200,7 @@ public class DeviceScanActivity extends AppCompatActivity {
                             public void onClick(DialogInterface dialog, int which) {
                                 Intent callGPSSettingIntent = new Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS);
                                 startActivity(callGPSSettingIntent);
+                                mAlertGps = null;
                             }
                         });
                 alertDialog.setNegativeButton(getResources().getString(R.string.gps_cancel),
@@ -351,6 +352,12 @@ public class DeviceScanActivity extends AppCompatActivity {
             scanLeDevice(true);
             mSwipeRefreshLayout.setEnabled(false);
             mProgress.setVisibility(View.VISIBLE);
+        } else if (!mLocationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+            Log.v(TAG, "ACCENDI IL GPS");
+            if (mAlertGps == null) {
+                mAlertGps = showAlert(ALERT_GPS).create();
+                mAlertGps.show();
+            }
         }
 
     }
@@ -398,11 +405,11 @@ public class DeviceScanActivity extends AppCompatActivity {
 
     /* ####### PERMISSION METHODS ####### */
 
-        /**
-         * This method checks location permissions and control if gps and bluetooth are enabled
-         *
-         * @param activity Activity Reference
-         */
+    /**
+     * This method checks location permissions and control if gps and bluetooth are enabled
+     *
+     * @param activity Activity Reference
+     */
 
     public void verifyPermissions(Activity activity) {
 
@@ -676,12 +683,9 @@ public class DeviceScanActivity extends AppCompatActivity {
         public void onProviderEnabled(String provider) {
 
             Log.d(TAG, "Change ----> GPS Activated");
-            mAlertGps.dismiss();
-            mAlertGps = null;
-            //start the scan
-            if (!mScanning && mBluetoothAdapter.isEnabled()) {
-                Log.d(TAG, "SCAN start from gps");
-                scanLeDevice(true);
+            if (mAlertGps != null) {
+                mAlertGps.dismiss();
+                mAlertGps = null;
             }
         }
 
