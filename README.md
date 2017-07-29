@@ -8,9 +8,7 @@ More specifically, the aim was to reverse-engineer the communication protocol of
 
 To move the target we have used three different markers: one for the target and the others two to recognize the left and the right side of the robot. The recognition has been exploited using [openCV Library](http://opencv.org/platforms/android/).
 
-You can checkout the behauvior of the application by watching the video below.
-
-<iframe width="560" height="315" src="https://www.youtube.com/embed/xStDo5KmYf8" frameborder="0" allowfullscreen></iframe>
+You can checkout the behauvior of the application by watching [a video on YouTube](https://www.youtube.com/embed/xStDo5KmYf8)
 
 ## Test Environment:
 
@@ -20,15 +18,15 @@ We have used the following disposition of markers: Target = Red, Right = Green a
 
 **Test condition**: the light on the markers can’t change too much in the test field and due to the fact that the back of robot is green and in some light condition can interfere, we cover it with a piece of white paper.
 
-<img src="https://raw.githubusercontent.com/prof18/CyberRobotBrain/master/images/image2.png" width="30%" height="30%" align="middle">
+<img src="https://raw.githubusercontent.com/prof18/CyberRobotBrain/master/images/image2.png" width="50%" height="50%">
 
 Also the color of the field where we have tested the app is uniform and has a neutral color (we use a large piece of paper); the use of paper removes some noise due to light reflection.
 
-<img src="https://raw.githubusercontent.com/prof18/CyberRobotBrain/master/images/image3.png" width="30%" height="30%" align="middle">
+<img src="https://raw.githubusercontent.com/prof18/CyberRobotBrain/master/images/image3.png" width="50%" height="50%">
 
 **Calibration**: To better recognize the markers, it is necessary a calibration phase. It is required to take a photo at 15 cm from the target marker as explain in the calibration message inside the app. We placed all the 3 markers close together and took the picture at 15 cm. The most precise this picture is taken, the most precise the application should work.
 
-<img src="https://raw.githubusercontent.com/prof18/CyberRobotBrain/master/images/image1.png" width="30%" height="30%" align="middle">
+<img src="https://raw.githubusercontent.com/prof18/CyberRobotBrain/master/images/image1.png" width="50%" height="50%">
 
 Last advice: if the app doesn’t recognize some of the markers or the robot seems to move in completely wrong direction we suggest to change illumination and calibrate again colors.
 
