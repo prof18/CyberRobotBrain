@@ -8,7 +8,7 @@ More specifically, the aim was to reverse-engineer the communication protocol of
 
 To move the target we have used three different markers: one for the target and the others two to recognize the left and the right side of the robot. The recognition has been exploited using [openCV Library](http://opencv.org/platforms/android/).
 
-You can checkout the behauvior of the application by watching [a video on YouTube](https://www.youtube.com/embed/xStDo5KmYf8)
+You can checkout the behauvior of the application by watching [a video on YouTube](https://www.youtube.com/watch?v=xStDo5KmYf8)
 
 ## Test Environment:
 
